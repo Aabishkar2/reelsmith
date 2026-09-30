@@ -5,7 +5,9 @@
  *  - loadEnv(): loads <repo>/.env via dotenv (falls back to a tiny parser if
  *    node_modules isn't installed yet). Never overrides existing env vars.
  *  - loadConfig(): config/fillers.json deep-merged over built-in defaults, so a
- *    missing/partial fillers.json never breaks the pipeline.
+ *    missing/partial fillers.json never breaks the pipeline. The file is the
+ *    project's (<project root of $REELSMITH_ROOT or the cwd>/config/fillers.json,
+ *    which `reelsmith init` copies), else the framework's (CONFIG_PATH).
  */
 const fs = require('fs');
 const path = require('path');
@@ -87,10 +89,19 @@ function merge(base, over) {
   return out;
 }
 
+/** The fillers.json in use: the project's when it has one, else the framework's. */
+function configPath() {
+  try {
+    const own = path.join(require('../core/project').root(process.env.REELSMITH_ROOT || process.cwd()), 'config', 'fillers.json');
+    if (fs.existsSync(own)) return own;
+  } catch (_) { /* fall back */ }
+  return CONFIG_PATH;
+}
+
 function loadConfig(overrides) {
   let file = {};
-  try { file = JSON.parse(fs.readFileSync(CONFIG_PATH, 'utf8')); } catch (_) { /* use defaults */ }
+  try { file = JSON.parse(fs.readFileSync(configPath(), 'utf8')); } catch (_) { /* use defaults */ }
   return merge(merge(DEFAULTS, file), overrides || {});
 }
 
-module.exports = { ROOT, CONFIG_PATH, loadEnv, loadConfig, DEFAULTS };
+module.exports = { ROOT, CONFIG_PATH, configPath, loadEnv, loadConfig, DEFAULTS };

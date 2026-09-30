@@ -110,7 +110,7 @@ function requireVoice({ model, voice, speed }, providerPlugin) {
     const hint = providerPlugin && typeof providerPlugin.voices === 'function'
       ? `\n  voices of ${providerPlugin.name}, e.g.: ${providerPlugin.voices().slice(0, 8).map(v => v.name).join(', ')}` : '';
     throw new Error('no TTS voice set — there is no default; ask the creator which voice, then either:\n' +
-      '  node pipeline/cli.js tts videos/<name> --voice=<name>\n' +
+      '  reelsmith tts <video> --voice=<name>\n' +
       '  or add `tts_voice: <name>` to script.md frontmatter\n' +
       '  or set TTS_VOICE=<name> in the environment / .env' + hint);
   }

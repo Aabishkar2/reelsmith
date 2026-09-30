@@ -1,6 +1,7 @@
 'use strict';
 /**
- * pipeline/test/render.test.js — pure tests for renderer/render.js planning (no browser, no ffmpeg).
+ * pipeline/test/render.test.js — pure tests for renderer/render.js planning (no browser, no ffmpeg;
+ * the --audio length probe is stubbed).
  *   node pipeline/test/render.test.js
  */
 const assert = require('assert');
@@ -162,6 +163,44 @@ function assertCovers(ranges, from, to) {
   });
   await test('no scenes.json and no --duration → clear error', () => {
     assert.throws(() => R.resolveMode([FAKE]), /cannot determine video length/);
+  });
+
+  console.log('\n--audio music tail (Σdur from scenes.json = 34.879 s; ffprobe stubbed)');
+  const AUDIO = path.join(path.dirname(FIXTURE), 'voiceover.mp3');       // exists; its length is stubbed
+  const withAudio = (sec, extra = []) => R.resolveMode([FIXTURE, `--audio=${AUDIO}`, ...extra], { probeAudio: () => sec });
+  await test('audio 2.5 s longer → the video runs to the end of the audio; the tail holds the closing frame', () => {
+    const m = withAudio(34.879 + 2.5);
+    assert.strictEqual(m.durationSource, 'audio');
+    assert.ok(Math.abs(m.duration - 37.379) < 1e-9 && Math.abs(m.sceneDuration - 34.879) < 1e-9, `${m.duration} / ${m.sceneDuration}`);
+    assert.strictEqual(m.totalFrames, Math.ceil(37.379 * 30 - 1e-6));
+    assert.ok(m.holdAt < 34.879 && m.holdAt > 34.878, String(m.holdAt));
+    assert.strictEqual(R.frameTime(m, 30), 1, 'before Σdur: i/fps');
+    assert.strictEqual(R.frameTime(m, m.totalFrames - 1), m.holdAt, 'in the tail: the closing frame');
+    assert.ok(/music tail/.test(m.durationNote), m.durationNote);
+  });
+  await test('audio more than 6 s longer, a hair longer (encoder padding) or shorter → Σdur, no hold', () => {
+    for (const sec of [34.879 + 8, 34.879 + 0.04, 30]) {
+      const m = withAudio(sec);
+      assert.strictEqual(m.durationSource, 'scenes.json', String(sec));
+      assert.ok(Math.abs(m.duration - 34.879) < 1e-9, String(m.duration));
+      assert.strictEqual(m.holdAt, null);
+      assert.strictEqual(R.frameTime(m, m.totalFrames - 1), (m.totalFrames - 1) / 30);
+      assert.ok(m.durationNote, 'the log says which length was used');
+    }
+    assert.ok(/cut/.test(withAudio(34.879 + 8).durationNote));
+  });
+  await test('--duration or no --audio → the audio is never probed', () => {
+    let probed = 0;
+    const probeAudio = () => { probed++; return 99; };
+    R.resolveMode([FIXTURE, `--audio=${AUDIO}`, '--duration=10'], { probeAudio });
+    R.resolveMode([FIXTURE], { probeAudio });
+    assert.strictEqual(probed, 0);
+    assert.strictEqual(R.resolveMode([FIXTURE, `--audio=${AUDIO}`, '--duration=10'], { probeAudio }).duration, 10);
+  });
+  await test('a range render inside the tail is allowed (clamped to the audio length)', () => {
+    const m = R.resolveMode([FIXTURE, `--audio=${AUDIO}`, '--from=35', '--to=40'], { probeAudio: () => 37.379 });
+    assert.ok(Math.abs(m.to - 37.379) < 1e-9 && m.frameEnd > m.frameStart);
+    assert.strictEqual(R.frameTime(m, m.frameEnd - 1), m.holdAt);
   });
 
   console.log(`\n${passed} passed, ${failed} failed`);

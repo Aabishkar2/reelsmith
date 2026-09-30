@@ -150,7 +150,7 @@ const decodedMd5 = (f) => (spawnSync('ffmpeg', ['-v', 'error', '-i', f, '-map', 
     await test('full-range render without an approval exits 3 with the gate message', () => {
       const r = spawnSync(process.execPath, [RENDER, HTML, path.join(tmp, 'gated.mp4')], { encoding: 'utf8', timeout: 60000 });
       assert.strictEqual(r.status, 3, `exit ${r.status}\n${r.stderr}`);
-      assert.ok(/Preview gate: no preview approval yet\./.test(r.stderr) && /approve-preview\.js/.test(r.stderr), r.stderr);
+      assert.ok(/Preview gate: no preview approval yet\./.test(r.stderr) && /reelsmith approve/.test(r.stderr), r.stderr);
       assert.ok(!fs.existsSync(path.join(tmp, 'gated.mp4')));
     });
   } finally {

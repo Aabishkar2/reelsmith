@@ -11,6 +11,7 @@ music/*.mp3
 music/*.wav
 videos/*/*.mp4
 videos/*/voiceover-mix.mp3
+videos/*/voiceover-mix.json
 pipeline/__pycache__/
 videos/*/source/*.wav
 videos/*/*.mp3

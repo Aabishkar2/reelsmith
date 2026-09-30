@@ -4,7 +4,7 @@
  *   node pipeline/test/run-tests.js [--force-tts] [--whisper-model=base]
  *
  * 1. unit tests (align.test.js, attempts.test.js, denoise.test.js, tts.test.js, plugins.test.js, performance.test.js,
- *    render.test.js — no whisper, no network)
+ *    publish.test.js, cli.test.js, render.test.js — no whisper, no network)
  *    + render.e2e.test.js (real render of videos/fixture-e2e; skipped when playwright/ffmpeg are missing)
  * 2. make-fixture (edge-tts; needs network — if it fails only step 1 runs)
  * 3. `cli.js analyze` on the clean + bad takes (whisper base, --no-jev)
@@ -48,8 +48,8 @@ function checkScenes(dir, label, expectScenes) {
 }
 
 (function main() {
-  console.log('1. unit tests (align, attempts, denoise, tts, plugins, performance, render, render e2e)');
-  for (const f of ['align.test.js', 'attempts.test.js', 'denoise.test.js', 'tts.test.js', 'plugins.test.js', 'performance.test.js', 'publish.test.js', 'render.test.js', 'render.e2e.test.js']) {
+  console.log('1. unit tests (align, attempts, denoise, tts, plugins, performance, publish, cli, render, render e2e)');
+  for (const f of ['align.test.js', 'attempts.test.js', 'denoise.test.js', 'tts.test.js', 'plugins.test.js', 'performance.test.js', 'publish.test.js', 'cli.test.js', 'render.test.js', 'render.e2e.test.js']) {
     const u = spawnSync(process.execPath, [path.join(__dirname, f)], { encoding: 'utf8' });
     const skipped = (u.stdout.match(/^SKIPPED: (.*)$/m) || [])[1];
     if (skipped && u.status === 0) { console.log(`  - ${f} skipped: ${skipped}`); continue; }

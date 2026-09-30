@@ -18,7 +18,7 @@ Every video with background music uses these defaults. Don't ask the creator aga
 
 **Never use a fixed dB offset** like `volume=-20dB`. Always measure the track first.
 
-`node scripts/mix-music.js videos/<name> --track=music/<file>.mp3` applies all of this and writes `voiceover-mix.mp3`. Render with `--audio=videos/<name>/voiceover-mix.mp3`. The voice isn't shifted, so `scenes.json` timing is unchanged. `--under=<dB>` overrides the level for one video, only if the creator asks. **4 dB under** (`--under=4`) is the louder option the creator asks for on energetic videos (used on `openai-devday`, 2026-09-30). Never make it the default.
+`reelsmith mix videos/<name> --track=music/<file>.mp3` (`tools/mix-music.js`) applies all of this and writes `voiceover-mix.mp3` + `voiceover-mix.json`. `reelsmith draft` / `reelsmith render` use it automatically and run to the end of the tail on the closing frame. The voice isn't shifted, so `scenes.json` timing is unchanged. `--under=<dB>` overrides the level for one video, only if the creator asks. **4 dB under** (`--under=4`) is the louder option the creator asks for on energetic videos (used on `openai-devday`, 2026-09-30). Never make it the default.
 
 ## Tracks
 
