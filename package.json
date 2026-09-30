@@ -1,0 +1,20 @@
+{
+  "name": "video-gen-v2",
+  "version": "0.1.0",
+  "private": true,
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "app": "node app/server.js",
+    "analyze": "node pipeline/cli.js analyze",
+    "cut": "node pipeline/cli.js cut",
+    "preview": "node scripts/preview.js",
+    "render": "node renderer/render.js",
+    "contact-sheet": "node scripts/contact-sheet.js"
+  },
+  "dependencies": {
+    "dotenv": "^17.4.2",
+    "playwright": "^1.52.0"
+  }
+}

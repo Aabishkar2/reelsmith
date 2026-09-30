@@ -1,0 +1,495 @@
+[
+  {
+    "idx": 1,
+    "dur": 8.023,
+    "file": "voiceover/s1.mp3",
+    "words": [
+      {
+        "word": "S3",
+        "start": 0.04,
+        "end": 0.492
+      },
+      {
+        "word": "is",
+        "start": 0.492,
+        "end": 0.752
+      },
+      {
+        "word": "the",
+        "start": 0.752,
+        "end": 0.892
+      },
+      {
+        "word": "oldest",
+        "start": 0.892,
+        "end": 1.292
+      },
+      {
+        "word": "and",
+        "start": 1.292,
+        "end": 1.672
+      },
+      {
+        "word": "most",
+        "start": 1.672,
+        "end": 1.952
+      },
+      {
+        "word": "widely",
+        "start": 1.952,
+        "end": 2.432
+      },
+      {
+        "word": "used",
+        "start": 2.432,
+        "end": 2.892
+      },
+      {
+        "word": "AWS",
+        "start": 2.892,
+        "end": 3.392
+      },
+      {
+        "word": "service.",
+        "start": 3.392,
+        "end": 3.972
+      },
+      {
+        "word": "It",
+        "start": 4.302,
+        "end": 4.383
+      },
+      {
+        "word": "stores,",
+        "start": 4.383,
+        "end": 4.803
+      },
+      {
+        "word": "objects",
+        "start": 5.203,
+        "end": 5.603
+      },
+      {
+        "word": "like",
+        "start": 5.603,
+        "end": 5.803
+      },
+      {
+        "word": "files,",
+        "start": 5.803,
+        "end": 6.263
+      },
+      {
+        "word": "logs,",
+        "start": 6.503,
+        "end": 7.043
+      },
+      {
+        "word": "and",
+        "start": 7.203,
+        "end": 7.263
+      },
+      {
+        "word": "backups.",
+        "start": 7.263,
+        "end": 7.683
+      }
+    ]
+  },
+  {
+    "idx": 2,
+    "dur": 11.289,
+    "file": "voiceover/s2.mp3",
+    "words": [
+      {
+        "word": "Lambda",
+        "start": 0.04,
+        "end": 0.292
+      },
+      {
+        "word": "runs",
+        "start": 0.292,
+        "end": 0.612
+      },
+      {
+        "word": "your",
+        "start": 0.612,
+        "end": 0.792
+      },
+      {
+        "word": "code",
+        "start": 0.792,
+        "end": 1.092
+      },
+      {
+        "word": "without",
+        "start": 1.092,
+        "end": 1.372
+      },
+      {
+        "word": "any",
+        "start": 1.372,
+        "end": 1.792
+      },
+      {
+        "word": "servers",
+        "start": 1.792,
+        "end": 2.212
+      },
+      {
+        "word": "to",
+        "start": 2.212,
+        "end": 2.432
+      },
+      {
+        "word": "manage.",
+        "start": 2.432,
+        "end": 2.772
+      },
+      {
+        "word": "But",
+        "start": 3.102,
+        "end": 3.159
+      },
+      {
+        "word": "a",
+        "start": 3.159,
+        "end": 3.259
+      },
+      {
+        "word": "cold",
+        "start": 3.259,
+        "end": 3.519
+      },
+      {
+        "word": "start",
+        "start": 3.519,
+        "end": 3.819
+      },
+      {
+        "word": "can",
+        "start": 3.819,
+        "end": 4.039
+      },
+      {
+        "word": "add",
+        "start": 4.039,
+        "end": 4.279
+      },
+      {
+        "word": "600",
+        "start": 4.279,
+        "end": 4.779
+      },
+      {
+        "word": "milliseconds",
+        "start": 4.779,
+        "end": 5.359
+      },
+      {
+        "word": "before",
+        "start": 5.359,
+        "end": 5.839
+      },
+      {
+        "word": "your",
+        "start": 5.839,
+        "end": 6.099
+      },
+      {
+        "word": "function",
+        "start": 6.099,
+        "end": 6.499
+      },
+      {
+        "word": "even",
+        "start": 6.499,
+        "end": 6.959
+      },
+      {
+        "word": "begins.",
+        "start": 6.959,
+        "end": 7.499
+      },
+      {
+        "word": "That",
+        "start": 7.789,
+        "end": 8.069
+      },
+      {
+        "word": "delay",
+        "start": 8.069,
+        "end": 8.309
+      },
+      {
+        "word": "happens",
+        "start": 8.309,
+        "end": 8.829
+      },
+      {
+        "word": "every",
+        "start": 8.829,
+        "end": 9.269
+      },
+      {
+        "word": "time",
+        "start": 9.269,
+        "end": 9.529
+      },
+      {
+        "word": "a",
+        "start": 9.529,
+        "end": 9.729
+      },
+      {
+        "word": "new",
+        "start": 9.729,
+        "end": 9.909
+      },
+      {
+        "word": "container",
+        "start": 9.909,
+        "end": 10.309
+      },
+      {
+        "word": "spins",
+        "start": 10.309,
+        "end": 10.649
+      },
+      {
+        "word": "up.",
+        "start": 10.649,
+        "end": 10.949
+      }
+    ]
+  },
+  {
+    "idx": 3,
+    "dur": 10.271,
+    "file": "voiceover/s3.mp3",
+    "words": [
+      {
+        "word": "Provision",
+        "start": 0.04,
+        "end": 0.369
+      },
+      {
+        "word": "concurrency,",
+        "start": 0.369,
+        "end": 1.069
+      },
+      {
+        "word": "keeps",
+        "start": 1.675,
+        "end": 1.935
+      },
+      {
+        "word": "containers",
+        "start": 1.935,
+        "end": 2.415
+      },
+      {
+        "word": "warm",
+        "start": 2.415,
+        "end": 2.935
+      },
+      {
+        "word": "and",
+        "start": 2.935,
+        "end": 3.295
+      },
+      {
+        "word": "ready.",
+        "start": 3.295,
+        "end": 3.555
+      },
+      {
+        "word": "It",
+        "start": 3.885,
+        "end": 3.957
+      },
+      {
+        "word": "costs",
+        "start": 3.957,
+        "end": 4.297
+      },
+      {
+        "word": "about",
+        "start": 4.297,
+        "end": 4.557
+      },
+      {
+        "word": "30",
+        "start": 4.557,
+        "end": 4.917
+      },
+      {
+        "word": "cents",
+        "start": 4.917,
+        "end": 5.197
+      },
+      {
+        "word": "per",
+        "start": 5.197,
+        "end": 5.397
+      },
+      {
+        "word": "hour",
+        "start": 5.397,
+        "end": 5.657
+      },
+      {
+        "word": "for",
+        "start": 5.657,
+        "end": 5.917
+      },
+      {
+        "word": "each",
+        "start": 5.917,
+        "end": 6.197
+      },
+      {
+        "word": "warm",
+        "start": 6.197,
+        "end": 6.437
+      },
+      {
+        "word": "instance.",
+        "start": 6.437,
+        "end": 6.817
+      },
+      {
+        "word": "For",
+        "start": 7.147,
+        "end": 7.231
+      },
+      {
+        "word": "busy",
+        "start": 7.231,
+        "end": 7.611
+      },
+      {
+        "word": "APIs,",
+        "start": 7.611,
+        "end": 8.111
+      },
+      {
+        "word": "the",
+        "start": 8.711,
+        "end": 9.091
+      },
+      {
+        "word": "price",
+        "start": 9.091,
+        "end": 9.311
+      },
+      {
+        "word": "is",
+        "start": 9.311,
+        "end": 9.451
+      },
+      {
+        "word": "worth",
+        "start": 9.451,
+        "end": 9.611
+      },
+      {
+        "word": "paying.",
+        "start": 9.611,
+        "end": 9.931
+      }
+    ]
+  },
+  {
+    "idx": 4,
+    "dur": 5.296,
+    "file": "voiceover/s4.mp3",
+    "words": [
+      {
+        "word": "measure",
+        "start": 0.04,
+        "end": 0.264
+      },
+      {
+        "word": "your",
+        "start": 0.264,
+        "end": 0.444
+      },
+      {
+        "word": "cold",
+        "start": 0.444,
+        "end": 0.724
+      },
+      {
+        "word": "starts",
+        "start": 0.724,
+        "end": 1.044
+      },
+      {
+        "word": "before",
+        "start": 1.044,
+        "end": 1.324
+      },
+      {
+        "word": "you",
+        "start": 1.324,
+        "end": 1.544
+      },
+      {
+        "word": "pay",
+        "start": 1.544,
+        "end": 1.704
+      },
+      {
+        "word": "to",
+        "start": 1.704,
+        "end": 1.844
+      },
+      {
+        "word": "remove",
+        "start": 1.844,
+        "end": 2.144
+      },
+      {
+        "word": "them.",
+        "start": 2.144,
+        "end": 2.384
+      },
+      {
+        "word": "Follow",
+        "start": 2.714,
+        "end": 2.896
+      },
+      {
+        "word": "for",
+        "start": 2.896,
+        "end": 3.096
+      },
+      {
+        "word": "more",
+        "start": 3.096,
+        "end": 3.336
+      },
+      {
+        "word": "AWS",
+        "start": 3.336,
+        "end": 3.856
+      },
+      {
+        "word": "tips",
+        "start": 3.856,
+        "end": 4.296
+      },
+      {
+        "word": "every",
+        "start": 4.296,
+        "end": 4.736
+      },
+      {
+        "word": "week.",
+        "start": 4.736,
+        "end": 4.956
+      }
+    ]
+  }
+]

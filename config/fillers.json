@@ -1,0 +1,105 @@
+{
+  "_doc": "Owned by pipeline/. Filler vocabulary + every numeric threshold used by analyze/splice/cut (docs/spec.md §6). All values are tunable; code falls back to pipeline/config.js defaults if a key is missing. Keys starting with _ are comments. Inter-sentence silence is always normalized to min(cut.sentenceGapSec, thresholds.pauseTrimBetweenSec); pauseBetweenSec only decides whether a warn flag is shown. Ambiguous words (like/so/right/okay/well) count as fillers only when inserted (never when in the script); Jev decides them when available, else ambiguousDefaultIsFiller.",
+
+  "fillers": ["um", "umm", "uhm", "uh", "uhh", "er", "erm", "ah", "ahh", "eh", "hmm", "hm", "mm", "mhm", "basically", "actually", "literally"],
+  "fillerPhrases": [["you", "know"], ["sort", "of"], ["kind", "of"], ["i", "mean"]],
+  "ambiguous": ["like", "so", "right", "okay", "ok", "well"],
+  "ambiguousDefaultIsFiller": true,
+
+  "whisper": {
+    "_doc": "script: 'pipeline' = pipeline/whisper_words.py (supports the prompt), 'root' = repo-root whisper_timestamps.py (no prompt). The disfluent prompt makes whisper keep um/uh/restarts instead of silently dropping them.",
+    "script": "pipeline",
+    "prompt": "Umm, let me think like, hmm... Okay, here's what I'm, like, thinking. So, uh, I-I mean, we, we should, you know, try it.",
+    "_mode": "chunked (default): split at pauses >= chunk.minSilenceSec whose frame RMS is below floor + vadFrac * (speech - floor) (floor/speech = floorPct/speechPct percentiles of the take's frame dB), shrunk to their quiet core below floor + lowFrac * (speech - floor) (>= minCoreSec) so soft onsets/fricatives stay in the chunk, pad chunks by <= chunk.padSec, merge chunks < chunk.minChunkSec, transcribe them in interleaved windows of <= chunk.packSec with chunk.sepSec silence between chunks, so a line and its retake never share a whisper window (docs/spec.md §7b). whole: one pass over the file (hides repeats). net: a word longer than max(longWordSec, ratio x median sec/char x length) that is >= speechFrac speech energy gets its chunk re-transcribed in sub-chunks split at dips >= subSilenceSec that are subBelowDb under the chunk's 80th-percentile level; unresolved -> word.suspect -> 'possible hidden repeat' warn.",
+    "mode": "chunked",
+    "threads": 0,
+    "chunk": { "minSilenceSec": 0.25, "vadFrac": 0.5, "lowFrac": 0.3, "minCoreSec": 0.12, "floorPct": 10, "speechPct": 70, "padSec": 0.35, "minChunkSec": 0.3, "packSec": 24, "sepSec": 1.0 },
+    "net": { "enabled": true, "longWordSec": 1.0, "ratio": 3, "speechFrac": 0.6, "subSilenceSec": 0.12, "subBelowDb": 12 }
+  },
+
+  "thresholds": {
+    "fillerBadCount": 3,
+    "mismatchWer": 0.15,
+    "missingCoverage": 0.34,
+    "orderMinCoverage": 0.6,
+    "similarityMatch": 0.7,
+
+    "pauseInsideSec": 1.2,
+    "pauseBetweenSec": 2.0,
+    "pauseTrimInsideSec": 0.35,
+    "pauseTrimBetweenSec": 0.6,
+
+    "paceMinWpm": 110,
+    "paceMaxWpm": 200,
+    "paceMinWords": 5,
+    "paceMinSec": 1.5,
+
+    "loudnessMinDb": -30,
+    "clippingMaxDb": -0.5,
+    "_edgeGuardSec": "untranscribed speech energy (no whisper word) running into a line's first word / out of its last word is kept, up to this many seconds (whisper drops soft edge words)",
+    "edgeGuardSec": 0.8,
+
+    "silenceMinSec": 0.3,
+    "silenceFloorDb": -50,
+    "silenceCeilDb": -30,
+    "silenceBelowMeanDb": 18
+  },
+
+  "cut": {
+    "paddingSec": 0.04,
+    "sentenceGapSec": 0.25,
+    "sceneTailSec": 0.3,
+    "fadeMs": 5,
+    "mp3Bitrate": "128k"
+  },
+
+  "jev": {
+    "timeoutMs": 10000,
+    "reviewWerMin": 0.05,
+    "reviewWerMax": 0.15,
+    "rerecordProb": 0.7,
+    "fillerProb": 0.5
+  },
+
+  "alignCosts": {
+    "exact": 0,
+    "fuzzy": 0.35,
+    "sub": 1.0,
+    "del": 1.0,
+    "ins": 0.6,
+    "insFiller": 0.3
+  },
+
+  "attempts": {
+    "_doc": "Best-attempt selection for lines said more than once (docs/spec.md §7a). A span next to a sentence is an attempt when the sentence fits it with coverage >= minCoverage (partial attempts stay restarts). score = weighted mean of accuracy (1 - WER - fuzzyPenalty * fuzzy-match rate), fluency (1 - penalties per filler / repeat / pause > thresholds.pauseInsideSec), confidence (mean whisper conf), audio (speech dB vs take median: loses 1/audioRangeDb per dB below median-audioSlackDb, clipping loses clipPenalty), pace (|wpm - take median| / median / paceRange). Non-bad attempts beat bad ones; scores within tieEpsilon of the best -> the latest attempt wins.",
+    "minCoverage": 0.8,
+    "maxSpanFactor": 1.5,
+    "tieEpsilon": 0.02,
+    "weights": { "accuracy": 0.5, "fluency": 0.2, "confidence": 0.1, "audio": 0.1, "pace": 0.1 },
+    "fluencyPenalty": { "filler": 0.15, "repeat": 0.2, "pause": 0.15 },
+    "fuzzyPenalty": 0.5,
+    "audioSlackDb": 2,
+    "audioRangeDb": 12,
+    "clipPenalty": 0.5,
+    "paceRange": 0.5
+  },
+
+  "denoise": {
+    "_doc": "Background-noise removal (docs/spec.md §7c). Every source the cut plays (take .hq.wav, re-record clips) is denoised into a cached <base>.clean.wav (regenerated only when the source is newer or these settings change); whisper/analysis keep the original. engine deepfilternet runs pipeline/denoise_dfn.py with `python` (DeepFilterNet pins numpy<2 - use a separate venv's python) and attenLimitDb caps the attenuation so the voice doesn't sound underwater. If it is missing or fails: ffmpeg highpass/lowpass + afftdn (fallback.*), a warning in take.json cut.warnings / CLI, never blocks. gate: in the rendered scene, frames outside the kept words (+- padSec) louder than the scene's room tone by > aboveRoomDb (a bark in a pause/gap) are pulled down to room tone. videos/<name>/settings.json { \"denoise\": false } turns it off per video.",
+    "enabled": true,
+    "engine": "deepfilternet",
+    "python": "python3.11",
+    "attenLimitDb": 35,
+    "timeoutSec": 600,
+    "fallback": { "highpassHz": 80, "lowpassHz": 12000, "nr": 12, "nf": -50, "trackNoise": true },
+    "gate": { "enabled": true, "aboveRoomDb": 18, "padSec": 0.12, "frameSec": 0.01 }
+  },
+
+  "silence": {
+    "_doc": "Silent-take guards. maxDb: a take/clip whose max volume (volumedetect) is below this is silent -> fail fast, Whisper never runs. hallucinations: phrases Whisper invents on silence; a transcript where they cover >= hallucinationFrac of the tokens while <= hallucinationMaxFound of the sentences were found is flagged status 'no-speech'.",
+    "maxDb": -60,
+    "hallucinations": ["thank you", "thanks for watching", "thank you for watching", "thank you so much for watching", "thanks for watching and see you next time", "please subscribe", "subscribe to my channel", "like and subscribe", "see you next time", "bye", "you", "subtitles by the amara org community", "transcription by castingwords"],
+    "hallucinationFrac": 0.6,
+    "hallucinationMaxFound": 0.1
+  }
+}

@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>video-gen-v2 · Teleprompter</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Ccircle cx='8' cy='8' r='6' fill='%23ff453a'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body data-view="picker">
+  <header class="topbar">
+    <button id="nav-home" class="brand" title="All videos"><span class="brand-dot"></span>video-gen-v2</button>
+    <span id="crumb" class="crumb"></span>
+    <span class="spacer"></span>
+    <span id="top-rec" class="rec-ind" hidden><span class="dot"></span><span class="rec-time">0:00</span></span>
+  </header>
+
+  <main>
+    <!-- ───────── Picker ───────── -->
+    <section id="view-picker" class="view view-picker">
+      <div class="picker-head">
+        <h1>Videos</h1>
+        <span class="spacer"></span>
+        <button id="picker-refresh" class="ghost">↻ Refresh</button>
+      </div>
+      <div id="video-list" class="video-list"></div>
+      <p class="hint">Each video lives in <code>videos/&lt;name&gt;/</code>. Write <code>script.md</code> from Claude Code
+        (research → script-writing → teleprompter-prep skills), then record it here.</p>
+    </section>
+
+    <!-- ───────── Teleprompter ───────── -->
+    <section id="view-prompter" class="view view-prompter" hidden>
+      <div class="toolbar">
+        <div class="group">
+          <button id="btn-arm" title="Allow microphone + show input level">🎙 Arm mic</button>
+          <div class="meter" title="Input level (RMS)"><div class="meter-fill"></div></div>
+          <span class="meter-db">— dB</span>
+          <span class="mic-warn" hidden>⚠ No audio from mic — check input device / permissions</span>
+        </div>
+        <div class="group">
+          <button id="btn-start" class="primary" title="Space">▶ Start</button>
+          <button id="btn-stop" class="danger" title="Esc" disabled>■ Stop take</button>
+          <button id="btn-retry-upload" class="warn" hidden>⟳ Retry upload</button>
+        </div>
+        <div class="group">
+          <span class="lbl">WPM</span>
+          <button id="wpm-down" class="sq" title="← (−5)">−</button><b id="wpm-val" class="val">150</b><button id="wpm-up" class="sq" title="→ (+5)">+</button>
+        </div>
+        <div class="group">
+          <span class="lbl">Size</span>
+          <button id="font-down" class="sq" title="− key">A−</button><b id="font-val" class="val">44</b><button id="font-up" class="sq" title="+ key">A+</button>
+        </div>
+        <div class="group">
+          <button id="btn-mirror" title="M — flip horizontally for glass teleprompters">⇋ Mirror</button>
+        </div>
+        <div class="group stats">
+          <span id="rec-ind" class="rec-ind" hidden><span class="dot"></span><span class="rec-time">0:00</span></span>
+          <span class="lbl">elapsed</span><b id="elapsed" class="val">0:00</b><span class="lbl">/ est</span><b id="est" class="val">0:00</b>
+        </div>
+        <div class="group takes">
+          <select id="take-select" title="Previous takes"></select>
+          <button id="btn-open-take">Open review</button>
+        </div>
+      </div>
+      <div id="p-status" class="p-status">Space to rehearse (scroll only) · Arm mic to record a take</div>
+      <div id="prompter-viewport" class="prompter-viewport">
+        <div id="prompter-mirror" class="prompter-mirror">
+          <div id="prompter-text" class="prompter-text"></div>
+        </div>
+        <div class="dim-top"></div>
+        <div class="band"></div>
+      </div>
+      <div class="keys-help"><kbd>Space</kbd> start / pause · <kbd>↑</kbd><kbd>↓</kbd> nudge line · <kbd>←</kbd><kbd>→</kbd> WPM ∓5 ·
+        <kbd>+</kbd><kbd>−</kbd> text size · <kbd>M</kbd> mirror · <kbd>Esc</kbd> stop</div>
+    </section>
+
+    <!-- ───────── Review ───────── -->
+    <section id="view-review" class="view view-review" hidden>
+      <div class="review-head">
+        <div class="review-row1">
+          <h2 id="review-title"></h2>
+          <span class="spacer"></span>
+          <button id="btn-back-prompter" class="ghost">← Back to teleprompter</button>
+          <button id="btn-ab" class="ghost" title="A/B: play sentences from the original or the denoised audio">A/B: original</button>
+          <label class="toggle plain" title="Remove background noise (barks, hum) from the final voiceover — per video"><input type="checkbox" id="denoise-on"> denoise</label>
+          <label id="anyway-wrap" class="toggle" hidden><input type="checkbox" id="finalize-anyway"> finalize anyway</label>
+          <button id="btn-finalize" class="primary" title="Enter">Finalize ⏎</button>
+        </div>
+        <div id="summary-chips" class="chips"></div>
+      </div>
+      <div id="finalize-result" class="finalize-result" hidden></div>
+      <div id="review-list" class="review-list"></div>
+      <div class="keys-help"><kbd>J</kbd><kbd>K</kbd> move · <kbd>P</kbd> play · <kbd>R</kbd> re-record ·
+        <kbd>Space</kbd> record/stop (in re-record) · <kbd>Esc</kbd> cancel · <kbd>Enter</kbd> finalize</div>
+    </section>
+  </main>
+
+  <div id="overlay" class="overlay" hidden>
+    <div class="overlay-box">
+      <div class="spinner"></div>
+      <div id="overlay-msg" class="overlay-msg"></div>
+      <div id="overlay-sub" class="overlay-sub"></div>
+      <div id="overlay-timer" class="overlay-sub mono"></div>
+    </div>
+  </div>
+  <div id="countdown" class="countdown" hidden><span id="countdown-num"></span></div>
+  <div id="toasts" class="toasts" aria-live="polite"></div>
+
+  <script src="/diff.js"></script>
+  <script src="/app.js"></script>
+</body>
+</html>

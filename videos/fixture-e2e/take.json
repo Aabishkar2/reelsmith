@@ -1,0 +1,1317 @@
+{
+  "version": 1,
+  "video": "fixture-e2e",
+  "take": "takes/take-01",
+  "status": "cut",
+  "analyzedAt": "2026-09-27T07:20:43.389Z",
+  "whisperModel": "turbo",
+  "audio": {
+    "durationSec": 39.336,
+    "sampleRate": 48000,
+    "meanVolumeDb": -20.9,
+    "maxVolumeDb": -2.9,
+    "clipping": false
+  },
+  "words": [
+    {
+      "i": 0,
+      "word": "S3",
+      "start": 0,
+      "end": 0.62,
+      "conf": 0.936,
+      "role": "restart",
+      "sid": "s1.1"
+    },
+    {
+      "i": 1,
+      "word": "is",
+      "start": 0.62,
+      "end": 0.84,
+      "conf": 0.919,
+      "role": "restart",
+      "sid": "s1.1"
+    },
+    {
+      "i": 2,
+      "word": "the,",
+      "start": 0.84,
+      "end": 1.02,
+      "conf": 0.992,
+      "role": "restart",
+      "sid": "s1.1"
+    },
+    {
+      "i": 3,
+      "word": "S3",
+      "start": 1.488,
+      "end": 1.94,
+      "conf": 0.965,
+      "role": "anchor",
+      "sid": "s1.1"
+    },
+    {
+      "i": 4,
+      "word": "is",
+      "start": 1.94,
+      "end": 2.2,
+      "conf": 0.991,
+      "role": "anchor",
+      "sid": "s1.1"
+    },
+    {
+      "i": 5,
+      "word": "the",
+      "start": 2.2,
+      "end": 2.34,
+      "conf": 0.997,
+      "role": "anchor",
+      "sid": "s1.1"
+    },
+    {
+      "i": 6,
+      "word": "oldest",
+      "start": 2.34,
+      "end": 2.74,
+      "conf": 0.979,
+      "role": "anchor",
+      "sid": "s1.1"
+    },
+    {
+      "i": 7,
+      "word": "and",
+      "start": 2.74,
+      "end": 3.12,
+      "conf": 0.982,
+      "role": "anchor",
+      "sid": "s1.1"
+    },
+    {
+      "i": 8,
+      "word": "most",
+      "start": 3.12,
+      "end": 3.4,
+      "conf": 0.994,
+      "role": "anchor",
+      "sid": "s1.1"
+    },
+    {
+      "i": 9,
+      "word": "widely",
+      "start": 3.4,
+      "end": 3.88,
+      "conf": 0.997,
+      "role": "anchor",
+      "sid": "s1.1"
+    },
+    {
+      "i": 10,
+      "word": "used",
+      "start": 3.88,
+      "end": 4.34,
+      "conf": 0.961,
+      "role": "anchor",
+      "sid": "s1.1"
+    },
+    {
+      "i": 11,
+      "word": "AWS",
+      "start": 4.34,
+      "end": 4.84,
+      "conf": 0.99,
+      "role": "anchor",
+      "sid": "s1.1"
+    },
+    {
+      "i": 12,
+      "word": "service.",
+      "start": 4.84,
+      "end": 5.42,
+      "conf": 0.961,
+      "role": "anchor",
+      "sid": "s1.1"
+    },
+    {
+      "i": 13,
+      "word": "It",
+      "start": 6.039,
+      "end": 6.12,
+      "conf": 0.991,
+      "role": "anchor",
+      "sid": "s1.2"
+    },
+    {
+      "i": 14,
+      "word": "stores,",
+      "start": 6.12,
+      "end": 6.54,
+      "conf": 0.99,
+      "role": "anchor",
+      "sid": "s1.2"
+    },
+    {
+      "i": 15,
+      "word": "um,",
+      "start": 6.76,
+      "end": 7.06,
+      "conf": 0.924,
+      "role": "filler",
+      "sid": "s1.2"
+    },
+    {
+      "i": 16,
+      "word": "objects",
+      "start": 7.32,
+      "end": 7.72,
+      "conf": 0.997,
+      "role": "anchor",
+      "sid": "s1.2"
+    },
+    {
+      "i": 17,
+      "word": "like",
+      "start": 7.72,
+      "end": 7.92,
+      "conf": 0.996,
+      "role": "anchor",
+      "sid": "s1.2"
+    },
+    {
+      "i": 18,
+      "word": "files,",
+      "start": 7.92,
+      "end": 8.38,
+      "conf": 0.997,
+      "role": "anchor",
+      "sid": "s1.2"
+    },
+    {
+      "i": 19,
+      "word": "logs,",
+      "start": 8.62,
+      "end": 9.16,
+      "conf": 0.999,
+      "role": "anchor",
+      "sid": "s1.2"
+    },
+    {
+      "i": 20,
+      "word": "and",
+      "start": 9.32,
+      "end": 9.38,
+      "conf": 0.999,
+      "role": "anchor",
+      "sid": "s1.2"
+    },
+    {
+      "i": 21,
+      "word": "backups.",
+      "start": 9.38,
+      "end": 9.8,
+      "conf": 0.995,
+      "role": "anchor",
+      "sid": "s1.2"
+    },
+    {
+      "i": 22,
+      "word": "Lambda",
+      "start": 10.448,
+      "end": 10.7,
+      "conf": 0.993,
+      "role": "anchor",
+      "sid": "s2.1"
+    },
+    {
+      "i": 23,
+      "word": "runs",
+      "start": 10.7,
+      "end": 11.02,
+      "conf": 0.999,
+      "role": "anchor",
+      "sid": "s2.1"
+    },
+    {
+      "i": 24,
+      "word": "your",
+      "start": 11.02,
+      "end": 11.2,
+      "conf": 0.998,
+      "role": "anchor",
+      "sid": "s2.1"
+    },
+    {
+      "i": 25,
+      "word": "code",
+      "start": 11.2,
+      "end": 11.5,
+      "conf": 0.999,
+      "role": "anchor",
+      "sid": "s2.1"
+    },
+    {
+      "i": 26,
+      "word": "without",
+      "start": 11.5,
+      "end": 11.78,
+      "conf": 0.997,
+      "role": "anchor",
+      "sid": "s2.1"
+    },
+    {
+      "i": 27,
+      "word": "any",
+      "start": 11.78,
+      "end": 12.2,
+      "conf": 0.999,
+      "role": "anchor",
+      "sid": "s2.1"
+    },
+    {
+      "i": 28,
+      "word": "servers",
+      "start": 12.2,
+      "end": 12.62,
+      "conf": 0.997,
+      "role": "anchor",
+      "sid": "s2.1"
+    },
+    {
+      "i": 29,
+      "word": "to",
+      "start": 12.62,
+      "end": 12.84,
+      "conf": 1,
+      "role": "anchor",
+      "sid": "s2.1"
+    },
+    {
+      "i": 30,
+      "word": "manage.",
+      "start": 12.84,
+      "end": 13.18,
+      "conf": 0.999,
+      "role": "anchor",
+      "sid": "s2.1"
+    },
+    {
+      "i": 31,
+      "word": "But",
+      "start": 13.783,
+      "end": 13.84,
+      "conf": 0.997,
+      "role": "anchor",
+      "sid": "s2.2"
+    },
+    {
+      "i": 32,
+      "word": "a",
+      "start": 13.84,
+      "end": 13.94,
+      "conf": 0.997,
+      "role": "anchor",
+      "sid": "s2.2"
+    },
+    {
+      "i": 33,
+      "word": "cold",
+      "start": 13.94,
+      "end": 14.2,
+      "conf": 0.992,
+      "role": "anchor",
+      "sid": "s2.2"
+    },
+    {
+      "i": 34,
+      "word": "start",
+      "start": 14.2,
+      "end": 14.5,
+      "conf": 0.992,
+      "role": "anchor",
+      "sid": "s2.2"
+    },
+    {
+      "i": 35,
+      "word": "can",
+      "start": 14.5,
+      "end": 14.72,
+      "conf": 0.999,
+      "role": "anchor",
+      "sid": "s2.2"
+    },
+    {
+      "i": 36,
+      "word": "add",
+      "start": 14.72,
+      "end": 14.96,
+      "conf": 0.998,
+      "role": "anchor",
+      "sid": "s2.2"
+    },
+    {
+      "i": 37,
+      "word": "600",
+      "start": 14.96,
+      "end": 15.46,
+      "conf": 0.991,
+      "role": "anchor",
+      "sid": "s2.2"
+    },
+    {
+      "i": 38,
+      "word": "milliseconds",
+      "start": 15.46,
+      "end": 16.04,
+      "conf": 0.991,
+      "role": "anchor",
+      "sid": "s2.2"
+    },
+    {
+      "i": 39,
+      "word": "before",
+      "start": 16.04,
+      "end": 16.52,
+      "conf": 0.999,
+      "role": "anchor",
+      "sid": "s2.2"
+    },
+    {
+      "i": 40,
+      "word": "your",
+      "start": 16.52,
+      "end": 16.78,
+      "conf": 0.999,
+      "role": "anchor",
+      "sid": "s2.2"
+    },
+    {
+      "i": 41,
+      "word": "function",
+      "start": 16.78,
+      "end": 17.18,
+      "conf": 0.998,
+      "role": "anchor",
+      "sid": "s2.2"
+    },
+    {
+      "i": 42,
+      "word": "even",
+      "start": 17.18,
+      "end": 17.64,
+      "conf": 0.999,
+      "role": "anchor",
+      "sid": "s2.2"
+    },
+    {
+      "i": 43,
+      "word": "begins.",
+      "start": 17.64,
+      "end": 18.18,
+      "conf": 1,
+      "role": "anchor",
+      "sid": "s2.2"
+    },
+    {
+      "i": 44,
+      "word": "Provision",
+      "start": 18.731,
+      "end": 19.06,
+      "conf": 0.982,
+      "role": "anchor",
+      "sid": "s3.1"
+    },
+    {
+      "i": 45,
+      "word": "concurrency,",
+      "start": 19.06,
+      "end": 19.76,
+      "conf": 0.871,
+      "role": "anchor",
+      "sid": "s3.1"
+    },
+    {
+      "i": 46,
+      "word": "uh,",
+      "start": 20.246,
+      "end": 20.4,
+      "conf": 0.808,
+      "role": "filler",
+      "sid": "s3.1"
+    },
+    {
+      "i": 47,
+      "word": "keeps",
+      "start": 20.6,
+      "end": 20.86,
+      "conf": 0.998,
+      "role": "anchor",
+      "sid": "s3.1"
+    },
+    {
+      "i": 48,
+      "word": "containers",
+      "start": 20.86,
+      "end": 21.34,
+      "conf": 0.999,
+      "role": "anchor",
+      "sid": "s3.1"
+    },
+    {
+      "i": 49,
+      "word": "warm",
+      "start": 21.34,
+      "end": 21.86,
+      "conf": 1,
+      "role": "anchor",
+      "sid": "s3.1"
+    },
+    {
+      "i": 50,
+      "word": "and",
+      "start": 21.86,
+      "end": 22.22,
+      "conf": 0.999,
+      "role": "anchor",
+      "sid": "s3.1"
+    },
+    {
+      "i": 51,
+      "word": "ready.",
+      "start": 22.22,
+      "end": 22.48,
+      "conf": 1,
+      "role": "anchor",
+      "sid": "s3.1"
+    },
+    {
+      "i": 52,
+      "word": "It",
+      "start": 22.988,
+      "end": 23.06,
+      "conf": 1,
+      "role": "anchor",
+      "sid": "s3.2"
+    },
+    {
+      "i": 53,
+      "word": "costs",
+      "start": 23.06,
+      "end": 23.4,
+      "conf": 0.997,
+      "role": "anchor",
+      "sid": "s3.2"
+    },
+    {
+      "i": 54,
+      "word": "about",
+      "start": 23.4,
+      "end": 23.66,
+      "conf": 1,
+      "role": "anchor",
+      "sid": "s3.2"
+    },
+    {
+      "i": 55,
+      "word": "30",
+      "start": 23.66,
+      "end": 24.02,
+      "conf": 0.961,
+      "role": "anchor",
+      "sid": "s3.2"
+    },
+    {
+      "i": 56,
+      "word": "cents",
+      "start": 24.02,
+      "end": 24.3,
+      "conf": 0.999,
+      "role": "anchor",
+      "sid": "s3.2"
+    },
+    {
+      "i": 57,
+      "word": "per",
+      "start": 24.3,
+      "end": 24.5,
+      "conf": 0.999,
+      "role": "anchor",
+      "sid": "s3.2"
+    },
+    {
+      "i": 58,
+      "word": "hour",
+      "start": 24.5,
+      "end": 24.76,
+      "conf": 1,
+      "role": "anchor",
+      "sid": "s3.2"
+    },
+    {
+      "i": 59,
+      "word": "for",
+      "start": 24.76,
+      "end": 25.02,
+      "conf": 1,
+      "role": "anchor",
+      "sid": "s3.2"
+    },
+    {
+      "i": 60,
+      "word": "each",
+      "start": 25.02,
+      "end": 25.3,
+      "conf": 1,
+      "role": "anchor",
+      "sid": "s3.2"
+    },
+    {
+      "i": 61,
+      "word": "warm",
+      "start": 25.3,
+      "end": 25.54,
+      "conf": 0.993,
+      "role": "anchor",
+      "sid": "s3.2"
+    },
+    {
+      "i": 62,
+      "word": "instance.",
+      "start": 25.54,
+      "end": 25.92,
+      "conf": 1,
+      "role": "anchor",
+      "sid": "s3.2"
+    },
+    {
+      "i": 63,
+      "word": "For",
+      "start": 29.676,
+      "end": 29.76,
+      "conf": 0.905,
+      "role": "anchor",
+      "sid": "s3.3"
+    },
+    {
+      "i": 64,
+      "word": "busy",
+      "start": 29.76,
+      "end": 30.14,
+      "conf": 0.873,
+      "role": "anchor",
+      "sid": "s3.3"
+    },
+    {
+      "i": 65,
+      "word": "APIs,",
+      "start": 30.14,
+      "end": 30.64,
+      "conf": 0.892,
+      "role": "anchor",
+      "sid": "s3.3"
+    },
+    {
+      "i": 66,
+      "word": "the,",
+      "start": 31.28,
+      "end": 31.36,
+      "conf": 0.925,
+      "role": "stutter",
+      "sid": "s3.3"
+    },
+    {
+      "i": 67,
+      "word": "the",
+      "start": 31.38,
+      "end": 31.76,
+      "conf": 0.963,
+      "role": "anchor",
+      "sid": "s3.3"
+    },
+    {
+      "i": 68,
+      "word": "price",
+      "start": 31.76,
+      "end": 31.98,
+      "conf": 0.979,
+      "role": "anchor",
+      "sid": "s3.3"
+    },
+    {
+      "i": 69,
+      "word": "is",
+      "start": 31.98,
+      "end": 32.12,
+      "conf": 0.994,
+      "role": "anchor",
+      "sid": "s3.3"
+    },
+    {
+      "i": 70,
+      "word": "worth",
+      "start": 32.12,
+      "end": 32.28,
+      "conf": 0.998,
+      "role": "anchor",
+      "sid": "s3.3"
+    },
+    {
+      "i": 71,
+      "word": "paying.",
+      "start": 32.28,
+      "end": 32.6,
+      "conf": 0.999,
+      "role": "anchor",
+      "sid": "s3.3"
+    },
+    {
+      "i": 72,
+      "word": "So,",
+      "start": 33.119,
+      "end": 33.32,
+      "conf": 0.991,
+      "role": "filler",
+      "sid": "s4.1"
+    },
+    {
+      "i": 73,
+      "word": "measure",
+      "start": 33.756,
+      "end": 33.98,
+      "conf": 0.992,
+      "role": "anchor",
+      "sid": "s4.1"
+    },
+    {
+      "i": 74,
+      "word": "your",
+      "start": 33.98,
+      "end": 34.16,
+      "conf": 0.996,
+      "role": "anchor",
+      "sid": "s4.1"
+    },
+    {
+      "i": 75,
+      "word": "cold",
+      "start": 34.16,
+      "end": 34.44,
+      "conf": 0.991,
+      "role": "anchor",
+      "sid": "s4.1"
+    },
+    {
+      "i": 76,
+      "word": "starts",
+      "start": 34.44,
+      "end": 34.76,
+      "conf": 0.981,
+      "role": "anchor",
+      "sid": "s4.1"
+    },
+    {
+      "i": 77,
+      "word": "before",
+      "start": 34.76,
+      "end": 35.04,
+      "conf": 0.992,
+      "role": "anchor",
+      "sid": "s4.1"
+    },
+    {
+      "i": 78,
+      "word": "you",
+      "start": 35.04,
+      "end": 35.26,
+      "conf": 0.999,
+      "role": "anchor",
+      "sid": "s4.1"
+    },
+    {
+      "i": 79,
+      "word": "pay",
+      "start": 35.26,
+      "end": 35.42,
+      "conf": 0.999,
+      "role": "anchor",
+      "sid": "s4.1"
+    },
+    {
+      "i": 80,
+      "word": "to",
+      "start": 35.42,
+      "end": 35.56,
+      "conf": 0.998,
+      "role": "anchor",
+      "sid": "s4.1"
+    },
+    {
+      "i": 81,
+      "word": "remove",
+      "start": 35.56,
+      "end": 35.86,
+      "conf": 0.999,
+      "role": "anchor",
+      "sid": "s4.1"
+    },
+    {
+      "i": 82,
+      "word": "them.",
+      "start": 35.86,
+      "end": 36.1,
+      "conf": 0.998,
+      "role": "anchor",
+      "sid": "s4.1"
+    },
+    {
+      "i": 83,
+      "word": "Follow",
+      "start": 36.598,
+      "end": 36.78,
+      "conf": 0.992,
+      "role": "anchor",
+      "sid": "s4.2"
+    },
+    {
+      "i": 84,
+      "word": "for",
+      "start": 36.78,
+      "end": 36.98,
+      "conf": 0.994,
+      "role": "anchor",
+      "sid": "s4.2"
+    },
+    {
+      "i": 85,
+      "word": "more",
+      "start": 36.98,
+      "end": 37.22,
+      "conf": 0.996,
+      "role": "anchor",
+      "sid": "s4.2"
+    },
+    {
+      "i": 86,
+      "word": "AWS",
+      "start": 37.22,
+      "end": 37.74,
+      "conf": 0.98,
+      "role": "anchor",
+      "sid": "s4.2"
+    },
+    {
+      "i": 87,
+      "word": "tips",
+      "start": 37.74,
+      "end": 38.18,
+      "conf": 0.824,
+      "role": "anchor",
+      "sid": "s4.2"
+    },
+    {
+      "i": 88,
+      "word": "every",
+      "start": 38.18,
+      "end": 38.62,
+      "conf": 0.939,
+      "role": "anchor",
+      "sid": "s4.2"
+    },
+    {
+      "i": 89,
+      "word": "week.",
+      "start": 38.62,
+      "end": 38.84,
+      "conf": 0.999,
+      "role": "anchor",
+      "sid": "s4.2"
+    }
+  ],
+  "sentences": [
+    {
+      "id": "s1.1",
+      "scene": 1,
+      "line": 1,
+      "text": "S3 is the oldest and most widely used AWS service.",
+      "status": "warn",
+      "range": {
+        "start": 1.488,
+        "end": 5.42
+      },
+      "wordIdx": [
+        3,
+        12
+      ],
+      "wer": 0,
+      "wpm": 141,
+      "flags": [
+        {
+          "type": "stutter",
+          "severity": "warn",
+          "where": "before",
+          "detail": "restart \"S3 is the,\" @0.00-1.02 (auto-cut)",
+          "range": {
+            "start": 0,
+            "end": 1.02
+          }
+        }
+      ],
+      "source": {
+        "kind": "take"
+      },
+      "meanVolumeDb": -19.5,
+      "heard": "S3 is the oldest and most widely used AWS service."
+    },
+    {
+      "id": "s1.2",
+      "scene": 1,
+      "line": 2,
+      "text": "It stores objects like files, logs, and backups.",
+      "status": "warn",
+      "range": {
+        "start": 6.039,
+        "end": 9.8
+      },
+      "wordIdx": [
+        13,
+        21
+      ],
+      "wer": 0,
+      "wpm": 129,
+      "flags": [
+        {
+          "type": "filler",
+          "severity": "warn",
+          "where": "inside",
+          "detail": "\"um\" @6.76-7.06",
+          "range": {
+            "start": 6.76,
+            "end": 7.06
+          }
+        }
+      ],
+      "source": {
+        "kind": "take"
+      },
+      "meanVolumeDb": -20.8,
+      "heard": "It stores, objects like files, logs, and backups."
+    },
+    {
+      "id": "s2.1",
+      "scene": 2,
+      "line": 1,
+      "text": "Lambda runs your code without any servers to manage.",
+      "status": "ok",
+      "range": {
+        "start": 10.448,
+        "end": 13.18
+      },
+      "wordIdx": [
+        22,
+        30
+      ],
+      "wer": 0,
+      "wpm": 176,
+      "flags": [],
+      "source": {
+        "kind": "take"
+      },
+      "meanVolumeDb": -18.9,
+      "heard": "Lambda runs your code without any servers to manage."
+    },
+    {
+      "id": "s2.2",
+      "scene": 2,
+      "line": 2,
+      "text": "But a cold start can add 900ms before your function even begins.",
+      "status": "bad",
+      "range": {
+        "start": 13.783,
+        "end": 18.18
+      },
+      "wordIdx": [
+        31,
+        43
+      ],
+      "wer": 0.071,
+      "wpm": 165,
+      "flags": [
+        {
+          "type": "dropped-key",
+          "severity": "bad",
+          "detail": "\"900ms\" heard as \"600\""
+        }
+      ],
+      "source": {
+        "kind": "take"
+      },
+      "meanVolumeDb": -20.1,
+      "heard": "But a cold start can add 600 milliseconds before your function even begins."
+    },
+    {
+      "id": "s2.3",
+      "scene": 2,
+      "line": 3,
+      "text": "That delay happens every time a new container spins up.",
+      "status": "rerecorded",
+      "range": null,
+      "wordIdx": null,
+      "wer": 0,
+      "wpm": 172,
+      "flags": [],
+      "source": {
+        "kind": "rerecord",
+        "clip": "takes/rr-s2.3-1",
+        "range": {
+          "start": 0,
+          "end": 3.16
+        },
+        "cuts": [
+          {
+            "start": 3.5,
+            "end": 3.528,
+            "reason": "post-roll"
+          }
+        ],
+        "words": [
+          {
+            "word": "That",
+            "start": 0,
+            "end": 0.28
+          },
+          {
+            "word": "delay",
+            "start": 0.28,
+            "end": 0.52
+          },
+          {
+            "word": "happens",
+            "start": 0.52,
+            "end": 1.04
+          },
+          {
+            "word": "every",
+            "start": 1.04,
+            "end": 1.48
+          },
+          {
+            "word": "time",
+            "start": 1.48,
+            "end": 1.74
+          },
+          {
+            "word": "a",
+            "start": 1.74,
+            "end": 1.94
+          },
+          {
+            "word": "new",
+            "start": 1.94,
+            "end": 2.12
+          },
+          {
+            "word": "container",
+            "start": 2.12,
+            "end": 2.52
+          },
+          {
+            "word": "spins",
+            "start": 2.52,
+            "end": 2.86
+          },
+          {
+            "word": "up.",
+            "start": 2.86,
+            "end": 3.16
+          }
+        ]
+      },
+      "heard": "That delay happens every time a new container spins up.",
+      "take": {
+        "status": "missing",
+        "range": null,
+        "wordIdx": null,
+        "wer": 1,
+        "wpm": null,
+        "flags": [
+          {
+            "type": "missing",
+            "severity": "missing",
+            "detail": "sentence not found in the take"
+          }
+        ],
+        "heard": ""
+      },
+      "clipStatus": "ok",
+      "rerecords": [
+        {
+          "clip": "takes/rr-s2.3-1",
+          "at": "2026-09-27T07:20:58.349Z",
+          "status": "ok",
+          "wer": 0,
+          "range": {
+            "start": 0,
+            "end": 3.16
+          },
+          "flags": []
+        }
+      ]
+    },
+    {
+      "id": "s3.1",
+      "scene": 3,
+      "line": 1,
+      "text": "Provisioned concurrency keeps containers warm and ready.",
+      "status": "warn",
+      "range": {
+        "start": 18.731,
+        "end": 22.48
+      },
+      "wordIdx": [
+        44,
+        51
+      ],
+      "wer": 0,
+      "wpm": 109,
+      "flags": [
+        {
+          "type": "filler",
+          "severity": "warn",
+          "where": "inside",
+          "detail": "\"uh\" @20.25-20.40",
+          "range": {
+            "start": 20.246,
+            "end": 20.4
+          }
+        },
+        {
+          "type": "pace",
+          "severity": "warn",
+          "detail": "109 wpm (slow; target 110-200)"
+        }
+      ],
+      "source": {
+        "kind": "take"
+      },
+      "meanVolumeDb": -19.7,
+      "heard": "Provision concurrency, keeps containers warm and ready."
+    },
+    {
+      "id": "s3.2",
+      "scene": 3,
+      "line": 2,
+      "text": "It costs about $0.30 per hour for each warm instance.",
+      "status": "warn",
+      "range": {
+        "start": 22.988,
+        "end": 25.92
+      },
+      "wordIdx": [
+        52,
+        62
+      ],
+      "wer": 0,
+      "wpm": 202,
+      "flags": [
+        {
+          "type": "pace",
+          "severity": "warn",
+          "detail": "202 wpm (fast; target 110-200)"
+        }
+      ],
+      "source": {
+        "kind": "take"
+      },
+      "meanVolumeDb": -20.4,
+      "heard": "It costs about 30 cents per hour for each warm instance."
+    },
+    {
+      "id": "s3.3",
+      "scene": 3,
+      "line": 3,
+      "text": "For busy APIs, the price is worth paying.",
+      "status": "warn",
+      "range": {
+        "start": 29.676,
+        "end": 32.6
+      },
+      "wordIdx": [
+        63,
+        71
+      ],
+      "wer": 0,
+      "wpm": 154,
+      "flags": [
+        {
+          "type": "pause",
+          "severity": "warn",
+          "where": "before",
+          "detail": "3.76s pause before sentence (auto-trimmed)",
+          "range": {
+            "start": 25.92,
+            "end": 29.676
+          }
+        },
+        {
+          "type": "stutter",
+          "severity": "warn",
+          "where": "inside",
+          "detail": "repeat \"the,\" @31.28-31.36 (auto-cut)",
+          "range": {
+            "start": 31.28,
+            "end": 31.36
+          }
+        }
+      ],
+      "source": {
+        "kind": "take"
+      },
+      "meanVolumeDb": -20.5,
+      "heard": "For busy APIs, the price is worth paying."
+    },
+    {
+      "id": "s4.1",
+      "scene": 4,
+      "line": 1,
+      "text": "Measure your cold starts before you pay to remove them.",
+      "status": "warn",
+      "range": {
+        "start": 33.756,
+        "end": 36.1
+      },
+      "wordIdx": [
+        73,
+        82
+      ],
+      "wer": 0,
+      "wpm": 224,
+      "flags": [
+        {
+          "type": "filler",
+          "severity": "warn",
+          "where": "before",
+          "detail": "\"So\" @33.12-33.32",
+          "range": {
+            "start": 33.119,
+            "end": 33.32
+          }
+        },
+        {
+          "type": "pace",
+          "severity": "warn",
+          "detail": "224 wpm (fast; target 110-200)"
+        }
+      ],
+      "source": {
+        "kind": "take"
+      },
+      "meanVolumeDb": -19.7,
+      "heard": "measure your cold starts before you pay to remove them."
+    },
+    {
+      "id": "s4.2",
+      "scene": 4,
+      "line": 2,
+      "text": "Follow for more AWS tips every week.",
+      "status": "ok",
+      "range": {
+        "start": 36.598,
+        "end": 38.84
+      },
+      "wordIdx": [
+        83,
+        89
+      ],
+      "wer": 0,
+      "wpm": 163,
+      "flags": [],
+      "source": {
+        "kind": "take"
+      },
+      "meanVolumeDb": -18.8,
+      "heard": "Follow for more AWS tips every week."
+    }
+  ],
+  "cuts": [
+    {
+      "start": 0,
+      "end": 1.448,
+      "reason": "restart:s3+pre-roll"
+    },
+    {
+      "start": 5.585,
+      "end": 5.874,
+      "reason": "gap"
+    },
+    {
+      "start": 6.72,
+      "end": 7.1,
+      "reason": "filler:um"
+    },
+    {
+      "start": 10.14,
+      "end": 10.408,
+      "reason": "gap"
+    },
+    {
+      "start": 13.345,
+      "end": 13.618,
+      "reason": "gap"
+    },
+    {
+      "start": 18.52,
+      "end": 18.691,
+      "reason": "gap"
+    },
+    {
+      "start": 20.206,
+      "end": 20.44,
+      "reason": "filler:uh"
+    },
+    {
+      "start": 22.645,
+      "end": 22.823,
+      "reason": "gap"
+    },
+    {
+      "start": 26.085,
+      "end": 29.511,
+      "reason": "gap"
+    },
+    {
+      "start": 31.24,
+      "end": 31.38,
+      "reason": "stutter:the"
+    },
+    {
+      "start": 32.94,
+      "end": 33.716,
+      "reason": "gap+filler:so"
+    },
+    {
+      "start": 36.265,
+      "end": 36.433,
+      "reason": "gap"
+    },
+    {
+      "start": 39.18,
+      "end": 39.336,
+      "reason": "post-roll"
+    }
+  ],
+  "summary": {
+    "ok": 2,
+    "warn": 6,
+    "bad": 1,
+    "missing": 0,
+    "rerecorded": 1,
+    "fillers": 3,
+    "estimatedCleanSec": 34.879
+  },
+  "jev": null,
+  "cut": {
+    "at": "2026-09-27T07:20:59.115Z",
+    "totalSec": 34.879,
+    "scenes": 4,
+    "warnings": [
+      "s2.2 is flagged bad — included as-is"
+    ]
+  }
+}
