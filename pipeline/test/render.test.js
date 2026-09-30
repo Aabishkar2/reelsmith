@@ -1,7 +1,7 @@
 'use strict';
 /**
  * pipeline/test/render.test.js — pure tests for renderer/render.js planning (no browser, no ffmpeg).
- *   ~/.nvm/versions/node/v22.17.0/bin/node pipeline/test/render.test.js
+ *   node pipeline/test/render.test.js
  */
 const assert = require('assert');
 const os = require('os');

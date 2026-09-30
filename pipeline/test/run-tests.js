@@ -1,7 +1,7 @@
 'use strict';
 /**
  * pipeline/test/run-tests.js — end-to-end pipeline test.
- *   ~/.nvm/versions/node/v22.17.0/bin/node pipeline/test/run-tests.js [--force-tts] [--whisper-model=base]
+ *   node pipeline/test/run-tests.js [--force-tts] [--whisper-model=base]
  *
  * 1. unit tests (align.test.js, attempts.test.js, denoise.test.js, tts.test.js, plugins.test.js, performance.test.js,
  *    render.test.js — no whisper, no network)

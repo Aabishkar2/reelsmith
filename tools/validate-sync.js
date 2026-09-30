@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// scripts/validate-sync.js
+// tools/validate-sync.js  (`reelsmith lint` runs it together with check-sync.js)
 //
 // Post-generation validator for index.html sync correctness.
 // Runs three checks (the third — SubtitleRail presence on every narrated
@@ -17,8 +17,9 @@
 //      use fade().
 //
 // Usage:
-//   node scripts/validate-sync.js videos/<name>/index.html [videos/<name>/scenes.json]
+//   node tools/validate-sync.js videos/<name>/index.html [videos/<name>/scenes.json]
 //   If scenes.json is not provided, defaults to same directory as index.html.
+//   A video folder or name works in place of the html path.
 //
 // Exit code 0 = clean (or warnings only), 1 = errors found, 2 = usage error.
 //
@@ -35,12 +36,17 @@ const path = require('path');
 
 // ── CLI ───────────────────────────────────────────────────────────────────────
 
-const htmlFile   = process.argv[2];
+let htmlFile     = process.argv[2];
 const scenesArg  = process.argv[3];
 
 if (!htmlFile) {
-  console.error('Usage: node scripts/validate-sync.js <index.html> [scenes.json]');
+  console.error('Usage: node tools/validate-sync.js <index.html | video dir> [scenes.json]');
   process.exit(2);
+}
+if (!htmlFile.endsWith('.html')) {             // a video folder, or a name under videos/
+  let dir = htmlFile;
+  if (!fs.existsSync(dir)) { try { dir = require('../core/project').resolveVideo(htmlFile); } catch (_) { /* reported below */ } }
+  if (fs.existsSync(dir) && fs.statSync(dir).isDirectory()) htmlFile = path.join(dir, 'index.html');
 }
 if (!fs.existsSync(htmlFile)) {
   console.error(`File not found: ${htmlFile}`);
@@ -255,7 +261,7 @@ if (errors.length > 0) {
   console.error(
     `\nFix guidance:\n` +
     `  - unmatched-cue: update the phrase to match actual words in scenes.json.\n` +
-    `    Run: node scripts/validate-sync.js <html> to re-check after fixing.\n` +
+    `    Run: reelsmith lint <video> (or node tools/validate-sync.js <html>) to re-check after fixing.\n` +
     `  - fade-on-text:  replace ...fade(localTime, duration) with ...slideUp(Math.max(0, localTime - cue), 0.5)\n` +
     `    on text overlay elements. fade() is only for background scrims and CTA cards.\n` +
     `  Add // sync-ok on the line to whitelist a deliberate exception.`

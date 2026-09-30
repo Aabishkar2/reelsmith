@@ -1,10 +1,10 @@
-#!/usr/bin/env python3.11
+#!/usr/bin/env python3
 """
 whisper_timestamps.py — Extract word-level timestamps from a per-scene voiceover MP3.
 
 Usage:
-  python3.11 whisper_timestamps.py <audio.mp3>
-  python3.11 whisper_timestamps.py <audio.mp3> --model=turbo
+  python3 whisper_timestamps.py <audio.mp3>
+  python3 whisper_timestamps.py <audio.mp3> --model=turbo
 
 Output:
   JSON to stdout — [{word, start, end}, ...]

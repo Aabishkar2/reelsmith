@@ -3,7 +3,7 @@
  * pipeline/test/attempts.test.js — best-attempt selection (docs/spec.md §7a) and
  * silent-take guards. Synthetic whisper words; the analyze()/rerecord() tests
  * write tiny generated WAVs into os.tmpdir() (ffmpeg needed, no whisper, no network).
- *   ~/.nvm/versions/node/v22.17.0/bin/node pipeline/test/attempts.test.js
+ *   node pipeline/test/attempts.test.js
  */
 const assert = require('assert');
 const fs = require('fs');
@@ -191,7 +191,8 @@ words = [{"word": "how", "start": 1.0, "end": 1.2}, {"word": "yourself", "start"
 net = {"longWordSec": 1.0, "ratio": 3, "speechFrac": 0.6, "subSilenceSec": 0.12, "subBelowDb": 12}
 print(json.dumps({"packs": packs, "two": two, "long": ww.long_words(words, db, net, -42.0),
                   "subs": ww.sub_chunks(db, 3.8, 6.8, net, -42.0)}))`;
-    const r = require('child_process').spawnSync('python3.11', ['-B', '-c', py], { encoding: 'utf8' });
+    const env = require('../../core/env');                             // the python with whisper's numpy
+    const r = require('child_process').spawnSync(env.pythonWithWhisper() || env.python() || 'python3', ['-B', '-c', py], { encoding: 'utf8' });
     assert.strictEqual(r.status, 0, r.stderr);
     const o = JSON.parse(r.stdout);
     const where = new Map(); o.packs.forEach((p, k) => p.forEach(i => where.set(i, k)));

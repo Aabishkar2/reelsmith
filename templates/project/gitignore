@@ -1,0 +1,27 @@
+node_modules/
+.env
+.DS_Store
+*.log
+
+# The framework, linked in by `reelsmith init` (symlinks into node_modules/reelsmith): never commit them.
+# Your own style packs in styles/<name>/ are real folders and do get committed.
+/runtime
+/styles/design.md
+/styles/motion
+/styles/reflective
+/styles/tech-news
+
+# Generated per video (rebuilt by the pipeline)
+videos/*/takes/
+videos/*/voiceover/
+videos/*/voiceover*.mp3
+videos/*/voiceover-mix.json
+videos/*/frames/
+videos/*/*.mp4
+videos/*/publish/
+videos/*/source/*.wav
+videos/*/source/*.pcm
+
+# Music beds (download again with: bash music/download.sh)
+music/*.mp3
+music/*.wav

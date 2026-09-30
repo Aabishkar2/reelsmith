@@ -3,7 +3,7 @@
  * pipeline/test/make-fixture.js — synthetic takes for the end-to-end test.
  *
  * Writes pipeline/test/fixture/script.md (4 scenes, 10 sentences, "900ms",
- * "$0.30") and renders two takes with edge-tts (python3.11 pipeline/test/tts.py):
+ * "$0.30") and renders two takes with edge-tts (pipeline/test/tts.py, in the python core/env.js resolves):
  *   fixture/clean.mp3  exact script
  *   fixture/bad.mp3    restart "S3 is the... S3 is the oldest…", "um", "uh",
  *                      stutter "the, the" (whisper drops an unpunctuated TTS
@@ -71,7 +71,8 @@ const BAD_B = [
 const PAUSE_SEC = 3.0;
 
 function tts(text, out) {
-  const r = spawnSync('python3.11', [TTS, text, out, VOICE, RATE], { encoding: 'utf8' });
+  const py = require('../../core/env').python() || 'python3';          // core/env.js: $REELSMITH_PYTHON, python3.11, …
+  const r = spawnSync(py, [TTS, text, out, VOICE, RATE], { encoding: 'utf8' });
   if (r.status !== 0 || !fs.existsSync(out)) throw new Error(`edge-tts failed (network?): ${(r.stderr || r.stdout || '').trim().slice(-400)}`);
 }
 

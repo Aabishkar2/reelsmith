@@ -3,7 +3,7 @@
  * pipeline/test/denoise.test.js — denoise cache/staleness, engine fallback, the
  * bark gate and finalize reading the clean files (docs/spec.md §7c). The
  * DeepFilterNet engine is stubbed; the fallback runs real ffmpeg. No whisper.
- *   ~/.nvm/versions/node/v22.17.0/bin/node pipeline/test/denoise.test.js
+ *   node pipeline/test/denoise.test.js
  */
 const assert = require('assert');
 const fs = require('fs');

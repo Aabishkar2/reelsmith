@@ -1,6 +1,6 @@
 'use strict';
 /**
- * pipeline/whisper.js — word-level transcription (python3.11 + openai-whisper).
+ * pipeline/whisper.js — word-level transcription (openai-whisper in the python core/env.js resolves).
  *
  * transcribe(wavPath, { model, force, quiet, prompt, script, mode }) → [{ word, start, end, conf, suspect? }]
  *   model:  opts.model || $WHISPER_MODEL || 'turbo'
@@ -118,7 +118,7 @@ function transcribe(wavPath, opts = {}) {
     if (wc.threads) args.push(`--threads=${wc.threads}`);
   }
   if (!opts.quiet) console.error(`  whisper (${model}, ${mode}${chunkInfo ? `: ${chunkInfo.chunks.length} chunks` : ''}, ${path.relative(ROOT, script)}) → ${path.basename(wavPath)}`);
-  const py = require('../core/env').pythonWithWhisper() || require('../core/env').python() || 'python3';   // core/env.js resolves it (no hard-coded python3.11)
+  const py = require('../core/env').pythonWithWhisper() || require('../core/env').python() || 'python3';   // core/env.js resolves it (REELSMITH_PYTHON first)
   const r = childProcess.spawnSync(py, args, {
     encoding: 'utf8', maxBuffer: 256 * 1024 * 1024, stdio: ['ignore', 'pipe', opts.quiet ? 'pipe' : 'inherit'],
   });

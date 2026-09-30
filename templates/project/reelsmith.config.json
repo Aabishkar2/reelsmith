@@ -1,0 +1,13 @@
+{
+  "$schema": "https://reelsmith.dev/schema/config.json",
+  "version": 1,
+  "videosDir": "videos",
+  "style": "reflective",
+  "plugins": [],
+  "tts": { "provider": "openrouter", "model": "google/gemini-3.8-flash-tts", "voice": null, "speed": 1.15, "mode": "sentence" },
+  "stt": { "provider": "whisper", "model": "turbo" },
+  "music": { "dir": "music", "underDb": 6, "voiceLufs": -16, "tailSec": 2.5, "defaultTrack": null },
+  "publish": { "targets": { "youtube": {}, "meta": {}, "discord": { "channelIdEnv": "DISCORD_CHANNEL_ID" } } },
+  "render": { "fps": 30, "width": 720, "height": 1280 },
+  "app": { "port": 4310 }
+}

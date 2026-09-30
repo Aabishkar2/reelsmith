@@ -3,8 +3,8 @@
  * pipeline/test/performance.test.js — pipeline/performance.js (`tts --mode=performance`) with a
  * stubbed tts provider (ffmpeg-generated 24 kHz PCM: five tone "sentences" with pauses between)
  * and a stubbed stt provider (fixed words). No network, no API key, no whisper.
- *   ~/.nvm/versions/node/v22.17.0/bin/node pipeline/test/performance.test.js
- * Needs ffmpeg/ffprobe (core/env.js finds them, /opt/homebrew/bin included).
+ *   node pipeline/test/performance.test.js
+ * Needs ffmpeg/ffprobe (core/env.js finds them).
  */
 const assert = require('assert');
 const fs = require('fs');
@@ -242,20 +242,57 @@ const base = { quiet: true, log: (...a) => logs.push(a.join(' ')) };
     assert.strictEqual(scenes[1].words.length, 3);
   });
 
-  await test('audio cached by the first one-off builder (legacy prompt hash) is reused, never regenerated', async () => {
-    const d = makeVideo('legacy');
-    fs.mkdirSync(F.src.replace(dir, d), { recursive: true });
+  // A prompt that made cached audio with different PERFORMANCE text (the first one-off builder took the
+  // block from the first "PERFORMANCE" substring, so the explanatory paragraph went in too).
+  const OLD_DIRECTION_PROMPT = EXPECTED_PROMPT.replace('PERFORMANCE\n\nStyle: steady.',
+    'PERFORMANCE mid-sentence but is not part of the block.\n\nPERFORMANCE\n\nStyle: steady.');
+  const seedCache = (name, storedPrompt, script = SCRIPT) => {
+    const d = makeVideo(name, script);
     const L = perf.cacheFiles(d);
+    fs.mkdirSync(L.src, { recursive: true });
     fs.copyFileSync(F.wav, L.wav);
-    const legacy = perf.legacyPrompt(SCRIPT, DIRECTION);
-    assert.ok(legacy.includes('mid-sentence but is not part'), 'the one-off took the block from the first substring');
+    fs.writeFileSync(L.prompt, storedPrompt);
     fs.writeFileSync(L.meta, JSON.stringify({ provider: 'stub', model: 'google/gemini-3.8-flash-tts', voice: 'Kore', mode: 'performance',
-      hash: perf.sha1(`google/gemini-3.8-flash-tts|Kore|${legacy}`), format: 'pcm', sampleRate: 24000, seconds: 9 }));
+      hash: perf.sha1(`google/gemini-3.8-flash-tts|Kore|${storedPrompt}`), format: 'pcm', sampleRate: 24000, seconds: 9 }));
+    return { d, L };
+  };
+
+  await test('only the direction text changed since the voice was made: cached via performance-prompt.md, logged, file kept', async () => {
+    const { d, L } = seedCache('dirchange', OLD_DIRECTION_PROMPT);
+    assert.ok(perf.onlyDirectionDiffers(OLD_DIRECTION_PROMPT, EXPECTED_PROMPT));
     const t = stubTts();
-    const r = await perf.synthesize(d, { ...base, ttsProvider: t, sttProvider: stubStt() });
+    logs.length = 0;
+    const r = await perf.synthesize(d, { ...base, offline: true, ttsProvider: t, sttProvider: stubStt() });
     assert.strictEqual(t.calls.length, 0);
-    assert.strictEqual(r.legacyPrompt, true);
-    assert.strictEqual(fs.readFileSync(L.prompt, 'utf8'), legacy, 'performance-prompt.md = the prompt that made the audio');
+    assert.strictEqual(r.cached, true);
+    assert.strictEqual(r.directionChanged, true);
+    assert.ok(logs.some(l => l.includes('cached (direction text changed since this voice was made; --force re-voices)')), logs.join('\n'));
+    assert.strictEqual(fs.readFileSync(L.prompt, 'utf8'), OLD_DIRECTION_PROMPT, 'performance-prompt.md = the prompt that made the audio');
+    const again = await perf.synthesize(d, { ...base, offline: true, ttsProvider: t, sttProvider: stubStt() });
+    assert.strictEqual(again.cached, true, 'still cached on the next run');
+    assert.strictEqual(t.calls.length, 0);
+  });
+
+  await test('stored prompt hash but the TRANSCRIPT or CONTEXT changed: not cached (--offline refuses and names the part)', async () => {
+    const lines = seedCache('transcript', OLD_DIRECTION_PROMPT, SCRIPT.replace('Foxtrot golf hotel.', 'Foxtrot golf hotels.'));
+    await assert.rejects(perf.synthesize(lines.d, { ...base, offline: true, ttsProvider: stubTts(), sttProvider: stubStt() }),
+      e => /not cached/.test(e.message) && /TRANSCRIPT/.test(e.message));
+    const ctx = seedCache('context', OLD_DIRECTION_PROMPT, SCRIPT.replace('Calm and clear.', 'Loud and fast.'));
+    await assert.rejects(perf.synthesize(ctx.d, { ...base, offline: true, ttsProvider: stubTts(), sttProvider: stubStt() }),
+      e => /not cached/.test(e.message) && /CONTEXT/.test(e.message));
+    const tampered = seedCache('tampered', OLD_DIRECTION_PROMPT);
+    fs.writeFileSync(tampered.L.prompt, OLD_DIRECTION_PROMPT.replace('Style: steady.', 'Style: edited.'));   // hash no longer matches
+    await assert.rejects(perf.synthesize(tampered.d, { ...base, offline: true, ttsProvider: stubTts(), sttProvider: stubStt() }), /not cached/);
+  });
+
+  await test('promptParts: title / direction / context / transcript; a missing CONTEXT is empty', () => {
+    const a = perf.promptParts(EXPECTED_PROMPT);
+    assert.deepStrictEqual(a, { title: '# Perf test', direction: 'PERFORMANCE\n\nStyle: steady.', context: 'Calm and clear.',
+      transcript: 'Alpha bravo charlie. Delta echo always-on.\n\nFoxtrot golf hotel.\n\nIndia juliet kilo. Lima mike November.' });
+    const b = perf.promptParts('# T\n\nPERFORMANCE\n\nx\n\nTRANSCRIPT\na b\n');
+    assert.strictEqual(b.context, '');
+    assert.strictEqual(b.transcript, 'a b');
+    assert.ok(!perf.onlyDirectionDiffers(EXPECTED_PROMPT, EXPECTED_PROMPT.replace('# Perf test', '# Other')), 'a title change is not "direction only"');
   });
 
   await test('a meta file in whisper\'s performance.json (old layout) moves to performance.meta.json', async () => {

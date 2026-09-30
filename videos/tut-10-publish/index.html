@@ -47,7 +47,7 @@ const YT_ID = 'r7Kq2Lm9TzA';
 // ═════════════════════════════════════════════════════════════════════════════
 // Scene 1 · hook: output.mp4 with destinations orbiting it, one wrong place
 // ═════════════════════════════════════════════════════════════════════════════
-const ORBIT = { cx: 360, cy: 620, rx: 228, ry: 255, w: -0.1 };
+const ORBIT = { cx: 360, cy: 630, rx: 228, ry: 275, w: -0.1 };
 const DESTS = [
   { label: 'YouTube', icon: 'play', color: VIOLET, a0: -90 },
   { label: 'Meta', icon: 'video', color: CYAN, a0: 30 },
@@ -71,7 +71,7 @@ function FileHero({ at, renderedAt }) {
   const p = Easing.easeInOutSine(clamp((lt - at) / Math.max(0.1, renderedAt - at), 0, 1));
   const done = lt >= renderedAt ? ez((lt - renderedAt) / 0.3) : 0;
   return (
-    <div style={{ position: 'absolute', left: ORBIT.cx - 120, top: ORBIT.cy - 112, width: 240, height: 224, zIndex: 5,
+    <div style={{ position: 'absolute', left: ORBIT.cx - 135, top: ORBIT.cy - 125, width: 270, height: 250, zIndex: 5,
       ...enter.pop(lt - at) }}>
       <div style={{ position: 'relative', width: '100%', height: '100%', borderRadius: 28, border: '2px solid transparent',
         background: `linear-gradient(${CODE_BG}, ${CODE_BG}) padding-box, ${GRAD_DIAG} border-box`,
@@ -81,14 +81,14 @@ function FileHero({ at, renderedAt }) {
           <div style={{ width: `${p * 100}%`, height: '100%', borderRadius: 6, background: done > 0 ? mixHex(CYAN, OK, done) : GRAD,
             boxShadow: `0 0 12px ${alpha(done > 0 ? OK : CYAN, 0.6)}` }} />
         </div>
-        <div style={{ width: 62, height: 62, borderRadius: 18, background: GRAD_DIAG, display: 'flex', alignItems: 'center',
+        <div style={{ width: 72, height: 72, borderRadius: 21, background: GRAD_DIAG, display: 'flex', alignItems: 'center',
           justifyContent: 'center', boxShadow: `0 8px 24px ${alpha(VIOLET, 0.45)}` }}>
-          <Icon name="film" size={32} color="#FFFFFF" />
+          <Icon name="film" size={38} color="#FFFFFF" />
         </div>
-        <div style={{ fontFamily: MONO, fontWeight: 600, fontSize: 26, color: TEXT }}>output.mp4</div>
+        <div style={{ fontFamily: MONO, fontWeight: 600, fontSize: 30, color: TEXT }}>output.mp4</div>
         <div style={{ fontFamily: MONO, fontSize: 22, color: MUTED }}>0:49 · 41 MB</div>
         <div style={{ height: 30, display: 'flex', alignItems: 'center' }}>
-          <Badge variant="ok" icon="check" size={18} at={renderedAt}>rendered</Badge>
+          <Badge variant="ok" icon="check" size={20} at={renderedAt}>rendered</Badge>
         </div>
       </div>
     </div>
@@ -98,7 +98,7 @@ function FileHero({ at, renderedAt }) {
 function OrbitHook({ cueVideo, cueRendered, cueNow, cueOut, cueAccident, cuePosting, cueWrong }) {
   const { localTime: lt } = useSprite();
   const { cx, cy, rx, ry, w } = ORBIT;
-  const ringP = ezio((lt - cueNow) / 0.9);
+  const ringP = ezio((lt - cueVideo - 0.15) / 1.1);
   const nodes = DESTS.map((d, i) => {
     const at = cueOut + i * 0.15;
     const s = spr(lt - at, 190, 17);
@@ -194,7 +194,7 @@ function Scene1() {
     <Sprite {...win}>
       <SceneRoot idx={1}>
         <Glow x={360} y={620} r={320} color={VIOLET} opacity={0.28} breathe={0.04} />
-        <Kicker y={110} at={0}>Episode 10 · Series finale</Kicker>
+        <Kicker y={110} at={0}>Finale · Episode 10</Kicker>
         <Title y={160} size={60} ats={[cueNow, cueWithout, cueWithout + 0.14]} text="Publish,|*no* *surprises.*" />
         <OrbitHook cueVideo={cueVideo} cueRendered={cueRendered} cueNow={cueNow} cueOut={cueOut}
           cueAccident={cueAccident} cuePosting={cuePosting} cueWrong={cueWrong} />
@@ -282,7 +282,7 @@ function PublishMd({ y, at, agentAt, writeAt, titleAt, limitAt, descAt, tagsAt, 
             <span style={{ fontFamily: SANS, fontWeight: 500, fontSize: 24, color: MUTED, whiteSpace: 'nowrap' }}>Music: Clean Soul, Kevin MacLeod</span>
           </div>
           <div style={{ display: 'flex', paddingLeft: 36, marginTop: 4 }}>
-            <Badge variant="ok" size={18} at={musicAt + 0.15}>CC BY 4.0</Badge>
+            <Badge variant="ok" size={20} at={musicAt + 0.15}>CC BY 4.0</Badge>
           </div>
         </div>
       </Slot>
@@ -300,31 +300,34 @@ function PublishMd({ y, at, agentAt, writeAt, titleAt, limitAt, descAt, tagsAt, 
 }
 
 // The three-step publish flow (docs/publishing.md): notes → dry run → publish.
-function StepTrack({ y, at, litAt }) {
+function StepTrack({ y, at, litAt, lit = 0 }) {
   const { localTime: lt } = useSprite();
   const steps = ['notes', 'dry run', 'publish'];
   return (
     <div style={{ position: 'absolute', top: y, left: 0, right: 0, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
       {steps.map((st, i) => {
         const dt = lt - at - i * 0.14;
-        const on = i === 0 && lt >= litAt ? ez((lt - litAt) / 0.3) : 0;
-        const punch = i === 0 ? spr(lt - litAt, PUNCH.k, PUNCH.d) : 1;
+        const on = i === lit && lt >= litAt ? ez((lt - litAt) / 0.3) : 0;
+        const done = i < lit;
+        const punch = i === lit ? spr(lt - litAt, PUNCH.k, PUNCH.d) : 1;
         const line = i > 0 ? ez((lt - at - i * 0.14 + 0.1) / 0.3) : 0;
         return (
           <React.Fragment key={st}>
             {i > 0 && (
-              <div style={{ width: 28, height: 3, borderRadius: 2, background: 'rgba(255,255,255,0.16)', transformOrigin: 'left center',
+              <div style={{ width: 28, height: 3, borderRadius: 2, background: i <= lit ? alpha(OK, 0.6) : 'rgba(255,255,255,0.16)', transformOrigin: 'left center',
                 transform: `scaleX(${line})` }} />
             )}
             <div style={{ height: 48, display: 'flex', alignItems: 'center', gap: 10, padding: '0 18px 0 9px', borderRadius: 999,
               background: on > 0 ? `linear-gradient(90deg, ${alpha(VIOLET, 0.3 * on)}, ${alpha(CYAN, 0.16 * on)}), ${CODE_BG}` : CODE_BG,
-              border: `1.5px solid ${on > 0 ? alpha(CYAN, 0.3 + 0.6 * on) : 'rgba(255,255,255,0.14)'}`,
+              border: `1.5px solid ${on > 0 ? alpha(CYAN, 0.3 + 0.6 * on) : done ? alpha(OK, 0.45) : 'rgba(255,255,255,0.14)'}`,
               boxShadow: on > 0 ? `0 0 ${30 * on}px ${alpha(VIOLET, 0.45 * on)}` : 'none',
               ...enter.pop(dt), transform: `${enter.pop(dt).transform || ''} scale(${0.94 + 0.06 * punch})` }}>
               <div style={{ width: 30, height: 30, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                background: on > 0 ? GRAD_DIAG : 'rgba(255,255,255,0.08)', fontFamily: DISPLAY, fontWeight: 700, fontSize: 18,
-                color: on > 0 ? '#FFFFFF' : FAINT }}>{i + 1}</div>
-              <span style={{ fontFamily: SANS, fontWeight: 600, fontSize: 24, color: on > 0 ? TEXT : FAINT, whiteSpace: 'nowrap' }}>{st}</span>
+                background: on > 0 ? GRAD_DIAG : done ? alpha(OK, 0.2) : 'rgba(255,255,255,0.08)', fontFamily: DISPLAY, fontWeight: 700,
+                fontSize: 18, color: on > 0 ? '#FFFFFF' : FAINT }}>
+                {done ? <Icon name="check" size={17} color={OK} stroke={3.2} /> : i + 1}
+              </div>
+              <span style={{ fontFamily: SANS, fontWeight: 600, fontSize: 24, color: on > 0 ? TEXT : done ? MUTED : FAINT, whiteSpace: 'nowrap' }}>{st}</span>
             </div>
           </React.Fragment>
         );
@@ -490,7 +493,7 @@ function Scene4() {
         <Glow x={200} y={420} r={300} color={CYAN} opacity={0.12} breathe={0.03} />
         <Title y={96} size={52} ats={[cueEvery, cueTarget, cueSupports, cueDry, cueRun]} text="Every target|supports *dry* *run*" />
         <TargetTicks y={236} at={cueEvery + 0.2} tickAt={cueDry} />
-        <Terminal y={312} width={600} fontSize={22} title="~/my-channel" command={CMD_DRY} at={cueCmd} speed={30} rows={[
+        <Terminal y={312} width={600} fontSize={22} title="~/my-channel" command={CMD_DRY} at={cueCmd} showAt={cueSupports} speed={30} rows={[
           { text: 'credentials', right: 'yt-token.json', status: 'ok', at: cueCreds },
           { text: 'output.mp4', right: '41 MB', status: 'ok', at: cueSize },
           { text: 'title', right: '58/60', status: 'ok', at: cueMeta },
@@ -510,7 +513,7 @@ function Scene4() {
 // Scene 5 · the real thing: drop the flag, the result is saved next to the video
 // ═════════════════════════════════════════════════════════════════════════════
 // Terminal geometry (kit): window top y + 1 px border + 50 px title bar + 20 px padding, 33 px lines at 22 px.
-const T5_Y = 104;
+const T5_Y = 170;
 const T5_ROW = (i) => T5_Y + 1 + 50 + 20 + i * 33;
 
 function FlagStrike({ at }) {
@@ -521,7 +524,7 @@ function FlagStrike({ at }) {
     <>
       <div style={{ position: 'absolute', left: 89 + 15 * 13.2 - 5, top: y, width: 128 * p, height: 5, borderRadius: 4, zIndex: 7,
         background: DANGER, transform: 'rotate(-1.5deg)', transformOrigin: 'left center', boxShadow: `0 0 14px ${alpha(DANGER, 0.6)}` }} />
-      <Badge x={424} y={T5_ROW(1) + 2} z={7} variant="danger" icon="x" size={18} at={at + 0.25}>flag dropped</Badge>
+      <Badge x={424} y={T5_ROW(1) + 2} z={7} variant="danger" icon="x" size={20} at={at + 0.25}>flag dropped</Badge>
     </>
   );
 }
@@ -530,7 +533,6 @@ function Scene5() {
   const win = useSceneWindow(5);
   const cueDrop = useWordCue(5, "drop the flag");
   const cueFlag = useWordCue(5, "flag when");
-  const cueReady = useWordCue(5, "you are ready");
   const cueResult = useWordCue(5, "result");
   const cueUrl = useWordCue(5, "url");
   const cueId = useWordCue(5, "id");
@@ -542,6 +544,7 @@ function Scene5() {
     <Sprite {...win}>
       <SceneRoot idx={5} enter="push">
         <Glow x={560} y={680} r={300} color={OK} opacity={0.1} breathe={0.03} />
+        <StepTrack y={92} at={0.1} litAt={cueDrop} lit={2} />
         <Terminal y={T5_Y} width={600} fontSize={22} title="~/my-channel" speed={40} steps={[
           { text: '$ reelsmith publish my-video', dim: true, at: 0 },
           { text: '  --to=youtube --dry-run', dim: true, at: 0 },
@@ -554,13 +557,13 @@ function Scene5() {
           { text: 'wrote publish/youtube.json', status: 'ok', at: cueSaved },
         ]} />
         <FlagStrike at={cueDrop} />
-        <FileTree y={528} width={520} title="videos/my-video/" at={cueReady} rows={[
-          { name: 'output.mp4', at: cueReady + 0.15 },
-          { name: 'publish.md', at: cueReady + 0.3 },
+        <FileTree y={594} width={520} title="videos/my-video/" at={cueDrop + 0.3} rows={[
+          { name: 'output.mp4', at: cueFlag },
+          { name: 'publish.md', at: cueFlag + 0.15 },
           { name: 'publish/', at: cueNext },
           { name: 'youtube.json', depth: 1, at: cueNext + 0.2, badge: 'new', badgeVariant: 'ok', hotAt: cueNext + 0.4, note: 'id · url' },
         ]} />
-        <Badge y={808} variant="warn" icon="lock" size={22} at={cueNever}>re-run refuses · id exists</Badge>
+        <Badge y={868} variant="warn" icon="lock" size={22} at={cueNever}>re-run refuses · id exists</Badge>
         <SubtitleRail sceneIdx={5} bottom={150} fontSize={28} variant="clean" accentColor={CYAN} fontFamily="Inter" />
       </SceneRoot>
     </Sprite>
@@ -602,7 +605,7 @@ function LockCard({ showAt, at, en, color, where, name, lines, badge }) {
         ))}
       </div>
       <div style={{ marginTop: 12, display: 'flex' }}>
-        <Badge variant="ok" icon="check" size={18} at={at + 0.5}>{badge}</Badge>
+        <Badge variant="ok" icon="check" size={20} at={at + 0.5}>{badge}</Badge>
       </div>
     </div>
   );

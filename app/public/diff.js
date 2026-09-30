@@ -1,5 +1,5 @@
 'use strict';
-/* video-gen-v2 — heard-text diff for the Review view (pure functions, no DOM/state).
+/* Reelsmith — heard-text diff for the Review view (pure functions, no DOM/state).
  * Aligns a sentence's script text against the words Whisper heard so the UI can show
  * inserted/filler words (amber strike-through), substitutions (red) and dropped script
  * words (wavy underline). This is a display aid only — take.json flags are the truth.

@@ -3,7 +3,7 @@
  * search-images.js — Search copyright-safe images from Wikimedia, Unsplash, Pexels.
  *
  * Usage:
- *   node scripts/search-images.js <query> [--source=all|wikimedia|unsplash|pexels] [--limit=5]
+ *   node tools/search-images.js <query> [--source=all|wikimedia|unsplash|pexels] [--limit=5]
  *
  * Output: JSON array — [{ url, thumb, title, source, license }]
  *
@@ -12,7 +12,7 @@
  *   PEXELS_API_KEY
  */
 
-require('dotenv').config({ path: require('path').resolve(__dirname, '../.env') });
+require('../core/config').loadEnv(require('../core/project').root());   // the project's .env (UNSPLASH_ACCESS_KEY, PEXELS_API_KEY)
 
 const https = require('https');
 const http  = require('http');
@@ -24,7 +24,7 @@ const limitParsed = parseInt((args.find(a => a.startsWith('--limit=')) || '--lim
 const limit      = (isNaN(limitParsed) || limitParsed < 1) ? 5 : limitParsed;
 
 if (!query) {
-  console.error('Usage: node scripts/search-images.js <query> [--source=all|wikimedia|unsplash|pexels] [--limit=5]');
+  console.error('Usage: node tools/search-images.js <query> [--source=all|wikimedia|unsplash|pexels] [--limit=5]');
   process.exit(1);
 }
 

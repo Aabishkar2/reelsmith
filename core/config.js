@@ -45,7 +45,7 @@ const DEFAULTS = deepFreeze({
     },
   },
   stt: { provider: 'whisper', model: 'turbo' },
-  music: { dir: 'music', underDb: 6, voiceLufs: -16 },
+  music: { dir: 'music', underDb: 6, voiceLufs: -16, tailSec: 2.5, defaultTrack: null },   // defaultTrack: `reelsmith mix` without --track
   publish: { targets: {} },
   render: { fps: 30, width: 720, height: 1280 },
   app: { port: 4310 },

@@ -1,8 +1,13 @@
 #!/usr/bin/env node
 'use strict';
 /**
- * video-gen-v2 — local teleprompter / recording / review app server.
+ * Reelsmith — local teleprompter / recording / review app server (`reelsmith record`).
  * Contract: docs/spec.md §5. Node built-ins only (plus dotenv for .env).
+ *
+ * Project: $REELSMITH_ROOT (set by `reelsmith record`), else the project around the cwd
+ * (core/project.root: nearest reelsmith.config.json; falls back to the framework checkout).
+ * Videos: $VIDEOS_DIR, else <project>/<reelsmith.config.json videosDir>. Port: $APP_PORT, else
+ * reelsmith.config.json app.port, else 4310. ffmpeg: core/env.js.
  *
  * Pipeline modules (../pipeline/*.js) are required lazily inside handlers so the
  * server always starts and serves the UI even if a pipeline module is missing or
@@ -17,15 +22,20 @@ const crypto = require('crypto');
 const { spawnSync } = require('child_process');
 const { URL } = require('url');
 
-const ROOT = path.join(__dirname, '..');
-try { require('dotenv').config({ path: path.join(ROOT, '.env'), quiet: true }); } catch { /* dotenv optional */ }
+const project = require('../core/project');
+const coreConfig = require('../core/config');
+const coreEnv = require('../core/env');
 
-const PORT = Number(process.env.APP_PORT) || 4310;
+const ROOT = project.root(process.env.REELSMITH_ROOT || process.cwd());                 // the project root
+const { config: CONFIG } = coreConfig.load({ root: ROOT });                             // + <root>/.env
+coreEnv.ensureOnPath();                                                                  // pipeline modules spawn ffmpeg too
+
+const PORT = Number(process.env.APP_PORT) || Number(CONFIG.app && CONFIG.app.port) || 4310;
 const PUBLIC_DIR = path.join(__dirname, 'public');
-const VIDEOS_DIR = process.env.VIDEOS_DIR ? path.resolve(process.env.VIDEOS_DIR) : path.join(ROOT, 'videos');   // override for testing
-const PIPELINE_DIR = path.join(ROOT, 'pipeline');
-const SLICE_DIR = path.join(os.tmpdir(), 'video-gen-v2-slices');
-const FFMPEG = fs.existsSync('/opt/homebrew/bin/ffmpeg') ? '/opt/homebrew/bin/ffmpeg' : 'ffmpeg';
+const VIDEOS_DIR = process.env.VIDEOS_DIR ? path.resolve(process.env.VIDEOS_DIR) : path.join(ROOT, CONFIG.videosDir || 'videos');   // override for testing
+const PIPELINE_DIR = path.join(__dirname, '..', 'pipeline');                            // framework code
+const SLICE_DIR = path.join(os.tmpdir(), 'reelsmith-slices');
+const FFMPEG = coreEnv.bin('ffmpeg');
 const MAX_UPLOAD = 500 * 1024 * 1024;
 const MAX_JSON = 2 * 1024 * 1024;
 
@@ -526,5 +536,5 @@ server.on('error', (e) => {
 });
 
 server.listen(PORT, () => {
-  console.log(`video-gen-v2 app → http://localhost:${PORT}  (videos: ${VIDEOS_DIR})`);
+  console.log(`reelsmith app → http://localhost:${PORT}  (videos: ${VIDEOS_DIR})`);
 });

@@ -1,7 +1,7 @@
 'use strict';
 /**
  * pipeline/test/render.e2e.test.js — renders videos/fixture-e2e with the real renderer (~30 s).
- *   ~/.nvm/versions/node/v22.17.0/bin/node pipeline/test/render.e2e.test.js
+ *   node pipeline/test/render.e2e.test.js
  * Needs playwright's Chromium, ffmpeg/ffprobe and network (the fixture loads React/Babel/fonts from CDNs).
  * Prints "SKIPPED: …" and exits 0 when playwright or ffmpeg is missing.
  *
@@ -20,9 +20,7 @@ const os = require('os');
 const path = require('path');
 const { spawnSync } = require('child_process');
 
-if (fs.existsSync('/opt/homebrew/bin') && !process.env.PATH.split(':').includes('/opt/homebrew/bin')) {
-  process.env.PATH = `/opt/homebrew/bin:${process.env.PATH}`;
-}
+require('../../core/env').ensureOnPath();              // ffmpeg/ffprobe from a thin PATH too
 
 const ROOT = path.join(__dirname, '..', '..');
 const RENDER = path.join(ROOT, 'renderer', 'render.js');

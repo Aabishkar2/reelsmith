@@ -2,7 +2,7 @@
 /**
  * pipeline/test/align.test.js — pure-JS tests (no audio, no network).
  * Builds synthetic whisper word arrays and runs align + analyzeWords on them.
- *   ~/.nvm/versions/node/v22.17.0/bin/node pipeline/test/align.test.js
+ *   node pipeline/test/align.test.js
  */
 const assert = require('assert');
 const A = require('../align');

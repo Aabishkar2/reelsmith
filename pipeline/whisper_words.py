@@ -1,4 +1,4 @@
-#!/usr/bin/env python3.11
+#!/usr/bin/env python3
 """
 pipeline/whisper_words.py - word timestamps for take analysis.
 
@@ -30,7 +30,7 @@ VAD-chunked mode (docs/spec.md §7b) — --chunks=<file.json>:
   word, the chunk's words are replaced; otherwise the word gets "suspect": true
   (analyze.js then flags "possible hidden repeat").
 
-Usage: python3.11 pipeline/whisper_words.py <audio> [--model=turbo] [--prompt="..."]
+Usage: python3 pipeline/whisper_words.py <audio> [--model=turbo] [--prompt="..."]
          [--chunks=chunks.json --pack-sec=24 --sep-sec=1.0 --net='{...}' --noise-db=-40]
 """
 import sys

@@ -3,7 +3,7 @@
  * download-image.js — Download a single image URL to a local path.
  *
  * Usage:
- *   node scripts/download-image.js <url> <dest-path>
+ *   node tools/download-image.js <url> <dest-path>
  *
  * Output: prints the saved path on success, exits 1 on error.
  * Follows redirects automatically.
@@ -17,7 +17,7 @@ const { URL } = require('url');
 const [,, url, destPath] = process.argv;
 
 if (!url || !destPath) {
-  console.error('Usage: node scripts/download-image.js <url> <dest-path>');
+  console.error('Usage: node tools/download-image.js <url> <dest-path>');
   process.exit(1);
 }
 

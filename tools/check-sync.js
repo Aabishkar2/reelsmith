@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// scripts/check-sync.js
+// tools/check-sync.js  (`reelsmith lint` runs it together with validate-sync.js)
 //
 // Pre-render lint: flags hand-picked second-based delays in a video's
 // index.html that should be bound to useWordCue() instead, and anything that
@@ -7,7 +7,7 @@
 // transitions/animations). See .claude/skills/html-animation/SKILL.md.
 //
 // Usage:
-//   node scripts/check-sync.js videos/<name>/index.html
+//   node tools/check-sync.js videos/<name>/index.html     (a video folder or name works too)
 //
 // Exit code 0 if clean, 1 if any violations.
 //
@@ -22,10 +22,15 @@ const path = require('path');
 
 const THRESHOLD = 0.6;
 
-const file = process.argv[2];
+let file = process.argv[2];
 if (!file) {
-  console.error('Usage: node scripts/check-sync.js <path/to/index.html>');
+  console.error('Usage: node tools/check-sync.js <path/to/index.html | video dir>');
   process.exit(2);
+}
+if (!file.endsWith('.html')) {                 // a video folder, or a name under videos/
+  let dir = file;
+  if (!fs.existsSync(dir)) { try { dir = require('../core/project').resolveVideo(file); } catch (_) { /* reported below */ } }
+  if (fs.existsSync(dir) && fs.statSync(dir).isDirectory()) file = path.join(dir, 'index.html');
 }
 if (!fs.existsSync(file)) {
   console.error(`File not found: ${file}`);

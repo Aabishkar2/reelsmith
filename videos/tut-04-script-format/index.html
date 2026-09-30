@@ -87,7 +87,7 @@ function Spoke({ from, to, at, dur = 0.5, flowAt }) {
 }
 
 // ── Scene 1 pieces: the script.md document and its four outputs ────────────
-function MdPage({ x, y, at, linesAt, typeAt, glowAt, checkAt }) {
+function MdPage({ x, y, at, linesAt, badgeAt, typeAt, glowAt, checkAt }) {
   const { localTime: lt } = useSprite();
   const gid = 'pg' + React.useId().replace(/[^a-zA-Z0-9]/g, '');
   const W = 300;
@@ -116,7 +116,7 @@ function MdPage({ x, y, at, linesAt, typeAt, glowAt, checkAt }) {
         <Icon name="file" size={24} color={CYAN} />
         <span style={{ fontFamily: MONO, fontWeight: 600, fontSize: 26, ...(g > 0.5 ? GRAD_TEXT : { color: TEXT }) }}>script.md</span>
       </div>
-      <Badge x={204} y={20} variant="cyan" mono size={18} upper={false} at={linesAt}>md</Badge>
+      <Badge x={204} y={20} variant="cyan" mono size={18} upper={false} at={badgeAt}>md</Badge>
       <div style={{ position: 'absolute', left: 18, right: 18, top: 64, height: 1, background: 'rgba(255,255,255,0.08)' }} />
       <div style={{ position: 'absolute', left: 24, top: 76, fontFamily: MONO, fontSize: 24, lineHeight: '34px' }}>
         {md.map((l, i) => (
@@ -129,7 +129,7 @@ function MdPage({ x, y, at, linesAt, typeAt, glowAt, checkAt }) {
         </div>
       </div>
       {lt >= checkAt && (
-        <div style={{ position: 'absolute', left: W / 2 - 32, bottom: -34, width: 64, height: 64 }}>
+        <div style={{ position: 'absolute', left: W / 2 - 32, bottom: -46, width: 64, height: 64 }}>
           {ring < 1 && <div style={{ position: 'absolute', inset: 0, borderRadius: '50%', border: `3px solid ${OK}`,
             transform: `scale(${1 + ring * 0.9})`, opacity: 0.75 * (1 - ring) }} />}
           <div style={{ position: 'absolute', inset: 0, borderRadius: '50%', background: OK, display: 'flex',
@@ -227,7 +227,7 @@ function ScrollCode({ title = 'script.md', lines = [], at = 0, y, width = 600, f
 function FrontmatterReel({ cueTitle, cueTopic, cueStyle, cueVoice, cueSpeed }) {
   const { localTime: lt } = useSprite();
   const st = lt >= cueStyle ? e3((lt - cueStyle) / 0.5) : 0;
-  const ti = lt >= cueTitle ? e3((lt - cueTitle) / 0.4) : 0;
+  const ti = lt >= cueTitle + 0.25 ? e3((lt - (cueTitle + 0.25)) / 0.4) : 0;
   const words = ['Caching', 'cuts', 'the', 'bill.'];
   const wi = lt >= cueVoice ? Math.floor((lt - cueVoice) * 2.6) % (words.length + 2) : -1;
   return (
@@ -237,24 +237,24 @@ function FrontmatterReel({ cueTitle, cueTopic, cueStyle, cueVoice, cueSpeed }) {
         background: `radial-gradient(ellipse 80% 50% at 15% 10%, ${alpha(VIOLET, 0.42)}, transparent 70%), radial-gradient(ellipse 70% 45% at 90% 95%, ${alpha(CYAN, 0.24)}, transparent 70%)` }} />
       <div style={{ position: 'absolute', left: 30, top: 58, display: 'flex', alignItems: 'center', gap: 8, padding: '6px 14px 6px 10px',
         borderRadius: 99, background: alpha(VIOLET, 0.22), border: `2px solid ${alpha(VIOLET, 0.6)}`, ...enter.pop(lt - cueVoice) }}>
-        <Icon name="mic" size={24} color={TEXT} />
-        <span style={{ fontFamily: SANS, fontWeight: 600, fontSize: 24, color: TEXT }}>Leda</span>
+        <Icon name="mic" size={28} color={TEXT} />
+        <span style={{ fontFamily: SANS, fontWeight: 600, fontSize: 30, color: TEXT }}>Leda</span>
       </div>
       <div style={{ position: 'absolute', right: 26, top: 58, padding: '6px 14px', borderRadius: 99, background: alpha(CYAN, 0.2),
-        border: `2px solid ${alpha(CYAN, 0.7)}`, fontFamily: DISPLAY, fontWeight: 700, fontSize: 26, color: TEXT, ...enter.pop(lt - cueSpeed) }}>1.2×</div>
-      <div style={{ position: 'absolute', left: 34, top: 134, fontFamily: SANS, fontWeight: 600, fontSize: 22, letterSpacing: '0.2em',
+        border: `2px solid ${alpha(CYAN, 0.7)}`, fontFamily: DISPLAY, fontWeight: 700, fontSize: 32, color: TEXT, ...enter.pop(lt - cueSpeed) }}>1.2×</div>
+      <div style={{ position: 'absolute', left: 34, top: 136, fontFamily: SANS, fontWeight: 600, fontSize: 26, letterSpacing: '0.18em',
         color: CYAN, ...enter.wipe(lt - cueTopic, 0.4) }}>DEVTOOLS</div>
       {[0.78, 0.5].map((w, i) => (
         <div key={i} style={{ position: 'absolute', left: 34, top: 178 + i * 58, width: `${w * 81}%`, height: 34, borderRadius: 10,
           background: 'rgba(255,255,255,0.10)', opacity: 1 - ti }} />
       ))}
       <div style={{ position: 'absolute', left: 34, right: 30, top: 172, opacity: ti * (1 - st), fontFamily: SANS, fontWeight: 600,
-        fontSize: 46, lineHeight: 1.12, color: TEXT }}>Prompt caching</div>
+        fontSize: 50, lineHeight: 1.12, color: TEXT }}>Prompt caching</div>
       <div style={{ position: 'absolute', left: 34, right: 30, top: 170, opacity: st, transform: `translateY(${(1 - st) * 16}px)`,
-        fontFamily: DISPLAY, fontWeight: 800, fontSize: 54, lineHeight: 1.04, letterSpacing: '-0.02em', color: TEXT }}>
+        fontFamily: DISPLAY, fontWeight: 800, fontSize: 60, lineHeight: 1.02, letterSpacing: '-0.02em', color: TEXT }}>
         Prompt <span style={GRAD_TEXT}>caching</span>
       </div>
-      <div style={{ position: 'absolute', left: 34, top: 344, width: 292, height: 118, borderRadius: 18,
+      <div style={{ position: 'absolute', left: 34, top: 360, width: 292, height: 118, borderRadius: 18,
         background: alpha(VIOLET, 0.16), border: `2px solid ${alpha(CYAN, 0.5)}`, ...enter.pop(lt - (cueStyle + 0.15)) }}>
         {[0.8, 0.55, 0.7].map((w, i) => (
           <div key={i} style={{ position: 'absolute', left: 20, top: 24 + i * 28, height: 12, borderRadius: 6,
@@ -263,8 +263,8 @@ function FrontmatterReel({ cueTitle, cueTopic, cueStyle, cueVoice, cueSpeed }) {
         ))}
       </div>
       {wi >= 0 && (
-        <div style={{ position: 'absolute', left: 20, right: 20, bottom: 92, display: 'flex', justifyContent: 'center', columnGap: 10,
-          fontFamily: SANS, fontWeight: 600, fontSize: 30 }}>
+        <div style={{ position: 'absolute', left: 16, right: 16, bottom: 80, display: 'flex', justifyContent: 'center', columnGap: 10,
+          fontFamily: SANS, fontWeight: 600, fontSize: 34 }}>
           {words.map((w, i) => (
             <span key={i} style={{ color: i === wi ? CYAN : i < wi ? 'rgba(255,255,255,0.5)' : 'rgba(255,255,255,0.88)' }}>{w}</span>
           ))}
@@ -276,6 +276,13 @@ function FrontmatterReel({ cueTitle, cueTopic, cueStyle, cueVoice, cueSpeed }) {
     </div>
   );
 }
+
+// Kit Stamp scale is 2.3 - 1.3·s (s = PUNCH spring). Multiply by this to get 1.45 - 0.45·s instead.
+const stampFix = (dt) => {
+  if (!(dt > 0)) return 1;
+  const s = sp(dt, PUNCH.k, PUNCH.d);
+  return (1.45 - 0.45 * s) / (2.3 - 1.3 * s);
+};
 
 // ── Scene 4 piece: the ">" key ──────────────────────────────────────────────
 function KeyCap({ x, y, at, size = 108 }) {
@@ -355,6 +362,7 @@ function Scene1() {
     <Sprite {...win}>
       <SceneRoot idx={1}>
         <Glow x={360} y={540} r={340} color={VIOLET} opacity={0.26} breathe={0.04} />
+        <Watermark text="#" y={560} size={900} opacity={0.07} drift={8} at={cueOne} font={MONO} />
         <Kicker y={104} at={0}>Reelsmith · Episode 04</Kicker>
         {nodes.map((n, i) => (
           <Spoke key={`s${i}`} from={n.from} to={n.to} at={cueControls + i * 0.08} flowAt={cueDownstream + i * 0.18} />
@@ -363,7 +371,7 @@ function Scene1() {
           <HubNode key={`n${i}`} x={n.x} y={n.y} role={n.role} file={n.file} icon={n.icon} color={n.color}
             at={cueWhole + i * 0.1} litAt={cueDownstream + i * 0.18} checkAt={cueEasier + i * 0.1} />
         ))}
-        <MdPage x={210} y={388} at={cueOne} linesAt={cueMarkdown} typeAt={cueFile} glowAt={cueScriptMd} checkAt={cueRight} />
+        <MdPage x={210} y={388} at={cueOne} linesAt={cueOne + 0.12} badgeAt={cueMarkdown} typeAt={cueFile} glowAt={cueScriptMd} checkAt={cueRight} />
         <SubtitleRail sceneIdx={1} bottom={150} fontSize={28} variant="clean" accentColor={CYAN} fontFamily="Inter" />
       </SceneRoot>
     </Sprite>
@@ -391,7 +399,7 @@ function Scene2() {
         <SceneRoot idx={2} enter="wipe">
           <Glow x={360} y={330} r={330} color={VIOLET} opacity={0.18} />
           <Kicker y={104} at={0.3}>01 · Frontmatter</Kicker>
-          <CodeCard y={160} title="script.md" at={cueAtTop} speed={48} lines={[
+          <CodeCard y={160} title="script.md" at={0.15} speed={48} lines={[
             { text: '---', at: cueTop, label: 'frontmatter', labelTone: 'violet', labelAt: cueFrontmatter },
             { text: 'title: Prompt caching', at: cueTitle, type: true },
             { text: 'topic: devtools', at: cueTopic, type: true },
@@ -411,7 +419,7 @@ function Scene2() {
             <FrontmatterReel cueTitle={cueTitle} cueTopic={cueTopic} cueStyle={cueStyle} cueVoice={cueVoice} cueSpeed={cueSpeed} />
           </PhoneFrame>
           <Card x={300} y={566} width={340} at={cueAnything} enter="fromRight" padding="20px 22px 18px" title="which wins" icon="bolt">
-            <div style={{ ...enter.push(localTime - (cueAnything + 0.1), 'left', 40) }}>
+            <div style={{ ...enter.slideUp(localTime - (cueAnything + 0.2), 0.4, 14) }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                 <span style={{ fontFamily: MONO, fontWeight: 600, fontSize: 22, color: TEXT }}>script.md</span>
                 <div style={{ marginLeft: 'auto' }}>
@@ -427,7 +435,7 @@ function Scene2() {
                 transformOrigin: 'left center', transform: `scaleX(${e3((localTime - cueAnything) / 0.5)})` }} />
               <Badge variant="violet" size={20} at={cueBeats} style={{ position: 'relative', background: CODE_BG }}>beats</Badge>
             </div>
-            <div style={{ ...enter.push(localTime - (cueBeats + 0.12), 'left', 40) }}>
+            <div style={{ ...enter.slideUp(localTime - (cueBeats + 0.12), 0.4, 14) }}>
               <div style={{ fontFamily: MONO, fontSize: 22, color: MUTED }}>reelsmith.config.json</div>
               <div style={{ fontFamily: MONO, fontSize: 22, marginTop: 6 }}>
                 <Strike at={cueProject} thickness={4} dim={0.45}><Segs segs={tokenize('"style": "reflective"', 'json')} /></Strike>
@@ -556,7 +564,7 @@ function Scene4() {
           <KeyCap x={100} y={148} at={cueAngle} />
           <Title x={236} y={154} width={384} align="left" size={42} ats={[cueNotes, cueNot, cueNarration]}
             text="Notes,|*not* *narration*." />
-          <CodeCard y={286} title="script.md" at={cueLines} lines={[
+          <CodeCard y={286} title="script.md" at={0.15} lines={[
             { text: '### Scene 2', at: cueLines },
             { text: '> say: "one hundred"', segs: note('say: "one hundred"'), at: cueAngle, label: 'note', labelTone: 'warn', labelAt: cueNotes },
             { text: '> [pause]', segs: note('[pause]'), at: cueAngle + 0.15, label: 'note', labelTone: 'warn', labelAt: cueNotes + 0.15 },
@@ -568,9 +576,9 @@ function Scene4() {
             { line: 3, at: cue100, until: cuePause, color: CYAN },
             { line: 2, at: cuePause, color: WARN },
           ]} />
-          {/* data-bleed: the kit Stamp punches in from 2.3x, wider than the 520 px line for ~0.15 s; at rest it sits at x 262-600 */}
-          <div data-bleed="">
-            <Stamp x={262} y={386} at={cueNeverSpoken} rotate={-8} size={40}>not spoken</Stamp>
+          {/* The kit Stamp punches in from 2.3x, which runs past the 520 px safe line; counter-scale it to a 1.45x slam. */}
+          <div style={{ position: 'absolute', left: 244, top: 386, transform: `scale(${stampFix(localTime - cueNeverSpoken)})` }}>
+            <Stamp at={cueNeverSpoken} rotate={-8} size={40}>not spoken</Stamp>
           </div>
           <Card y={598} width={560} at={cueLines + 0.3} enter="rise" padding="22px 26px 24px" title="voiceover.mp3" titleMono
             icon="wave" color={CYAN} glowAt={cueNarration}>
@@ -621,7 +629,7 @@ function Scene5() {
           <SceneRoot idx={5} enter="up">
             <Glow x={360} y={600} r={340} color={VIOLET} opacity={0.16} />
             <Kicker y={104} at={0.3}>04 · Scene hints</Kicker>
-            <CodeCard y={160} title="script.md" at={cueBelow} start={30} enter="rise" lines={[
+            <CodeCard y={160} title="script.md" at={0.15} start={30} enter="rise" lines={[
               { text: 'Cached reads cost less.', dim: true, at: cueBelow + 0.2 },
               { text: '## Scene Hints', at: cueAddHints, type: true },
               { text: '- Scene 1 (hook): "150" counts up. Primitive: Counter', segs: hint1, at: cueOneLine },
@@ -640,12 +648,12 @@ function Scene5() {
             </Card>
             <div style={{ position: 'absolute', top: 792, left: 0, right: 0, display: 'flex', justifyContent: 'center',
               alignItems: 'center', gap: 14 }}>
-              <Chip at={cueAgent} icon="eye" color="cyan">Claude Code</Chip>
+              <Chip at={cueAgent} icon="eye" color="cyan" size={26}>Claude Code</Chip>
               <div style={{ display: 'flex', alignItems: 'center', ...enter.wipe(localTime - cueBuilds, 0.4) }}>
-                <div style={{ width: 40, height: 3, borderRadius: 2, background: GRAD }} />
-                <Icon name="arrow" size={28} color={CYAN} style={{ marginLeft: -10 }} />
+                <div style={{ width: 36, height: 3, borderRadius: 2, background: GRAD }} />
+                <Icon name="arrow" size={30} color={CYAN} style={{ marginLeft: -10 }} />
               </div>
-              <Chip at={cueAnimation} icon="code" mono color="ok" variant="outline">index.html</Chip>
+              <Chip at={cueAnimation} icon="code" mono color="ok" size={26}>index.html</Chip>
             </div>
             <SubtitleRail sceneIdx={5} bottom={150} fontSize={28} variant="clean" accentColor={CYAN} fontFamily="Inter" />
           </SceneRoot>
@@ -665,7 +673,6 @@ function Scene6() {
   const cueSpoken = useWordCue(6, "spoken words");
   const cueWords = useWordCue(6, "words");
   const cue60 = useWordCue(6, "60-second");
-  const cueShortAt = useWordCue(6, "short at");
   const cueNormal = useWordCue(6, "normal pace");
   const cuePace = useWordCue(6, "pace");
   const cueSay = useWordCue(6, "say the numbers");
@@ -681,7 +688,7 @@ function Scene6() {
           <Kicker y={104} at={0.3}>05 · Length</Kicker>
           <Title y={146} size={58} ats={[cueKeep, cueIt, cueShort]} text="Keep it *short*." />
           <div style={{ position: 'absolute', top: 234, left: 0, right: 0, display: 'flex', justifyContent: 'center',
-            ...enter.pop(localTime - cueShort, 0.7) }}>
+            ...enter.pop(localTime - 0.15, 0.7) }}>
             <Ring size={276} stroke={18} at={cueAbout} until={cueWords} enter="none">
               <Counter value={150} at={cueAbout} dur={cueWords - cueAbout} size={100} enter="none" />
               <div style={{ fontFamily: SANS, fontWeight: 600, fontSize: 24, color: MUTED, marginTop: 4,
@@ -693,7 +700,7 @@ function Scene6() {
             <Counter value={60} prefix="≈ " suffix=" s" at={cue60} dur={0.8} size={64} gradient />
             <Chip at={cueNormal} icon="clock" color="cyan">normal pace</Chip>
           </div>
-          <ProgressBar y={624} width={520} height={10} at={cueShortAt} until={cuePace} pct={false} />
+          <ProgressBar y={624} width={520} height={10} at={cue60} until={cuePace + 0.3} pct={false} />
           <Card y={664} width={520} at={cueSay} enter="rise" padding="20px 26px 12px" title="write it as heard" icon="wave"
             color={OK} glowAt={cueHeard}>
             <HeardRow first from="150" to="one hundred fifty" at={cueSay + 0.1} />

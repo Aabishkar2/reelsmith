@@ -85,7 +85,7 @@ async function decide(state, questions) {
     const { status, body, text } = await fetchJson(DECISIONS_URL, {
       method: 'POST',
       headers: { Authorization: `Bearer ${process.env.OPENROUTER_API_KEY}`, 'Content-Type': 'application/json',
-        'X-Title': 'video-gen-v2' },
+        'X-Title': 'reelsmith' },
       body: JSON.stringify({ model: model(), state, questions }),
     });
     if (status !== 200 || !body || typeof body.answers !== 'object') {

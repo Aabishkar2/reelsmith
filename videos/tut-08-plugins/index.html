@@ -127,30 +127,28 @@ function Scene1() {
   const cueAdd = useWordCue(1, "add it");
   const cueReelsmith = useWordCue(1, "reelsmith");
   const cuePlugins = useWordCue(1, "plugins");
-  const cueAll = useWordCue(1, "all");
-  const cueTheWay = useWordCue(1, "the way");
-  const cueWay = useWordCue(1, "way down");
-  const cueDown = useWordCue(1, "down");
-  // Dock geometry (PluginDock 620 × 520 at y 170): core centre (360, 430),
-  // left slot centre (133, 430), right slot centre (587, 430), core right edge x 475.
+  // Dock geometry (PluginDock 620 × 520 at y 236): core centre (360, 496),
+  // left slot centre (133, 496), right slot centre (587, 496), core right edge x 475.
   const mono = { fontFamily: MONO, fontSize: 24, whiteSpace: 'nowrap' };
   return (
     <Sprite {...win}>
       {({ localTime }) => (
         <SceneRoot idx={1}>
-          <Glow x={360} y={430} r={340} color={VIOLET} opacity={0.24} breathe={0.04} />
-          <Glow x={360} y={430} r={250} color={CYAN} opacity={0.2} breathe={0.05} at={cueReelsmith} />
-          <Kicker y={96} at={0}>Episode 08 · Plugins</Kicker>
-          <OpenSocket cx={587} cy={430} barX={475} at={0.4} hotAt={cueNew} />
-          <PluginDock y={170} at={0} core={{ label: 'reelsmith', sub: 'core' }} tiles={[
+          <Glow x={360} y={496} r={340} color={VIOLET} opacity={0.24} breathe={0.04} />
+          <Glow x={360} y={496} r={250} color={CYAN} opacity={0.2} breathe={0.05} at={cueReelsmith} />
+          <Kicker y={84} at={0}>Episode 08 · Plugins</Kicker>
+          {/* the thesis lands whole on "plugins" (0.1 s word stagger) so it reads before scene 2 wipes in on "down" */}
+          <Title y={130} size={52} at={cuePlugins} stagger={0.1} text="*Plugins* all|the way down." />
+          <OpenSocket cx={587} cy={496} barX={475} at={0.4} hotAt={cueNew} />
+          <PluginDock y={236} at={0} core={{ label: 'reelsmith', sub: 'core' }} tiles={[
             { label: 'stt', sub: 'whisper', icon: 'words', color: KC.stt, at: 0.1, slot: 'top' },
             { label: 'style', sub: 'motion', icon: 'palette', color: KC.style, at: 0.2, slot: 'bottom' },
             { label: 'tts', sub: 'openrouter', icon: 'wave', color: KC.tts, at: 0.3, slot: 'left', outAt: cueSwap },
             { label: 'tts', sub: 'elevenlabs', icon: 'wave', color: KC.tts, at: cueSwap + 0.3, slot: 'left' },
             { label: 'publish', sub: 'discord', icon: 'send', color: KC.publish, at: cueAdd, slot: 'right' },
           ]} />
-          <SwapRing cx={133} cy={430} at={cueVoice} fixAt={cueSwap + 0.6} />
-          <Card y={704} width={580} at={cueVoice} enter="rise" padding="10px 24px">
+          <SwapRing cx={133} cy={496} at={cueVoice} fixAt={cueSwap + 0.6} />
+          <Card y={772} width={580} at={cueVoice} enter="rise" padding="10px 24px">
             <ChangeRow kind="tts" verb="swap" verbTone="violet" at={cueVoice + 0.12} verbAt={cueSwap} first>
               <span style={{ ...mono, color: CODE.text }}><Strike at={cueSwap} thickness={4} rotate={-2}>openrouter</Strike></span>
               <span style={{ display: 'inline-flex', ...enter.pop(localTime - cueSwap - 0.3) }}>
@@ -165,7 +163,6 @@ function Scene1() {
               </span>
             </ChangeRow>
           </Card>
-          <Title y={890} size={54} ats={[cuePlugins, cueAll, cueTheWay, cueWay, cueDown]} text="*Plugins* all|the way down." />
           <SubtitleRail sceneIdx={1} bottom={150} fontSize={28} variant="clean" accentColor={CYAN} fontFamily="Inter" />
         </SceneRoot>
       )}

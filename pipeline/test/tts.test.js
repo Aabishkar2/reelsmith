@@ -2,17 +2,15 @@
 /**
  * pipeline/test/tts.test.js — pipeline/tts.js with a stubbed fetch (no network,
  * no API key needed, no whisper: timings are 'estimate' or a stubbed transcribe).
- *   ~/.nvm/versions/node/v22.17.0/bin/node pipeline/test/tts.test.js
- * Needs ffmpeg/ffprobe (adds /opt/homebrew/bin to PATH when present).
+ *   node pipeline/test/tts.test.js
+ * Needs ffmpeg/ffprobe (core/env.js finds them; their dir is put on PATH).
  */
 const assert = require('assert');
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
 
-if (fs.existsSync('/opt/homebrew/bin') && !process.env.PATH.split(':').includes('/opt/homebrew/bin')) {
-  process.env.PATH = `/opt/homebrew/bin:${process.env.PATH}`;
-}
+require('../../core/env').ensureOnPath();
 const { loadEnv } = require('../config');
 loadEnv();                                   // load .env now, then neutralise anything it set
 for (const k of ['TTS_MODEL', 'TTS_VOICE', 'TTS_SPEED']) delete process.env[k];

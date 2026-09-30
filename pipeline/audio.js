@@ -25,8 +25,12 @@ const fs = require('fs');
 const path = require('path');
 const { spawnSync } = require('child_process');
 
-const FFMPEG = 'ffmpeg';
-const FFPROBE = 'ffprobe';
+const env = require('../core/env');
+
+// Resolved on each call (cached inside core/env.js): $FFMPEG_PATH / $FFPROBE_PATH, PATH, then the
+// Homebrew / /usr/local fallback dirs; the bare name when nothing is found, so the spawn error says so.
+const FFMPEG = () => env.bin('ffmpeg');
+const FFPROBE = () => env.bin('ffprobe');
 
 function run(bin, args, { allowFail = false } = {}) {
   const r = spawnSync(bin, args, { encoding: 'utf8', maxBuffer: 256 * 1024 * 1024 });
@@ -38,7 +42,7 @@ function run(bin, args, { allowFail = false } = {}) {
   return r;
 }
 
-const ffmpeg = (args, opts) => run(FFMPEG, ['-y', '-hide_banner', '-nostdin', ...args], opts);
+const ffmpeg = (args, opts) => run(FFMPEG(), ['-y', '-hide_banner', '-nostdin', ...args], opts);
 
 function mkdirFor(file) { fs.mkdirSync(path.dirname(file), { recursive: true }); }
 
@@ -65,14 +69,14 @@ function ensureWavs(base) {
 }
 
 function duration(file) {
-  const r = run(FFPROBE, ['-v', 'error', '-show_entries', 'format=duration', '-of', 'default=nw=1:nk=1', file]);
+  const r = run(FFPROBE(), ['-v', 'error', '-show_entries', 'format=duration', '-of', 'default=nw=1:nk=1', file]);
   const d = parseFloat(String(r.stdout).trim());
   if (!Number.isFinite(d)) throw new Error(`ffprobe: no duration for ${file}`);
   return d;
 }
 
 function sampleRate(file) {
-  const r = run(FFPROBE, ['-v', 'error', '-select_streams', 'a:0', '-show_entries', 'stream=sample_rate',
+  const r = run(FFPROBE(), ['-v', 'error', '-select_streams', 'a:0', '-show_entries', 'stream=sample_rate',
     '-of', 'default=nw=1:nk=1', file]);
   return parseInt(String(r.stdout).trim(), 10) || null;
 }

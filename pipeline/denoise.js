@@ -13,8 +13,9 @@
  *      when the clean file is missing, older than the source, or was made with
  *      other settings. Never touches the source.
  *      engine 'deepfilternet': pipeline/denoise_dfn.py run by denoise.python
- *        (default python3.11; DeepFilterNet pins numpy<2, so a separate venv
- *        python is the safe install), attenuation capped at denoise.attenLimitDb
+ *        (default: the python core/env.js finds — $REELSMITH_PYTHON, python3.11,
+ *        python3.12, python3.13, python3; DeepFilterNet pins numpy<2, so a separate
+ *        venv python is the safe install), attenuation capped at denoise.attenLimitDb
  *        so the voice doesn't go underwater.
  *      fallback (engine missing/failing, or engine 'afftdn'): ffmpeg highpass +
  *        lowpass voice band + afftdn. Weaker on non-stationary noise (barks) —
@@ -50,9 +51,10 @@ function settingsOf(cfg) {
 
 const engines = {
   deepfilternet(src, out, d) {
-    const r = spawnSync(d.python || 'python3.11', [DFN_SCRIPT, src, out, `--atten=${d.attenLimitDb}`],
+    const py = d.python || require('../core/env').python() || 'python3';
+    const r = spawnSync(py, [DFN_SCRIPT, src, out, `--atten=${d.attenLimitDb}`],
       { encoding: 'utf8', maxBuffer: 64 * 1024 * 1024, timeout: (d.timeoutSec || 600) * 1000 });
-    if (r.error) throw new Error(`${d.python || 'python3.11'} could not start: ${r.error.message}`);
+    if (r.error) throw new Error(`${py} could not start: ${r.error.message}`);
     if (r.status !== 0) {
       const tail = String(r.stderr || '').trim().split('\n').filter(Boolean).slice(-1)[0] || `exit ${r.status}`;
       throw new Error(tail.replace(/^.*ModuleNotFoundError: /, ''));

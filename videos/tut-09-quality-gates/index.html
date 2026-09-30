@@ -208,9 +208,32 @@ function Scene1() {
 // ── Scene 2 · gate 1: the linters ───────────────────────────────────────────
 const CHECK_DRIFT = ['setTimeout', 'Math.random', 'delay={7.5}']; // sync-ok (on-screen text, not a delay)
 const VALIDATE_DRIFT = ['cue not spoken', 'no SubtitleRail'];
-const DriftLabel = ({ children, top = 0 }) => (
-  <div style={{ fontFamily: MONO, fontSize: 22, color: MUTED, margin: `${top}px 0 10px` }}>{children}</div>
-);
+// A row of chips with skeleton slots under it until the chips pop in.
+function ChipRow({ items, widths, ats }) {
+  const { localTime: lt } = useSprite();
+  let x = 0;
+  return (
+    <div style={{ position: 'relative', display: 'flex', flexWrap: 'wrap', gap: 10 }}>
+      {widths.map((w, i) => {
+        const el = lt < ats[i] + 0.1 ? <SkelBar key={'s' + i} left={x} top={0} width={w} height={44} /> : null;
+        x += w + 10;
+        return el;
+      })}
+      {items.map((d, i) => <Chip key={d} at={ats[i]} mono size={22} color="danger" variant="outline">{d}</Chip>)}
+    </div>
+  );
+}
+
+function DriftLabel({ name, desc, at, top = 0 }) {
+  const { localTime: lt } = useSprite();
+  return (
+    <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, margin: `${top}px 0 10px`, whiteSpace: 'nowrap',
+      ...enter.push(lt - at, 'left', 40) }}>
+      <span style={{ fontFamily: MONO, fontWeight: 600, fontSize: 22, color: TEXT }}>{name}</span>
+      <span style={{ fontFamily: SANS, fontWeight: 500, fontSize: 22, color: MUTED }}>{desc}</span>
+    </div>
+  );
+}
 
 function Scene2() {
   const win = useSceneWindow(2);
@@ -235,20 +258,15 @@ function Scene2() {
             { text: 'validate-sync', status: 'ok', right: '0 errors', at: cueValidate },
             { text: 'lint failed · exit 1', status: 'err', color: DANGER, bold: true, at: cueFail },
           ]} />
-          <Card y={600} width={600} at={cueFail} title="fails on anything that drifts" icon="warn" color={DANGER}
-            glowAt={cueAnything + 0.3} enter="rise" padding="20px 18px 22px">
-            <DriftLabel>check-sync</DriftLabel>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
-              {CHECK_DRIFT.map((d, i) => (
-                <Chip key={d} at={cueFail + 0.15 + i * 0.12} mono size={22} color="danger" variant="outline">{d}</Chip>
-              ))}
+          <Card y={600} width={600} at={cueCheck} color={DANGER} glowAt={cueAnything + 0.3} enter="rise" padding="18px 18px 22px">
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, height: 26, marginBottom: 14, ...enter.wipe(localTime - cueFail, 0.5) }}>
+              <Icon name="warn" size={22} color={DANGER} />
+              <span style={{ fontFamily: SANS, fontWeight: 600, fontSize: 20, letterSpacing: '0.14em', textTransform: 'uppercase', color: MUTED }}>fails on anything that drifts</span>
             </div>
-            <DriftLabel top={16}>validate-sync</DriftLabel>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
-              {VALIDATE_DRIFT.map((d, i) => (
-                <Chip key={d} at={cueAnything + 0.08 + i * 0.12} mono size={22} color="danger" variant="outline">{d}</Chip>
-              ))}
-            </div>
+            <DriftLabel name="check-sync" desc="· timing and determinism" at={cueCheck + 0.15} />
+            <ChipRow items={CHECK_DRIFT} widths={[168, 181, 181]} ats={CHECK_DRIFT.map((d, i) => cueFail + 0.15 + i * 0.12)} />
+            <DriftLabel name="validate-sync" desc="· cues and subtitles" at={cueValidate + 0.1} top={16} />
+            <ChipRow items={VALIDATE_DRIFT} widths={[220, 233]} ats={VALIDATE_DRIFT.map((d, i) => cueAnything + 0.08 + i * 0.12)} />
           </Card>
           <SubtitleRail sceneIdx={2} bottom={150} fontSize={28} variant="clean" accentColor={CYAN} fontFamily="Inter" />
         </SceneRoot>
@@ -380,6 +398,14 @@ function Scene3() {
 // draft), blurred and overlaid with a pixel grid (0.75× size).
 function DraftScreen({ showAt, playAt }) {
   const { localTime: lt } = useSprite();
+  if (lt < showAt) {
+    return (
+      <div style={{ position: 'absolute', inset: 0, background: INK, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ width: 84, height: 84, borderRadius: '50%', border: `8px solid ${alpha(CYAN, 0.16)}`, borderTopColor: CYAN,
+          transform: `rotate(${lt * 420}deg)` }} />
+      </div>
+    );
+  }
   const held = 1.2; // the frame the paused preview sits on (seconds into the reel)
   const raw = lt < playAt ? showAt + held : showAt + held + (lt - playAt);
   const rt = Math.floor(raw * 15) / 15;
@@ -440,12 +466,12 @@ function Scene4() {
               { text: 'wrote draft.mp4', status: 'ok', right: '30 s', at: cueSeconds },
             ]} />
             <Ring x={96} y={574} size={188} stroke={14} at={cueRenders} until={cueSeconds}>
-              <Counter value={30} at={cueRenders} dur={cueSeconds - cueRenders} size={60} suffix="s" enter="none" />
+              <Counter value={30} at={cueRenders} dur={cueSeconds - cueRenders} size={60} format={(n) => `${Math.round(steady(n, 30))}s`} enter="none" />
             </Ring>
             <div style={{ position: 'absolute', left: 70, width: 240, top: 780, textAlign: 'center', fontFamily: SANS,
               fontWeight: 500, fontSize: 24, color: MUTED, ...enter.slideUp(localTime - cueRenders - 0.15) }}>draft render time</div>
             <Badge x={78} y={846} at={cueCommit} variant="ghost" icon="lock" mono upper={false}>output.mp4: not yet</Badge>
-            <PhoneFrame x={400} y={552} width={230} at={cueLowRes} tilt={tilt}>
+            <PhoneFrame x={400} y={552} width={230} at={cueDraft} tilt={tilt}>
               <DraftScreen showAt={cueLowRes} playAt={cuePhone} />
             </PhoneFrame>
             <Badge x={392} y={530} z={6} at={cuePreview} variant="warn" mono upper={false}>15 fps · 0.75×</Badge>
@@ -472,12 +498,22 @@ function Scramble({ text, at, seed = 1 }) {
   return <span style={{ whiteSpace: 'pre' }}>{out.join('')}</span>;
 }
 
+// Loading placeholder bar (a skeleton row) with a travelling highlight.
+function SkelBar({ left = 0, top = 0, width = 200, height = 14 }) {
+  const { localTime: lt } = useSprite();
+  return <div style={{ position: 'absolute', left, top, width, height, borderRadius: height / 2,
+    backgroundImage: 'linear-gradient(90deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.13) 50%, rgba(255,255,255,0.05) 100%)',
+    backgroundSize: '360px 100%', backgroundPosition: `${((lt * 320) % 720) - 360}px 0`, backgroundColor: 'rgba(255,255,255,0.04)' }} />;
+}
+
 function FpRow({ icon, name, role, at, dim, editAt }) {
   const { localTime: lt } = useSprite();
   const ed = editAt != null && lt >= editAt ? e3((lt - editAt) / 0.3) : 0;
   const b = editAt != null ? bump(lt - editAt, 0.45) : 0;
   const c = ed > 0.5 ? WARN : dim ? FAINT : CYAN;
   return (
+    <div style={{ position: 'relative' }}>
+    {lt < at + 0.12 && <><SkelBar left={0} top={16} width={24} /><SkelBar left={38} top={16} width={170} /><SkelBar left={408} top={16} width={120} /></>}
     <div style={{ ...enter.push(lt - at, 'right', 70) }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 14, height: 46, padding: '0 10px', margin: '0 -10px', borderRadius: 10,
         background: ed > 0 ? alpha(WARN, 0.13 * ed) : 'transparent', boxShadow: ed > 0 ? `inset 3px 0 0 ${alpha(WARN, ed)}` : 'none',
@@ -490,20 +526,23 @@ function FpRow({ icon, name, role, at, dim, editAt }) {
         <Icon name={ed > 0.5 ? 'warn' : 'check'} size={24} color={ed > 0.5 ? WARN : dim ? FAINT : OK} stroke={2.8} />
       </div>
     </div>
+    </div>
   );
 }
 
-function FingerprintCard({ y, at, rows, editAt, mismatchAt, badAt }) {
+function FingerprintCard({ y, openAt, at, rows, editAt, mismatchAt, badAt }) {
   const { localTime: lt } = useSprite();
   const bad = lt >= badAt ? e3((lt - badAt) / 0.35) : 0;
   const mis = lt >= mismatchAt;
   return (
-    <Window y={y} width={580} at={at} enter="fromRight" title="preview-approved.json" icon="lock" padding="18px 26px 14px"
+    <Window y={y} width={580} at={openAt} enter="fromRight" title="preview-approved.json" icon="lock" padding="18px 26px 14px"
       accent={bad > 0 ? DANGER : true}
       style={{ border: `1px solid ${bad > 0 ? alpha(DANGER, 0.3 + 0.5 * bad) : CARD_BORDER}`,
         boxShadow: `${SHADOW}, inset 0 1px 0 rgba(255,255,255,0.05)${bad > 0 ? `, 0 0 ${56 * bad}px ${alpha(DANGER, 0.4 * bad)}` : ''}` }}>
-      <div style={{ fontFamily: SANS, fontWeight: 600, fontSize: 20, letterSpacing: '0.16em', textTransform: 'uppercase', color: FAINT }}>approved fingerprint</div>
-      <div style={{ marginTop: 6, fontFamily: MONO, fontWeight: 600, fontSize: 26, color: mis ? MUTED : TEXT }}>
+      {lt < at + 0.1 && <div style={{ position: 'relative', height: 0 }}><SkelBar top={4} width={250} height={14} /><SkelBar top={40} width={330} height={18} /></div>}
+      <div style={{ fontFamily: SANS, fontWeight: 600, fontSize: 20, letterSpacing: '0.16em', textTransform: 'uppercase', color: FAINT,
+        ...enter.wipe(lt - at, 0.45) }}>approved fingerprint</div>
+      <div style={{ marginTop: 6, fontFamily: MONO, fontWeight: 600, fontSize: 26, color: mis ? MUTED : TEXT, opacity: lt >= at ? 1 : 0 }}>
         <Strike at={mismatchAt} thickness={4} rotate={-1.5} dim={0.6}>
           <span style={{ color: CYAN }}>sha256:</span><Scramble text="9f3c71ab…c7e2" at={at + 0.1} seed={3} />
         </Strike>
@@ -549,7 +588,7 @@ function Scene5() {
             { text: 'preview approved by aabishkar', status: 'ok', at: cueRecords + 0.1 },
             { text: 'preview-approved.json', status: 'info', at: cueFingerprint },
           ]} />
-          <FingerprintCard y={540} at={cueFingerprint} editAt={cueChange} mismatchAt={cueAny} badAt={cueTheApproval} rows={[
+          <FingerprintCard y={540} openAt={cueApproval + 0.2} at={cueFingerprint} editAt={cueChange} mismatchAt={cueAny} badAt={cueTheApproval} rows={[
             { icon: 'file', name: 'index.html', role: 'animation', at: cueAnimation },
             { icon: 'file', name: 'scenes.json', role: 'timings', at: cueTimings },
             { icon: 'folder', name: 'images/**', role: 'images', at: cueImages },
@@ -587,7 +626,7 @@ function ShardRig({ y, rowAts, fillFrom, ends, pipeAt, ffAt }) {
         return (
           <React.Fragment key={k}>
             <div style={{ position: 'absolute', left: 70, top: k * (RH + RG), width: 376, height: RH, display: 'flex',
-              alignItems: 'center', gap: 12, ...enter.push(lt - rowAts[k], 'left', 80) }}>
+              alignItems: 'center', gap: 12, ...enter.wipe(lt - rowAts[k], 0.45) }}>
               <div style={{ width: 132, flexShrink: 0, display: 'flex', alignItems: 'center', gap: 8, fontFamily: MONO, fontSize: 22, whiteSpace: 'nowrap',
                 color: done ? TEXT : MUTED }}>
                 {done ? <Icon name="check" size={22} color={OK} stroke={3} /> : <Icon name="globe" size={22} color={c} />}
@@ -652,6 +691,8 @@ function OutputBar({ y, segAts, mergeAt, labelAt }) {
   );
 }
 
+// Counter eases with easeOutCubic; invert it so a stopwatch ticks at a steady rate.
+const steady = (n, v) => v * (1 - Math.cbrt(Math.max(0, 1 - n / v)));
 const clock = (n) => {
   const s = Math.max(0, Math.floor(n));
   return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
@@ -689,9 +730,9 @@ function Scene6() {
               ends={[cueFfmpeg + 0.2, cueFfmpeg + 0.5, cueFfmpeg, cueFfmpeg + 0.35]} pipeAt={cueFrames} ffAt={cueFfmpeg} />
             <OutputBar y={770} segAts={[cueShort, cueShort + 0.1, cueShort + 0.2, cueShort + 0.3]} mergeAt={cueShortWord} labelAt={cueShortWord} />
             <div style={{ position: 'absolute', left: 80, top: 876, transform: `scale(${1 + 0.06 * land})`, transformOrigin: 'left center' }}>
-              <Counter value={89} at={cueFour} dur={cue90 - cueFour} size={100} gradient format={clock} enter="pop" />
+              <Counter value={89} at={cueRun} dur={cue90 - cueRun} size={100} gradient format={(n) => clock(steady(n, 89))} enter="pop" />
             </div>
-            <div style={{ position: 'absolute', left: 330, top: 890, ...enter.push(localTime - cueFour, 'right', 60) }}>
+            <div style={{ position: 'absolute', left: 330, top: 890, ...enter.push(localTime - cueRun - 0.12, 'right', 60) }}>
               <div style={{ fontFamily: SANS, fontWeight: 600, fontSize: 26, color: TEXT }}>render wall time</div>
               <div style={{ fontFamily: SANS, fontWeight: 500, fontSize: 24, color: MUTED, marginTop: 4 }}>for a 90 s short</div>
             </div>

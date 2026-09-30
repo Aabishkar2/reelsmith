@@ -162,6 +162,7 @@ function SyncLanes({ appearAt, early, word, bracketAt, textAt, markAt, fixAt }) 
 
 function Scene1() {
   const win = useSceneWindow(1);
+  const cueMost = useWordCue(1, "Most");
   const cueAI = useWordCue(1, "AI");
   const cueMade = useWordCue(1, "made");
   const cueVideos = useWordCue(1, "videos");
@@ -187,8 +188,8 @@ function Scene1() {
           </PhoneFrame>
           <Badge x={432} y={228} at={cueDrift} variant="danger" icon="warn" size={22} upper={false}><Strike at={cueImpossible} color={TEXT} thickness={3} rotate={-2} dim={0.45}>0.5 s early</Strike></Badge>
           <Badge x={432} y={282} at={cueImpossible} variant="ok" icon="check" size={22} upper={false}>on the word</Badge>
-          <Card y={594} width={560} at={cueAI} enter="rise" padding="18px 22px 14px" title="timeline" icon="clock" color={CYAN}>
-            <SyncLanes appearAt={cueAI} early={cueEarly} word={cueDrift} bracketAt={cueDrift} textAt={cueText} markAt={cueVoice} fixAt={cueImpossible} />
+          <Card y={594} width={560} at={cueMost + 0.1} enter="rise" padding="18px 22px 14px" title="timeline" icon="clock" color={CYAN}>
+            <SyncLanes appearAt={cueMost + 0.2} early={cueEarly} word={cueDrift} bracketAt={cueDrift} textAt={cueText} markAt={cueVoice} fixAt={cueImpossible} />
           </Card>
           <div style={{ position: 'absolute', top: 894, left: 0, right: 0, display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 16 }}>
             <Logo size={46} at={cueReelsmith} />
@@ -264,40 +265,50 @@ function Scene2() {
 function S3Code({ cueInside, cueHard, cueDelay, cueYou, cueCall, cuePhrase, cueGet }) {
   const lt = useSprite().localTime;
   const hl = lt >= cuePhrase ? ease3((lt - cuePhrase) / 0.25) : 0;
-  const row = (at, en) => ({ height: 48, display: 'flex', alignItems: 'center', whiteSpace: 'pre', ...entry(en, lt - at) });
   const phraseStyle = hl > 0 ? { background: alpha(CYAN, 0.2 * hl), boxShadow: `0 0 0 2px ${alpha(CYAN, 0.75 * hl)}`, borderRadius: 6 } : null;
+  const blink = Math.floor(lt * 2) % 2 === 0;
+  // an editor line: the gutter number is always there, the code enters on its cue
+  const line = (n, at, en, content) => (
+    <div style={{ height: 48, display: 'flex', alignItems: 'center' }}>
+      <span style={{ width: 34, flexShrink: 0, textAlign: 'right', marginRight: 18, fontSize: 20, color: lt >= at ? 'rgba(245,247,255,0.4)' : 'rgba(245,247,255,0.2)' }}>{n}</span>
+      <div style={{ display: 'flex', alignItems: 'center', whiteSpace: 'pre', ...entry(en, lt - at) }}>{content}</div>
+    </div>
+  );
   return (
-    <div style={{ fontFamily: MONO, fontSize: 26, color: CODE.text }}>
-      <div style={row(cueInside, 'fadeIn')}><span style={{ color: CODE.cm, fontStyle: 'italic' }}>{'// inside a scene'}</span></div>
-      <div style={row(cueHard, 'fromLeft')}>
-        <Strike at={cueDelay} thickness={5} rotate={-1.2}>
-          <span>
-            <span style={{ color: CODE.tag }}>{'<Badge'}</span>
-            <span style={{ color: CODE.prop }}>{' at'}</span>
-            <span style={{ color: CODE.punct }}>{'={'}</span>
-            <span style={{ color: CODE.num }}>4.5</span>
-            <span style={{ color: CODE.punct }}>{'} />'}</span>
-          </span>
-        </Strike>
-        <Badge at={cueDelay + 0.15} variant="danger" size={20} upper={false} style={{ marginLeft: 20 }}>hand-typed</Badge>
-      </div>
-      <div style={row(cueYou, 'none')}>
-        <TypedSegs at={cueYou} speed={32} segs={[{ s: 'const', c: CODE.kw }, { s: ' cue ', c: CODE.text }, { s: '=', c: CODE.punct }]} />
-      </div>
-      <div style={row(cueCall, 'none')}>
-        <TypedSegs at={cueCall} speed={36} segs={[
-          { s: '  useWordCue', c: CODE.fn }, { s: '(', c: CODE.punct }, { s: '3', c: CODE.num }, { s: ', ', c: CODE.punct },
-          { s: '"phrase"', c: CODE.str, style: phraseStyle }, { s: ');', c: CODE.punct },
-        ]} />
-      </div>
-      <div style={row(cueGet, 'fromLeft')}>
-        <span style={{ color: CODE.tag }}>{'<Badge'}</span>
-        <span style={{ color: CODE.prop }}>{' at'}</span>
-        <span style={{ color: CODE.punct }}>{'={'}</span>
-        <span style={{ color: CODE.text }}>cue</span>
-        <span style={{ color: CODE.punct }}>{'} />'}</span>
-        <Badge at={cueGet + 0.2} variant="ok" icon="check" size={20} upper={false} style={{ marginLeft: 20 }}>on cue</Badge>
-      </div>
+    <div style={{ position: 'relative', fontFamily: MONO, fontSize: 26, color: CODE.text }}>
+      {lt >= cueInside + 0.3 && lt < cueHard && (
+        <div style={{ position: 'absolute', left: 54, top: 48 + 12, width: 15, height: 26, background: CYAN, opacity: blink ? 0.9 : 0 }} />
+      )}
+      {line(1, cueInside, 'fadeIn', <span style={{ color: CODE.cm, fontStyle: 'italic' }}>{'// inside a scene'}</span>)}
+      {line(2, cueHard, 'fromLeft', (
+        <React.Fragment>
+          <Strike at={cueDelay} thickness={5} rotate={-1.2}>
+            <span>
+              <span style={{ color: CODE.tag }}>{'<Badge'}</span>
+              <span style={{ color: CODE.prop }}>{' at'}</span>
+              <span style={{ color: CODE.punct }}>{'={'}</span>
+              <span style={{ color: CODE.num }}>4.5</span>
+              <span style={{ color: CODE.punct }}>{'} />'}</span>
+            </span>
+          </Strike>
+          <Badge at={cueDelay + 0.15} variant="danger" size={20} upper={false} style={{ marginLeft: 18 }}>hand-typed</Badge>
+        </React.Fragment>
+      ))}
+      {line(3, cueYou, 'none', <TypedSegs at={cueYou} speed={32} segs={[{ s: 'const', c: CODE.kw }, { s: ' cue ', c: CODE.text }, { s: '=', c: CODE.punct }]} />)}
+      {line(4, cueCall, 'none', <TypedSegs at={cueCall} speed={36} segs={[
+        { s: '  useWordCue', c: CODE.fn }, { s: '(', c: CODE.punct }, { s: '3', c: CODE.num }, { s: ', ', c: CODE.punct },
+        { s: '"phrase"', c: CODE.str, style: phraseStyle }, { s: ');', c: CODE.punct },
+      ]} />)}
+      {line(5, cueGet, 'fromLeft', (
+        <React.Fragment>
+          <span style={{ color: CODE.tag }}>{'<Badge'}</span>
+          <span style={{ color: CODE.prop }}>{' at'}</span>
+          <span style={{ color: CODE.punct }}>{'={'}</span>
+          <span style={{ color: CODE.text }}>cue</span>
+          <span style={{ color: CODE.punct }}>{'} />'}</span>
+          <Badge at={cueGet + 0.2} variant="ok" icon="check" size={20} upper={false} style={{ marginLeft: 18 }}>on cue</Badge>
+        </React.Fragment>
+      ))}
     </div>
   );
 }
@@ -351,7 +362,7 @@ function Scene3() {
       {({ localTime }) => (
       <SceneRoot idx={3} enter="up" pattern="dots">
         <Kicker y={70} at={0.3}>02 · The cue</Kicker>
-        <Window y={116} width={600} title="index.html · Scene 3" icon="code" at={cueInside} padding="16px 28px 18px">
+        <Window y={116} width={600} title="index.html · Scene 3" icon="code" at={cueInside} padding="16px 24px 18px 14px">
           <S3Code cueInside={cueInside} cueHard={cueHard} cueDelay={cueDelay} cueYou={cueYou} cueCall={cueCall} cuePhrase={cuePhrase} cueGet={cueGet} />
         </Window>
         <Card y={472} width={560} at={cueScene} enter="fromBottom" padding="16px 22px 12px" title="scene 3 · the voice" icon="wave" color={CYAN}>
@@ -501,7 +512,7 @@ function Scene4() {
 function RailLens({ words, raw }) {
   const lt = useSprite().localTime;
   const VIEW = 532, GAP = 20;
-  const widths = words.map((w) => Math.max(70, w.word.length * 21 + 24));
+  const widths = words.map((w) => Math.max(64, w.word.length * 19 + 20));
   const centers = [];
   let acc = 0;
   widths.forEach((wd) => { centers.push(acc + wd / 2); acc += wd + GAP; });
@@ -522,7 +533,7 @@ function RailLens({ words, raw }) {
           const stamp = lt >= w.start ? ease3((lt - w.start) / 0.25) : 0;
           return (
             <div key={i} style={{ position: 'absolute', left: centers[i] - widths[i] / 2, width: widths[i], top: 14, textAlign: 'center', opacity: vis }}>
-              <div style={{ fontFamily: SANS, fontWeight: 600, fontSize: 40, lineHeight: 1.1, whiteSpace: 'nowrap',
+              <div style={{ fontFamily: SANS, fontWeight: 600, fontSize: 36, lineHeight: 1.1, whiteSpace: 'nowrap',
                 color: isCur ? CYAN : past ? 'rgba(245,247,255,0.42)' : 'rgba(245,247,255,0.85)',
                 textShadow: isCur ? `0 0 22px ${alpha(CYAN, 0.45)}` : 'none' }}>{w.word}</div>
               <div style={{ marginTop: 12, ...monoS(22, isCur ? CYAN : MUTED, { fontWeight: isCur ? 600 : 400 }), opacity: stamp,
@@ -615,7 +626,7 @@ function Scene6() {
           { text: '  bans Date.now · timers · rAF', dim: true, at: cueWall },
           { text: 'validate-sync', status: 'ok', right: '0 warnings', at: cueValidate },
           { text: '  6/6 scenes have a rail', dim: true, at: cueRail },
-          { text: '  57/57 cues resolve', dim: true, at: cueResolves },
+          { text: '  58/58 cues resolve', dim: true, at: cueResolves },
         ]} />
         <div style={{ position: 'absolute', top: 492, left: 0, right: 0, display: 'flex', justifyContent: 'center', gap: 24 }}>
           <GuardTile at={cueLinters} activeAt={cueCheck + 0.3} label="check-sync" sub="no wall clock" en="fromLeft" />

@@ -1,8 +1,8 @@
-#!/usr/bin/env python3.11
+#!/usr/bin/env python3
 """
 pipeline/denoise_dfn.py - DeepFilterNet denoise for pipeline/denoise.js (docs/spec.md §7c).
 
-Usage: python3.11 pipeline/denoise_dfn.py <in.wav> <out.wav> [--atten=35]
+Usage: python3 pipeline/denoise_dfn.py <in.wav> <out.wav> [--atten=35]
   in:    mono wav (the take's 48 kHz .hq.wav or a re-record clip)
   out:   48 kHz mono 16-bit wav, same length as the input
   atten: attenuation limit in dB (DeepFilterNet atten_lim_db): caps how much

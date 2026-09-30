@@ -1,10 +1,10 @@
-#!/usr/bin/env python3.11
+#!/usr/bin/env python3
 """
 tts.py — Generate voiceover MP3 from script text using edge-tts.
 
 Usage:
-  python3.11 tts.py <script_text> <output.mp3>
-  python3.11 tts.py <script_text> <output.mp3> --voice=en-US-GuyNeural --rate=+5%
+  python3 tts.py <script_text> <output.mp3>
+  python3 tts.py <script_text> <output.mp3> --voice=en-US-GuyNeural --rate=+5%
 
 Voices worth trying for news:
   en-US-GuyNeural       clean neutral male (default)

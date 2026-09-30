@@ -17,13 +17,19 @@
  *                   `>` cue lines excluded>
  *    sections separated by a blank line, trailing newline.
  * 2. Cache: voiceover/source/performance.meta.json { provider, model, voice, mode, hash, format,
- *    sampleRate, seconds, at } with hash = sha1(model|voice|prompt) next to performance.wav
- *    → no API call ("cached"). Else one provider.synthesizePerformance({ prompt, voice, model }):
+ *    sampleRate, seconds, at } with hash = sha1(model|voice|prompt) next to performance.wav.
+ *    The cached audio is reused (no API call, "cached") when performance.wav exists and either
+ *      a. hash === sha1(model|voice|<current prompt>), or
+ *      b. hash === sha1(model|voice|<performance-prompt.md>) — the prompt that made the audio —
+ *         AND the title, CONTEXT and TRANSCRIPT of the current prompt equal that file's, i.e. only
+ *         the PERFORMANCE direction text changed (e.g. config/voice/performance.md was edited).
+ *         Logged as "cached (direction text changed since this voice was made; --force re-voices)";
+ *         performance-prompt.md keeps the prompt that made the audio.
+ *    Else one provider.synthesizePerformance({ prompt, voice, model }):
  *    raw audio → performance.{pcm|mp3|src.wav}, performance.wav (mono s16le; 24 kHz for
  *    OpenRouter PCM). A performance.json that holds that meta (the pre-rename layout) is moved to
  *    performance.meta.json first: performance.json belongs to whisper (words of performance.wav).
  *    opts.offline refuses the API call and says why the cache missed; opts.force re-generates.
- *    (legacyPrompt(): audio cached by the first, one-off builder is recognised too — see there.)
  * 3. Word timings: the stt provider on the 1× wav (mode 'whole', no prompt; whisper caches the
  *    words at performance.json + performance.whisper.json). Fragments whisper splits off
  *    ("always" "-on", "3" ".11") are glued back onto the previous word.
@@ -99,23 +105,6 @@ function buildPrompt({ title, performance, context, transcript }) {
   return `${head.join('\n\n')}\n\nTRANSCRIPT\n${transcript}\n`;
 }
 
-/**
- * The prompt exactly as the first, one-off performance builder (2026-09-30) made it. That builder
- * took the PERFORMANCE block from the first "PERFORMANCE" *substring* of the direction file, which
- * in config/voice/performance.md sits mid-sentence in the explanatory paragraph above the marker
- * line, so the paragraph went into the prompt too. The tutorial videos were voiced that way; this
- * only exists so their cached audio is recognised (hash match) instead of re-generated. New audio
- * always uses buildPrompt(). Safe to delete once no cache made by that builder is left.
- */
-function legacyPrompt(md, directionText) {
-  const i = String(directionText || '').indexOf('PERFORMANCE');
-  const title = (String(md).match(/^title:\s*(.*)$/m) || [])[1];
-  if (i < 0 || title === undefined) return null;
-  const scenes = section(md, 'Script', 'm').split(/^### Scene \d+\s*$/m).map(s => s.trim()).filter(Boolean);
-  const transcript = scenes.map(s => s.split('\n').map(l => l.trim()).filter(l => l && !l.startsWith('>')).join(' ')).join('\n\n');
-  return `# ${title}\n\n${directionText.slice(i).trim()}\n\nCONTEXT\n\n${section(md, 'Voice direction', 'm')}\n\nTRANSCRIPT\n${transcript}\n`;
-}
-
 /** Direction file: frontmatter tts_performance (video dir, then project root), else the config default. */
 function directionFile(videoDir, S) {
   const fmPath = S.fm.tts_performance;
@@ -141,24 +130,42 @@ function makePrompts(videoDir, S) {
     context: section(md, 'Voice direction'),
     transcript: transcriptOf(S.parsed.scenes),
   });
-  return { prompt, legacy: text ? legacyPrompt(md, text) : null, directionFile: file };
+  return { prompt, directionFile: file };
+}
+
+/**
+ * A prompt split into its parts: { title, direction, context, transcript } (direction = everything
+ * between the title line and CONTEXT/TRANSCRIPT; context/transcript bodies trimmed; an absent CONTEXT
+ * section is ''). Works for any prompt this module wrote, including the first one-off builder's.
+ */
+function promptParts(p) {
+  const text = String(p);
+  const t = text.indexOf('\n\nTRANSCRIPT\n');
+  const end = t >= 0 ? t : text.length;
+  const c = text.lastIndexOf('\n\nCONTEXT\n', end);
+  const nl = text.indexOf('\n');
+  const title = nl >= 0 ? text.slice(0, nl) : text;
+  const headEnd = c >= 0 ? c : end;
+  return {
+    title,
+    direction: nl >= 0 && nl < headEnd ? text.slice(nl, headEnd).trim() : '',
+    context: c >= 0 ? text.slice(c + '\n\nCONTEXT\n'.length, end).trim() : '',
+    transcript: t >= 0 ? text.slice(t + '\n\nTRANSCRIPT\n'.length).trim() : text.trim(),
+  };
+}
+
+/** True when two prompts differ only in their PERFORMANCE direction text. */
+function onlyDirectionDiffers(a, b) {
+  const x = promptParts(a), y = promptParts(b);
+  return x.title === y.title && x.context === y.context && x.transcript === y.transcript;
 }
 
 /** Which parts of the prompt differ (for "why is this not cached"). */
 function promptDiff(oldPrompt, newPrompt) {
   if (typeof oldPrompt !== 'string') return 'the prompt changed (no performance-prompt.md to compare)';
-  const parts = p => {
-    const t = p.indexOf('\n\nTRANSCRIPT\n'), c = p.indexOf('\n\nCONTEXT\n\n'), f = p.indexOf('PERFORMANCE');
-    const end = t >= 0 ? t : p.length;
-    return {
-      title: p.split('\n')[0],
-      'PERFORMANCE (direction file)': f >= 0 ? p.slice(f, c >= 0 && c > f ? c : end) : '',
-      'CONTEXT (## Voice direction)': c >= 0 ? p.slice(c, end) : '',
-      'TRANSCRIPT (script lines)': t >= 0 ? p.slice(t) : p,
-    };
-  };
-  const a = parts(oldPrompt), b = parts(newPrompt);
-  const changed = Object.keys(a).filter(k => a[k] !== b[k]);
+  const a = promptParts(oldPrompt), b = promptParts(newPrompt);
+  const names = { title: 'title', direction: 'PERFORMANCE (direction file)', context: 'CONTEXT (## Voice direction)', transcript: 'TRANSCRIPT (script lines)' };
+  const changed = Object.keys(names).filter(k => a[k] !== b[k]).map(k => names[k]);
   return `the prompt changed: ${changed.length ? changed.join(', ') : 'whitespace'} (compare voiceover/source/performance-prompt.md)`;
 }
 
@@ -186,21 +193,26 @@ function migrateMeta(F, log) {
   return true;
 }
 
-function cacheState(F, { providerId, model, voice, prompt, legacy }) {
+/**
+ * → { hit, meta, prompt (the prompt that made the audio), directionChanged } | { hit: false, meta?, why }.
+ * Rule a/b of the header: the current prompt's hash, or the stored performance-prompt.md's hash when
+ * only the direction text differs from it.
+ */
+function cacheState(F, { providerId, model, voice, prompt }) {
   if (!fs.existsSync(F.wav)) return { hit: false, why: 'no cached performance.wav' };
   const meta = readJson(F.meta);
   if (!meta) return { hit: false, why: 'performance.wav has no performance.meta.json' };
   if (meta.provider && meta.provider !== providerId) return { hit: false, meta, why: `the cached audio is from provider ${meta.provider}, not ${providerId}` };
-  if (meta.hash === sha1(`${model}|${voice}|${prompt}`)) return { hit: true, meta, prompt, legacy: false };
-  if (legacy && meta.hash === sha1(`${model}|${voice}|${legacy}`)) return { hit: true, meta, prompt: legacy, legacy: true };
+  if (meta.hash === sha1(`${model}|${voice}|${prompt}`)) return { hit: true, meta, prompt, directionChanged: false };
+  let stored = null;
+  try { stored = fs.readFileSync(F.prompt, 'utf8'); } catch (_) { /* none */ }
+  if (stored !== null && meta.hash === sha1(`${model}|${voice}|${stored}`) && onlyDirectionDiffers(stored, prompt)) {
+    return { hit: true, meta, prompt: stored, directionChanged: true };
+  }
   const why = [];
   if (meta.model && meta.model !== model) why.push(`model ${meta.model} → ${model}`);
   if (meta.voice && meta.voice !== voice) why.push(`voice ${meta.voice} → ${voice}`);
-  if (!why.length) {
-    let old = null;
-    try { old = fs.readFileSync(F.prompt, 'utf8'); } catch (_) { /* none */ }
-    why.push(promptDiff(old, prompt));
-  }
+  if (!why.length) why.push(promptDiff(stored, prompt));
   return { hit: false, meta, why: why.join(', ') };
 }
 
@@ -449,13 +461,14 @@ async function synthesize(videoDir, opts = {}) {
   migrateMeta(F, log);
 
   // 1–2. Prompt + cached audio (or one API call).
-  const { prompt, legacy, directionFile: dirFile } = makePrompts(videoDir, S);
+  const { prompt, directionFile: dirFile } = makePrompts(videoDir, S);
   if (!dirFile) log('  warning: no direction file (config/voice/performance.md or tts_performance:) — the prompt has no PERFORMANCE block');
-  const state = opts.force ? { hit: false, why: '--force' } : cacheState(F, { providerId, model, voice, prompt, legacy });
+  const state = opts.force ? { hit: false, why: '--force' } : cacheState(F, { providerId, model, voice, prompt });
   let apiCalls = 0, usedPrompt = prompt, meta = state.meta;
   if (state.hit) {
-    usedPrompt = state.prompt;
-    log(`  performance audio cached (${providerId} ${model}, ${voice}${state.legacy ? '; prompt from the first performance builder' : ''}) — no API call`);
+    usedPrompt = state.prompt;                             // performance-prompt.md = the prompt that made the audio
+    if (state.directionChanged) log(`  performance audio cached (direction text changed since this voice was made; --force re-voices): ${providerId} ${model}, ${voice} — no API call`);
+    else log(`  performance audio cached (${providerId} ${model}, ${voice}) — no API call`);
   } else {
     if (opts.offline) throw new Error(`performance audio is not cached (${state.why}); refusing to call the TTS API (--offline)`);
     if (fs.existsSync(F.wav)) log(`  performance audio re-generated: ${state.why}`);
@@ -553,13 +566,13 @@ async function synthesize(videoDir, opts = {}) {
 
   return {
     mode: 'performance', scenes: out, totalSec, provider: providerId, model, voice, speed, timings: 'whisper',
-    apiCalls, cached: apiCalls === 0, legacyPrompt: Boolean(state.hit && state.legacy), sourceSec: meta ? meta.seconds : null,
+    apiCalls, cached: apiCalls === 0, directionChanged: Boolean(state.hit && state.directionChanged), sourceSec: meta ? meta.seconds : null,
     sentences: sentences.length, matched: found.length, unmatched,
     promptFile: path.relative(videoDir, F.prompt), cuts: cuts1x.map(t => r3(t / speed)),
   };
 }
 
 module.exports = {
-  synthesize, buildPrompt, performanceBlock, transcriptOf, section, legacyPrompt, makePrompts, cacheState, cacheFiles,
+  synthesize, buildPrompt, performanceBlock, transcriptOf, section, makePrompts, promptParts, onlyDirectionDiffers, promptDiff, cacheState, cacheFiles,
   glueFragments, alignSentences, respell, sceneCuts, assignWords, migrateMeta, sha1,
 };

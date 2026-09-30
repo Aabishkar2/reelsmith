@@ -114,6 +114,12 @@ function FolderCard({ x, y, at, emptyAt, moveAt }) {
   );
 }
 
+// Live bottom edge of a kit Terminal at y=top: window chrome is 96 px + 36 px per
+// line (24 px × 1.5); rows grow in over 0.22 s from their cue, like the kit does.
+function termBottom(localTime, top, lines, growAts) {
+  return top + 96 + 36 * lines + growAts.reduce((h, a) => h + 36 * e3((localTime - a) / 0.22), 0);
+}
+
 // Annotation pill under a command, its arrow pointing up at the argument it explains.
 function Note({ x, y, at, children }) {
   const { localTime } = useSprite();
@@ -149,7 +155,7 @@ const TIMED = [
   { w: 'the', s: 0.76, e: 0.89 },
   { w: 'bill.', s: 0.93, e: 1.3 },
 ];
-function VoiceCard({ y, at, sweepAt, sweepEnd, timesAt }) {
+function VoiceCard({ y, at, liveAt, sweepAt, sweepEnd, timesAt }) {
   const { localTime } = useSprite();
   const W = 508;
   const SPAN = 1.34;
@@ -157,12 +163,13 @@ function VoiceCard({ y, at, sweepAt, sweepEnd, timesAt }) {
   const p = clamp((localTime - sweepAt) / dur, 0, 1);
   const head = localTime >= sweepAt ? 1 - e3((localTime - sweepEnd) / 0.3) : 0;
   return (
-    <Card y={y} width={560} at={at} enter="rise" title="voiceover.mp3" titleMono icon="wave" color={CYAN} padding="22px 26px 20px">
+    <Card y={y} width={560} at={at} enter="rise" title="voiceover.mp3" titleMono icon="wave" color={CYAN} glowAt={liveAt}
+      padding="22px 26px 20px">
       <div style={{ position: 'absolute', right: 24, top: 16 }}>
         <Badge variant="cyan" icon="words" at={sweepAt} size={20}>whisper</Badge>
       </div>
       <div style={{ position: 'relative', width: W }}>
-        <Waveform width={W} height={112} bars={46} seed={12} at={at} active={[at, Infinity]} />
+        <Waveform width={W} height={112} bars={46} seed={12} at={at} active={[liveAt, Infinity]} />
         <div style={{ position: 'relative', height: 82, marginTop: 16 }}>
           {TIMED.map((wd, i) => {
             const x0 = (wd.s / SPAN) * W;
@@ -317,7 +324,7 @@ function Scene2() {
             <Terminal y={180} title="~/my-channel" showAt={0.2} command="reelsmith new prompt-caching" at={cueNew} finalPrompt rows={[
               { text: 'videos/prompt-caching/', status: 'ok', right: 'created', at: cueGet },
             ]} />
-            <Note x={292} y={398} at={cueName}>your video's name</Note>
+            <Note x={292} y={termBottom(localTime, 180, 1, [cueGet, cueGet + 0.35]) + 14} at={cueName}>your video's name</Note>
           </Glide>
           <FileTree y={462} title="my-channel/" at={cueVideos + 0.15} rows={[
             { name: 'videos/', depth: 0, at: cueVideos + 0.3 },
@@ -403,16 +410,14 @@ function Scene4() {
           <Glow x={360} y={660} r={320} color={CYAN} opacity={0.14} at={cueSynth} breathe={0.04} />
           <Kicker y={100} at={0.15}>Command 2 of 6 · tts</Kicker>
           <StepRail done={1} fills={[cueTts]} />
-          <Watermark text="tts" y={600} size={330} opacity={0.07} at={0.2} />
-          <Glide from={250} scale={1.08} at={cueSynth}>
-            <Terminal y={180} title="~/my-channel" showAt={0.2} command={'reelsmith tts prompt-caching \\\n  --voice=Leda'} at={cueRun} rows={[
+          <Watermark text="tts" y={880} size={330} color={CYAN} opacity={0.06} at={0.2} />
+          <Terminal y={180} title="~/my-channel" showAt={0.2} accent="cyan" enter="fromLeft" command={'reelsmith tts prompt-caching \\\n  --voice=Leda'} at={cueRun} rows={[
               { text: 'voiceover.mp3', status: 'ok', right: '52.4s', at: cueTheVoice },
               { text: 'word timings: whisper', status: 'ok', at: cueTimings },
               { text: 'scenes.json written', status: 'ok', right: '7 scenes', at: cueScenesJson },
             ]} />
-            <Note x={96} y={470} at={cueVoiceName}>you pick the voice</Note>
-          </Glide>
-          <VoiceCard y={544} at={cueSynth + 0.15} sweepAt={cueWhisper} sweepEnd={cueTimings + 0.4} timesAt={cueWord} />
+          <Note x={96} y={termBottom(localTime, 180, 2, [cueTheVoice, cueTimings, cueScenesJson]) + 14} at={cueVoiceName}>you pick the voice</Note>
+          <VoiceCard y={544} at={cueRun + 0.15} liveAt={cueSynth} sweepAt={cueWhisper} sweepEnd={cueTimings + 0.4} timesAt={cueWord} />
           <SubtitleRail sceneIdx={4} bottom={150} fontSize={28} variant="clean" accentColor={CYAN} fontFamily="Inter" />
         </SceneRoot>
       )}
@@ -486,7 +491,7 @@ function Scene6() {
           <StepRail done={2} fills={[cueSheet, cueDraft]} />
           <Watermark text="sheet" y={600} size={260} opacity={0.07} at={0.2} />
           <Glide from={270} scale={1.08} at={cueContact}>
-            <Terminal y={180} title="~/my-channel" showAt={0.2} at={cueSheetCmd} finalPrompt steps={[
+            <Terminal y={180} title="~/my-channel" showAt={0.2} enter="blur" at={cueSheetCmd} finalPrompt steps={[
               { cmd: 'reelsmith sheet prompt-caching', at: cueSheetCmd },
               { text: 'frames/contact-sheet.png', status: 'ok', at: cueContact },
               { cmd: 'reelsmith draft prompt-caching', at: cueDraftCmd },
@@ -510,9 +515,9 @@ function Scene6() {
           <div style={{ position: 'absolute', top: 908, left: 0, right: 0, display: 'flex', justifyContent: 'center',
             alignItems: 'center', gap: 10 }}>
             <Chip at={cueWatch} icon="eye" color="cyan">watch</Chip>
-            <div style={{ opacity: localTime >= cueFeedback ? 1 : 0.25 }}><Icon name="arrow" size={22} color={FAINT} /></div>
+            <div style={enter.pop(localTime - cueFeedback)}><Icon name="arrow" size={22} color={FAINT} /></div>
             <Chip at={cueFeedback} icon="chat" color="violet">feedback</Chip>
-            <div style={{ opacity: localTime >= cueIterate ? 1 : 0.25 }}><Icon name="arrow" size={22} color={FAINT} /></div>
+            <div style={enter.pop(localTime - cueIterate)}><Icon name="arrow" size={22} color={FAINT} /></div>
             <Chip at={cueIterate} icon="code" color="cyan">iterate</Chip>
           </div>
           <SubtitleRail sceneIdx={6} bottom={150} fontSize={28} variant="clean" accentColor={CYAN} fontFamily="Inter" />
@@ -541,15 +546,15 @@ function Scene7() {
           <Glow x={360} y={840} r={320} color={OK} opacity={0.12} at={cueOutput} breathe={0.03} />
           <Kicker y={100} at={0.15}>Commands 5–6 · ship it</Kicker>
           <StepRail done={4} fills={[cueApprove, cueRender]} />
-          <Watermark text="ship" y={560} size={300} opacity={0.07} at={0.2} />
+          <Watermark text="ship" y={560} size={300} color={OK} opacity={0.06} at={0.2} />
           <Glide from={230} scale={1.08} at={cueRender + 0.3}>
-            <Terminal y={180} title="~/my-channel" showAt={cueHappy} at={cueApproveCmd} speed={40} finalPrompt steps={[
+            <Terminal y={180} title="~/my-channel" showAt={cueHappy} accent="ok" enter="drop" at={cueApproveCmd} speed={40} finalPrompt steps={[
               { cmd: 'reelsmith approve prompt-caching \\\n  --by=you', at: cueApproveCmd },
               { text: 'preview-approved.json', status: 'ok', at: cueThen + 0.15 },
               { cmd: 'reelsmith render prompt-caching', at: cueRenderCmd },
               { text: 'output.mp4', status: 'ok', right: '52.4s', at: cueOutput },
             ]} />
-            <Note x={96} y={506} at={cueThen}>you sign off first</Note>
+            <Note x={96} y={termBottom(localTime, 180, 2, [cueThen + 0.15, cueRenderCmd, cueOutput, cueOutput + 0.35]) + 14} at={cueThen}>you sign off first</Note>
           </Glide>
           <ProgressBar y={574} at={cueRender + 0.45} until={cueOutput} label="rendering · 4 shards" />
           <div style={{ position: 'absolute', top: 652, left: 0, right: 0, display: 'flex', justifyContent: 'center',

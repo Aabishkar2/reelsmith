@@ -1,5 +1,5 @@
 'use strict';
-/* video-gen-v2 — teleprompter · recorder · take review. Vanilla JS, no build step.
+/* Reelsmith — teleprompter · recorder · take review. Vanilla JS, no build step.
  * Talks to app/server.js (docs/spec.md §5). All mutable UI state lives in `state`. */
 
 // ════════════════════════════ 1. State ════════════════════════════
@@ -864,7 +864,7 @@ function renderFinalize() {
       ...scenes.map((s) => h('tr', {}, h('td', {}, s.idx), h('td', {}, fmtSec(Number(s.dur))), h('td', {}, Array.isArray(s.words) ? s.words.length : '—'), h('td', { class: 'mono' }, s.file || '')))),
     h('audio', { controls: true, preload: 'metadata', src: `/videos/${enc(state.name)}/voiceover.mp3?t=${Date.now()}` }),
     h('div', { class: 'next-step' }, 'Now in Claude Code: write ', h('code', {}, 'index.html'), ' (html-animation skill), then ',
-      h('code', {}, `node scripts/preview.js videos/${state.name}`), ' and render.'));
+      h('code', {}, `reelsmith preview ${state.name}`), ' and render.'));
 }
 
 // ═══════════════════════ 11. Review: playback ═══════════════════════

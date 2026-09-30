@@ -367,19 +367,19 @@ function Scene2() {
             { name: 'kit.jsx', at: cueComponent, note: <Late at={cueKit} en="wipe" style={noteStyle}>components</Late> },
             { name: 'reference/', at: cueReference, note: <Late at={cueReference + 0.15} en="wipe" style={noteStyle}>a finished video</Late> },
           ]} />
-          <Arrow from={[640, 360]} to={[620, 526]} curve={-36} at={cueDescribes} dashed />
-          <CodeCard y={516} width={600} title="STYLE.md" at={cueDescribes}
+          <Arrow from={[640, 360]} to={[620, 526]} curve={-36} at={cueMarkdown + 0.2} dashed />
+          <CodeCard y={516} width={600} title="STYLE.md" at={cueMarkdown} stagger={0}
             highlight={[{ line: 1, at: cueLook }]}
             lines={[
-              '## Palette',
-              { text: 'VIOLET #7C5CFF · CYAN #22D3EE', segs: [
+              { text: '## Palette', at: cueDescribes },
+              { text: 'VIOLET #7C5CFF · CYAN #22D3EE', at: cueDescribes + 0.12, segs: [
                 { s: 'VIOLET ', c: CODE.text }, { s: '#7C5CFF', c: '#A994FF' }, { s: ' · ', c: CODE.punct },
                 { s: 'CYAN ', c: CODE.text }, { s: '#22D3EE', c: CYAN },
               ] },
-              '## Fonts',
-              'Sora · Inter · JetBrains Mono',
-              '## Layouts',
-              'Hook · Terminal-led · Split',
+              { text: '## Fonts', at: cueDescribes + 0.24 },
+              { text: 'Sora · Inter · JetBrains Mono', at: cueDescribes + 0.36 },
+              { text: '## Layouts', at: cueDescribes + 0.48 },
+              { text: 'Hook · Terminal-led · Split', at: cueDescribes + 0.6 },
             ]} />
           <SubtitleRail sceneIdx={2} bottom={150} fontSize={28} variant="clean" accentColor={CYAN} fontFamily="Inter" />
         </SceneRoot>
@@ -418,6 +418,18 @@ function StyleCard({ y, at, en, name, nameColor, accent, bg, swatches, specimen,
   );
 }
 
+// Empty slot a style card lands in (shown on "three", covered when its card arrives).
+function CardSlot({ y, at, n }) {
+  const { localTime } = useSprite();
+  return (
+    <div style={{ position: 'absolute', left: 84, top: y + 3, width: 552, height: 174, borderRadius: 22,
+      border: '2px dashed rgba(255,255,255,0.16)', background: 'rgba(255,255,255,0.025)', display: 'flex',
+      alignItems: 'center', justifyContent: 'center', ...enter.pop(localTime - at, 0.85) }}>
+      <span style={{ fontFamily: DISPLAY, fontWeight: 800, fontSize: 56, letterSpacing: '-0.02em', color: 'rgba(245,247,255,0.10)' }}>{n}</span>
+    </div>
+  );
+}
+
 function Scene3() {
   const win = useSceneWindow(3);
   const cueReelsmith = useWordCue(3, "reelsmith");
@@ -452,6 +464,7 @@ function Scene3() {
               </div>
             </div>
           </div>
+          {[236, 436, 652].map((y, i) => <CardSlot key={y} y={y} at={cueThree + 0.1 + i * 0.12} n={`0${i + 1}`} />)}
           <StyleCard y={236} at={cueReflective} en="fromLeft" name="reflective" nameColor={REF_GOLD} accent={REF_GOLD}
             bg="linear-gradient(135deg, #1d140b 0%, #0b0906 70%)"
             swatches={[REF_BG, REF_GOLD, REF_GOLD2, REF_CREAM]}

@@ -3,7 +3,7 @@
  * pipeline/test/plugins.test.js — core/plugins.js (discovery order, overrides, broken plugins,
  * kind validation, style packs), core/env.js, core/config.js, core/project.js and the built-in
  * tts-openrouter / stt-whisper plugins (stubbed fetch, no network, no whisper run).
- *   ~/.nvm/versions/node/v22.17.0/bin/node pipeline/test/plugins.test.js
+ *   node pipeline/test/plugins.test.js
  */
 const assert = require('assert');
 const fs = require('fs');
