@@ -576,9 +576,9 @@ function Scene4() {
             { line: 3, at: cue100, until: cuePause, color: CYAN },
             { line: 2, at: cuePause, color: WARN },
           ]} />
-          {/* The kit Stamp punches in from 2.3x, which runs past the 520 px safe line; counter-scale it to a 1.45x slam. */}
-          <div style={{ position: 'absolute', left: 244, top: 386, transform: `scale(${stampFix(localTime - cueNeverSpoken)})` }}>
-            <Stamp at={cueNeverSpoken} rotate={-8} size={40}>not spoken</Stamp>
+          {/* Stamp slams from 1.45x so it stays inside the 520 px safe line. */}
+          <div style={{ position: 'absolute', left: 244, top: 386 }}>
+            <Stamp at={cueNeverSpoken} rotate={-8} size={40} from={1.45}>not spoken</Stamp>
           </div>
           <Card y={598} width={560} at={cueLines + 0.3} enter="rise" padding="22px 26px 24px" title="voiceover.mp3" titleMono
             icon="wave" color={CYAN} glowAt={cueNarration}>

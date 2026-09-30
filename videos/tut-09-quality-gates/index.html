@@ -585,7 +585,7 @@ function Scene5() {
           <Terminal y={286} width={600} fontSize={22} title="~/my-channel" speed={48} showAt={cueGate} steps={[
             { cmd: cmd1, at: cueCmd },
             { cmd: '--by=you', prompt: '>', promptColor: FAINT, at: cueCmd + typeDuration(cmd1, 48) + 0.04 },
-            { text: 'preview approved by aabishkar', status: 'ok', at: cueRecords + 0.1 },
+            { text: 'preview approved by you', status: 'ok', at: cueRecords + 0.1 },
             { text: 'preview-approved.json', status: 'info', at: cueFingerprint },
           ]} />
           <FingerprintCard y={540} openAt={cueApproval + 0.2} at={cueFingerprint} editAt={cueChange} mismatchAt={cueAny} badAt={cueTheApproval} rows={[
