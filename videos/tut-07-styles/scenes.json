@@ -1,0 +1,677 @@
+[
+  {
+    "idx": 1,
+    "dur": 4.496,
+    "file": "voiceover/s1.mp3",
+    "words": [
+      {
+        "word": "Same",
+        "start": 0,
+        "end": 0.47
+      },
+      {
+        "word": "script,",
+        "start": 0.47,
+        "end": 0.817
+      },
+      {
+        "word": "three",
+        "start": 1.13,
+        "end": 1.374
+      },
+      {
+        "word": "completely",
+        "start": 1.374,
+        "end": 1.896
+      },
+      {
+        "word": "different",
+        "start": 1.896,
+        "end": 2.139
+      },
+      {
+        "word": "videos.",
+        "start": 2.139,
+        "end": 2.522
+      },
+      {
+        "word": "That",
+        "start": 2.783,
+        "end": 3.252
+      },
+      {
+        "word": "is",
+        "start": 3.252,
+        "end": 3.391
+      },
+      {
+        "word": "what",
+        "start": 3.391,
+        "end": 3.53
+      },
+      {
+        "word": "style",
+        "start": 3.53,
+        "end": 3.843
+      },
+      {
+        "word": "packs",
+        "start": 3.843,
+        "end": 4.087
+      },
+      {
+        "word": "do.",
+        "start": 4.087,
+        "end": 4.313
+      }
+    ]
+  },
+  {
+    "idx": 2,
+    "dur": 7.148,
+    "file": "voiceover/s2.mp3",
+    "words": [
+      {
+        "word": "A",
+        "start": 0.183,
+        "end": 0.67
+      },
+      {
+        "word": "style",
+        "start": 0.67,
+        "end": 0.983
+      },
+      {
+        "word": "pack",
+        "start": 0.983,
+        "end": 1.243
+      },
+      {
+        "word": "is",
+        "start": 1.243,
+        "end": 1.417
+      },
+      {
+        "word": "a",
+        "start": 1.417,
+        "end": 1.522
+      },
+      {
+        "word": "folder,",
+        "start": 1.522,
+        "end": 1.783
+      },
+      {
+        "word": "a",
+        "start": 2.009,
+        "end": 2.252
+      },
+      {
+        "word": "markdown",
+        "start": 2.252,
+        "end": 2.565
+      },
+      {
+        "word": "file",
+        "start": 2.565,
+        "end": 2.843
+      },
+      {
+        "word": "that",
+        "start": 2.843,
+        "end": 3
+      },
+      {
+        "word": "describes",
+        "start": 3,
+        "end": 3.33
+      },
+      {
+        "word": "the",
+        "start": 3.33,
+        "end": 3.487
+      },
+      {
+        "word": "look,",
+        "start": 3.487,
+        "end": 3.713
+      },
+      {
+        "word": "a",
+        "start": 3.87,
+        "end": 4.148
+      },
+      {
+        "word": "component",
+        "start": 4.148,
+        "end": 4.513
+      },
+      {
+        "word": "kit",
+        "start": 4.513,
+        "end": 4.739
+      },
+      {
+        "word": "the",
+        "start": 4.739,
+        "end": 4.896
+      },
+      {
+        "word": "animation",
+        "start": 4.896,
+        "end": 5.209
+      },
+      {
+        "word": "can",
+        "start": 5.209,
+        "end": 5.4
+      },
+      {
+        "word": "use,",
+        "start": 5.4,
+        "end": 5.748
+      },
+      {
+        "word": "and",
+        "start": 5.87,
+        "end": 6.252
+      },
+      {
+        "word": "a",
+        "start": 6.252,
+        "end": 6.374
+      },
+      {
+        "word": "reference",
+        "start": 6.374,
+        "end": 6.635
+      },
+      {
+        "word": "video.",
+        "start": 6.635,
+        "end": 6.896
+      }
+    ]
+  },
+  {
+    "idx": 3,
+    "dur": 10.574,
+    "file": "voiceover/s3.mp3",
+    "words": [
+      {
+        "word": "Reelsmith",
+        "start": 0.252,
+        "end": 0.739
+      },
+      {
+        "word": "ships",
+        "start": 0.739,
+        "end": 0.965
+      },
+      {
+        "word": "three,",
+        "start": 0.965,
+        "end": 1.243
+      },
+      {
+        "word": "reflective,",
+        "start": 1.522,
+        "end": 1.991
+      },
+      {
+        "word": "warm,",
+        "start": 2.304,
+        "end": 2.67
+      },
+      {
+        "word": "and",
+        "start": 2.67,
+        "end": 2.861
+      },
+      {
+        "word": "photo",
+        "start": 2.861,
+        "end": 3.154
+      },
+      {
+        "word": "led",
+        "start": 3.154,
+        "end": 3.33
+      },
+      {
+        "word": "with",
+        "start": 3.33,
+        "end": 3.539
+      },
+      {
+        "word": "serif",
+        "start": 3.539,
+        "end": 3.852
+      },
+      {
+        "word": "headlines,",
+        "start": 3.852,
+        "end": 4.2
+      },
+      {
+        "word": "tech",
+        "start": 4.652,
+        "end": 4.965
+      },
+      {
+        "word": "news,",
+        "start": 4.965,
+        "end": 5.191
+      },
+      {
+        "word": "dark",
+        "start": 5.383,
+        "end": 5.73
+      },
+      {
+        "word": "with",
+        "start": 5.73,
+        "end": 5.887
+      },
+      {
+        "word": "a",
+        "start": 5.887,
+        "end": 5.974
+      },
+      {
+        "word": "red",
+        "start": 5.974,
+        "end": 6.113
+      },
+      {
+        "word": "accent",
+        "start": 6.113,
+        "end": 6.496
+      },
+      {
+        "word": "and",
+        "start": 6.496,
+        "end": 6.687
+      },
+      {
+        "word": "code",
+        "start": 6.687,
+        "end": 6.875
+      },
+      {
+        "word": "driven",
+        "start": 6.875,
+        "end": 7.157
+      },
+      {
+        "word": "scenes,",
+        "start": 7.157,
+        "end": 7.522
+      },
+      {
+        "word": "and",
+        "start": 7.678,
+        "end": 8.252
+      },
+      {
+        "word": "motion,",
+        "start": 8.252,
+        "end": 8.548
+      },
+      {
+        "word": "the",
+        "start": 8.791,
+        "end": 8.965
+      },
+      {
+        "word": "one",
+        "start": 8.965,
+        "end": 9.07
+      },
+      {
+        "word": "you're",
+        "start": 9.07,
+        "end": 9.261
+      },
+      {
+        "word": "watching,",
+        "start": 9.261,
+        "end": 9.557
+      },
+      {
+        "word": "built",
+        "start": 9.765,
+        "end": 9.974
+      },
+      {
+        "word": "for",
+        "start": 9.974,
+        "end": 10.113
+      },
+      {
+        "word": "teaching.",
+        "start": 10.113,
+        "end": 10.374
+      }
+    ]
+  },
+  {
+    "idx": 4,
+    "dur": 7.913,
+    "file": "voiceover/s4.mp3",
+    "words": [
+      {
+        "word": "Pick",
+        "start": 0.2,
+        "end": 0.635
+      },
+      {
+        "word": "a",
+        "start": 0.635,
+        "end": 0.809
+      },
+      {
+        "word": "style",
+        "start": 0.809,
+        "end": 1.052
+      },
+      {
+        "word": "in",
+        "start": 1.052,
+        "end": 1.243
+      },
+      {
+        "word": "the",
+        "start": 1.243,
+        "end": 1.313
+      },
+      {
+        "word": "frontmatter,",
+        "start": 1.313,
+        "end": 1.713
+      },
+      {
+        "word": "or",
+        "start": 1.835,
+        "end": 2.096
+      },
+      {
+        "word": "set",
+        "start": 2.096,
+        "end": 2.304
+      },
+      {
+        "word": "a",
+        "start": 2.304,
+        "end": 2.374
+      },
+      {
+        "word": "default",
+        "start": 2.374,
+        "end": 2.652
+      },
+      {
+        "word": "in",
+        "start": 2.652,
+        "end": 2.791
+      },
+      {
+        "word": "the",
+        "start": 2.791,
+        "end": 2.878
+      },
+      {
+        "word": "project",
+        "start": 2.878,
+        "end": 3.139
+      },
+      {
+        "word": "config.",
+        "start": 3.139,
+        "end": 3.452
+      },
+      {
+        "word": "Your",
+        "start": 3.87,
+        "end": 4.078
+      },
+      {
+        "word": "agent",
+        "start": 4.078,
+        "end": 4.357
+      },
+      {
+        "word": "loads",
+        "start": 4.357,
+        "end": 4.722
+      },
+      {
+        "word": "the",
+        "start": 4.722,
+        "end": 4.896
+      },
+      {
+        "word": "style",
+        "start": 4.896,
+        "end": 5.122
+      },
+      {
+        "word": "file",
+        "start": 5.122,
+        "end": 5.383
+      },
+      {
+        "word": "first,",
+        "start": 5.383,
+        "end": 5.765
+      },
+      {
+        "word": "before",
+        "start": 5.904,
+        "end": 6.27
+      },
+      {
+        "word": "it",
+        "start": 6.27,
+        "end": 6.461
+      },
+      {
+        "word": "writes",
+        "start": 6.461,
+        "end": 6.652
+      },
+      {
+        "word": "a",
+        "start": 6.652,
+        "end": 6.774
+      },
+      {
+        "word": "single",
+        "start": 6.774,
+        "end": 7.035
+      },
+      {
+        "word": "line",
+        "start": 7.035,
+        "end": 7.243
+      },
+      {
+        "word": "of",
+        "start": 7.243,
+        "end": 7.365
+      },
+      {
+        "word": "HTML.",
+        "start": 7.365,
+        "end": 7.713
+      }
+    ]
+  },
+  {
+    "idx": 5,
+    "dur": 10.078,
+    "file": "voiceover/s5.mp3",
+    "words": [
+      {
+        "word": "Want",
+        "start": 0.2,
+        "end": 0.635
+      },
+      {
+        "word": "your",
+        "start": 0.635,
+        "end": 0.757
+      },
+      {
+        "word": "own?",
+        "start": 0.757,
+        "end": 0.913
+      },
+      {
+        "word": "Copy",
+        "start": 1.348,
+        "end": 1.8
+      },
+      {
+        "word": "a",
+        "start": 1.8,
+        "end": 1.939
+      },
+      {
+        "word": "pack,",
+        "start": 1.939,
+        "end": 2.217
+      },
+      {
+        "word": "change",
+        "start": 2.374,
+        "end": 2.704
+      },
+      {
+        "word": "the",
+        "start": 2.704,
+        "end": 2.826
+      },
+      {
+        "word": "palette,",
+        "start": 2.826,
+        "end": 3.174
+      },
+      {
+        "word": "fonts,",
+        "start": 3.383,
+        "end": 3.8
+      },
+      {
+        "word": "and",
+        "start": 3.939,
+        "end": 4.009
+      },
+      {
+        "word": "layouts",
+        "start": 4.009,
+        "end": 4.374
+      },
+      {
+        "word": "in",
+        "start": 4.374,
+        "end": 4.53
+      },
+      {
+        "word": "the",
+        "start": 4.53,
+        "end": 4.6
+      },
+      {
+        "word": "markdown,",
+        "start": 4.6,
+        "end": 5.017
+      },
+      {
+        "word": "and",
+        "start": 5.174,
+        "end": 5.487
+      },
+      {
+        "word": "add",
+        "start": 5.487,
+        "end": 5.696
+      },
+      {
+        "word": "your",
+        "start": 5.696,
+        "end": 5.904
+      },
+      {
+        "word": "components",
+        "start": 5.904,
+        "end": 6.339
+      },
+      {
+        "word": "to",
+        "start": 6.339,
+        "end": 6.565
+      },
+      {
+        "word": "the",
+        "start": 6.565,
+        "end": 6.67
+      },
+      {
+        "word": "kit.",
+        "start": 6.67,
+        "end": 6.878
+      },
+      {
+        "word": "Your",
+        "start": 7.104,
+        "end": 7.504
+      },
+      {
+        "word": "brand",
+        "start": 7.504,
+        "end": 7.783
+      },
+      {
+        "word": "is",
+        "start": 7.783,
+        "end": 7.974
+      },
+      {
+        "word": "now",
+        "start": 7.974,
+        "end": 8.113
+      },
+      {
+        "word": "a",
+        "start": 8.113,
+        "end": 8.252
+      },
+      {
+        "word": "style",
+        "start": 8.252,
+        "end": 8.617
+      },
+      {
+        "word": "your",
+        "start": 8.617,
+        "end": 8.913
+      },
+      {
+        "word": "agent",
+        "start": 8.913,
+        "end": 9.226
+      },
+      {
+        "word": "can",
+        "start": 9.226,
+        "end": 9.4
+      },
+      {
+        "word": "follow.",
+        "start": 9.4,
+        "end": 9.678
+      }
+    ]
+  }
+]

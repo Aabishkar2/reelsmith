@@ -1,0 +1,768 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Publish, without surprises</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@600;700;800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+  <script type="text/babel" src="../../runtime/animations.jsx"></script>
+  <script type="text/babel" src="../../styles/motion/kit.jsx"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { width: 100%; height: 100%; background: #0B0F19; overflow: hidden; }
+    #root { width: 100%; height: 100vh; position: relative; }
+  </style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+// tut-10-publish: episode 10 (series finale) of the Reelsmith tutorials.
+// Style: motion (styles/motion/STYLE.md). Every reveal is bound to useWordCue.
+
+// ── Local helpers (prefixed so they never collide with runtime globals) ─────
+const ez = (p) => Easing.easeOutCubic(clamp(p, 0, 1));
+const ezio = (p) => Easing.easeInOutCubic(clamp(p, 0, 1));
+const spr = (dt, k = SNAPPY.k, d = SNAPPY.d) => (!(dt > 0) ? 0 : dt > 8 ? 1 : spring(dt, k, d));
+// Hex midpoint of two palette colours (the kit's mix() returns rgb(), which alpha() can't tint).
+function mixHex(a, b, p) {
+  const h = (c) => [1, 3, 5].map((i) => parseInt(c.slice(i, i + 2), 16));
+  const A = h(a), B = h(b);
+  return '#' + A.map((v, i) => Math.round(v + (B[i] - v) * p).toString(16).padStart(2, '0')).join('');
+}
+const BLUE = mixHex(VIOLET, CYAN, 0.5); // palette midpoint: the Discord target
+
+// Real facts shown on screen
+const CMD_NOTES = 'reelsmith publish my-video --notes';
+const CMD_DRY = 'reelsmith publish my-video --to=youtube --dry-run';
+const CMD_REAL = 'reelsmith publish my-video --to=youtube';
+const PUB_TITLE = 'Ship one video to YouTube, Instagram, Facebook and Discord';
+const TITLE_SPEED = 40;
+const YT_ID = 'r7Kq2Lm9TzA';
+
+// ═════════════════════════════════════════════════════════════════════════════
+// Scene 1 · hook: output.mp4 with destinations orbiting it, one wrong place
+// ═════════════════════════════════════════════════════════════════════════════
+const ORBIT = { cx: 360, cy: 620, rx: 228, ry: 255, w: -0.1 };
+const DESTS = [
+  { label: 'YouTube', icon: 'play', color: VIOLET, a0: -90 },
+  { label: 'Meta', icon: 'video', color: CYAN, a0: 30 },
+  { label: 'Discord', icon: 'chat', color: BLUE, a0: 150 },
+];
+const WRONG = { x: 572, y: 398 };
+
+function DestGlyph({ icon, color, size = 72 }) {
+  return (
+    <div style={{ width: size, height: size, borderRadius: size * 0.28, background: CODE_BG, display: 'flex',
+      alignItems: 'center', justifyContent: 'center', border: `2px solid ${alpha(color, 0.8)}`,
+      boxShadow: `${SHADOW}, 0 0 30px ${alpha(color, 0.35)}` }}>
+      <Icon name={icon} size={Math.round(size * 0.5)} color={color} />
+    </div>
+  );
+}
+
+function FileHero({ at, renderedAt }) {
+  const { localTime: lt } = useSprite();
+  // render progress strip: fills from the file's cue to "rendered", then turns green and stays
+  const p = Easing.easeInOutSine(clamp((lt - at) / Math.max(0.1, renderedAt - at), 0, 1));
+  const done = lt >= renderedAt ? ez((lt - renderedAt) / 0.3) : 0;
+  return (
+    <div style={{ position: 'absolute', left: ORBIT.cx - 120, top: ORBIT.cy - 112, width: 240, height: 224, zIndex: 5,
+      ...enter.pop(lt - at) }}>
+      <div style={{ position: 'relative', width: '100%', height: '100%', borderRadius: 28, border: '2px solid transparent',
+        background: `linear-gradient(${CODE_BG}, ${CODE_BG}) padding-box, ${GRAD_DIAG} border-box`,
+        boxShadow: `${SHADOW}, 0 0 ${64 + 30 * done}px ${alpha(VIOLET, 0.38)}`, display: 'flex', flexDirection: 'column',
+        alignItems: 'center', justifyContent: 'center', gap: 9, paddingBottom: 12 }}>
+        <div style={{ position: 'absolute', left: 26, right: 26, bottom: 16, height: 6, borderRadius: 6, background: 'rgba(255,255,255,0.08)' }}>
+          <div style={{ width: `${p * 100}%`, height: '100%', borderRadius: 6, background: done > 0 ? mixHex(CYAN, OK, done) : GRAD,
+            boxShadow: `0 0 12px ${alpha(done > 0 ? OK : CYAN, 0.6)}` }} />
+        </div>
+        <div style={{ width: 62, height: 62, borderRadius: 18, background: GRAD_DIAG, display: 'flex', alignItems: 'center',
+          justifyContent: 'center', boxShadow: `0 8px 24px ${alpha(VIOLET, 0.45)}` }}>
+          <Icon name="film" size={32} color="#FFFFFF" />
+        </div>
+        <div style={{ fontFamily: MONO, fontWeight: 600, fontSize: 26, color: TEXT }}>output.mp4</div>
+        <div style={{ fontFamily: MONO, fontSize: 22, color: MUTED }}>0:49 · 41 MB</div>
+        <div style={{ height: 30, display: 'flex', alignItems: 'center' }}>
+          <Badge variant="ok" icon="check" size={18} at={renderedAt}>rendered</Badge>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function OrbitHook({ cueVideo, cueRendered, cueNow, cueOut, cueAccident, cuePosting, cueWrong }) {
+  const { localTime: lt } = useSprite();
+  const { cx, cy, rx, ry, w } = ORBIT;
+  const ringP = ezio((lt - cueNow) / 0.9);
+  const nodes = DESTS.map((d, i) => {
+    const at = cueOut + i * 0.15;
+    const s = spr(lt - at, 190, 17);
+    const th = (d.a0 * Math.PI) / 180 + w * lt;
+    const ox = cx + rx * Math.cos(th);
+    const oy = cy + ry * Math.sin(th);
+    return { ...d, at, s, x: cx + (ox - cx) * s, y: cy + (oy - cy) * s, o: clamp((lt - at) / 0.15, 0, 1) };
+  });
+  // the wrong destination
+  const wdt = lt - cueAccident;
+  const wIn = spr(wdt, PUNCH.k, PUNCH.d);
+  const wobble = wdt > 0 ? Math.sin(wdt * 18) * 9 * Math.exp(-wdt * 4) : 0;
+  const hit = lt >= cueWrong;
+  const hdt = lt - cueWrong;
+  const shake = hit ? Math.sin(hdt * 52) * 7 * Math.exp(-hdt * 7) : 0;
+  const lineP = ezio((lt - cuePosting) / 0.45);
+  const lx = cx + (WRONG.x - cx) * lineP;
+  const ly = cy + (WRONG.y - cy) * lineP;
+  const mk = { x: cx + (WRONG.x - cx) * 0.62, y: cy + (WRONG.y - cy) * 0.62 };
+  const mkS = spr(hdt, PUNCH.k, PUNCH.d);
+  const comet = lt * 0.9;
+  return (
+    <>
+      <svg data-bleed="" width={720} height={1280} style={{ position: 'absolute', left: 0, top: 0, pointerEvents: 'none' }}>
+        <ellipse cx={cx} cy={cy} rx={rx} ry={ry} fill="none" stroke="rgba(255,255,255,0.16)" strokeWidth={2}
+          pathLength={1} strokeDasharray={`${ringP} 1`} />
+        {ringP >= 1 && (
+          <g>
+            <circle cx={cx + rx * Math.cos(comet)} cy={cy + ry * Math.sin(comet)} r={11} fill={alpha(CYAN, 0.2)} />
+            <circle cx={cx + rx * Math.cos(comet)} cy={cy + ry * Math.sin(comet)} r={4.5} fill={CYAN} />
+          </g>
+        )}
+        {nodes.map((n, i) => n.o > 0 && (
+          <g key={i} opacity={n.o}>
+            <line x1={cx} y1={cy} x2={n.x} y2={n.y} stroke={alpha(n.color, 0.5)} strokeWidth={2.5} strokeDasharray="3 9"
+              strokeLinecap="round" />
+            {[0, 0.5].map((k) => {
+              const q = ((lt - n.at) * 0.7 + k) % 1;
+              return <circle key={k} cx={cx + (n.x - cx) * q} cy={cy + (n.y - cy) * q} r={4} fill={n.color}
+                opacity={0.95 * Math.sin(Math.PI * q)} />;
+            })}
+          </g>
+        ))}
+        {lineP > 0 && (
+          <line x1={cx} y1={cy} x2={lx} y2={ly} stroke={alpha(DANGER, hit ? 0.45 : 0.9)} strokeWidth={3}
+            strokeDasharray="8 8" strokeLinecap="round" />
+        )}
+      </svg>
+      {nodes.map((n, i) => (
+        <div key={i} style={{ position: 'absolute', left: n.x - 75, top: n.y - 58, width: 150, height: 116, zIndex: 3,
+          display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10, opacity: n.o,
+          transform: `scale(${0.6 + 0.4 * Math.min(1, n.s)})` }}>
+          <DestGlyph icon={n.icon} color={n.color} />
+          <div style={{ fontFamily: SANS, fontWeight: 600, fontSize: 24, color: TEXT, whiteSpace: 'nowrap', textShadow: TS }}>{n.label}</div>
+        </div>
+      ))}
+      {wdt >= 0 && (
+        <div style={{ position: 'absolute', left: WRONG.x - 80, top: WRONG.y - 58, width: 160, height: 116, zIndex: 4,
+          display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10, opacity: clamp(wdt / 0.12, 0, 1),
+          transform: `translateX(${shake}px) rotate(${wobble}deg) scale(${0.5 + 0.5 * wIn})` }}>
+          <div style={{ opacity: hit ? 1 - 0.45 * ez(hdt / 0.3) : 1 }}>
+            <DestGlyph icon="globe" color={DANGER} />
+          </div>
+          <div style={{ fontFamily: SANS, fontWeight: 600, fontSize: 24, color: mixHex('#F5F7FF', DANGER, 0.35), whiteSpace: 'nowrap',
+            textShadow: TS }}>
+            <Strike at={cueWrong} thickness={5} dim={0.55}>wrong place</Strike>
+          </div>
+        </div>
+      )}
+      {hit && (
+        <div style={{ position: 'absolute', left: mk.x - 24, top: mk.y - 24, width: 48, height: 48, zIndex: 6, borderRadius: '50%',
+          background: INK, border: `3px solid ${DANGER}`, display: 'flex', alignItems: 'center', justifyContent: 'center',
+          boxShadow: `0 0 26px ${alpha(DANGER, 0.6)}`, transform: `scale(${mkS})`, opacity: clamp(hdt / 0.08, 0, 1) }}>
+          <Icon name="x" size={26} color={DANGER} stroke={3.2} />
+        </div>
+      )}
+      <FileHero at={cueVideo} renderedAt={cueRendered} />
+    </>
+  );
+}
+
+function Scene1() {
+  const win = useSceneWindow(1);
+  const cueVideo = useWordCue(1, "the video");
+  const cueRendered = useWordCue(1, "rendered");
+  const cueNow = useWordCue(1, "now");
+  const cueOut = useWordCue(1, "get it out");
+  const cueWithout = useWordCue(1, "without");
+  const cueAccident = useWordCue(1, "accidentally");
+  const cuePosting = useWordCue(1, "posting");
+  const cueWrong = useWordCue(1, "to the wrong");
+  return (
+    <Sprite {...win}>
+      <SceneRoot idx={1}>
+        <Glow x={360} y={620} r={320} color={VIOLET} opacity={0.28} breathe={0.04} />
+        <Kicker y={110} at={0}>Episode 10 · Series finale</Kicker>
+        <Title y={160} size={60} ats={[cueNow, cueWithout, cueWithout + 0.14]} text="Publish,|*no* *surprises.*" />
+        <OrbitHook cueVideo={cueVideo} cueRendered={cueRendered} cueNow={cueNow} cueOut={cueOut}
+          cueAccident={cueAccident} cuePosting={cuePosting} cueWrong={cueWrong} />
+        <SubtitleRail sceneIdx={1} bottom={150} fontSize={28} variant="clean" accentColor={CYAN} fontFamily="Inter" />
+      </SceneRoot>
+    </Sprite>
+  );
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
+// Scene 2 · notes: `--notes` writes the skeleton, the agent fills publish.md
+// ═════════════════════════════════════════════════════════════════════════════
+function MdHead({ children, right }) {
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', height: 36 }}>
+      <span style={{ fontFamily: MONO, fontWeight: 600, fontSize: 22, color: CODE.head }}>{children}</span>
+      {right && <div style={{ marginLeft: 'auto' }}>{right}</div>}
+    </div>
+  );
+}
+
+// A section body: dim skeleton bars (what --notes wrote) until `fillAt`, then the content.
+// After `activeAt` (the agent is writing) a violet shimmer runs along the bars.
+function Slot({ fillAt, activeAt = Infinity, minH, bars = [0.92, 0.58], children }) {
+  const { localTime: lt } = useSprite();
+  const f = lt >= fillAt ? ez((lt - fillAt) / 0.3) : 0;
+  const act = lt >= activeAt ? ez((lt - activeAt) / 0.4) : 0;
+  const sweep = act > 0 ? ((lt - activeAt) * 0.9) % 1 : 0;
+  return (
+    <div style={{ position: 'relative', minHeight: minH }}>
+      {f < 1 && (
+        <div style={{ position: 'absolute', inset: 0, opacity: 1 - f }}>
+          {bars.map((w, i) => (
+            <div key={i} style={{ width: `${w * 100}%`, height: 12, borderRadius: 6, marginTop: i ? 14 : 11,
+              backgroundColor: 'rgba(255,255,255,0.09)',
+              backgroundImage: act > 0
+                ? `linear-gradient(90deg, rgba(255,255,255,0) 0%, ${alpha(VIOLET, 0.55 * act)} 50%, rgba(255,255,255,0) 100%)`
+                : 'none',
+              backgroundSize: '300% 100%', backgroundPosition: `${100 - sweep * 150 + i * 20}% 0` }} />
+          ))}
+        </div>
+      )}
+      {lt >= fillAt && children}
+    </div>
+  );
+}
+
+function PublishMd({ y, at, agentAt, writeAt, titleAt, limitAt, descAt, tagsAt, musicAt }) {
+  const { localTime: lt } = useSprite();
+  const n = clamp(Math.floor((lt - titleAt) * TITLE_SPEED), 0, PUB_TITLE.length);
+  const lim = lt >= limitAt ? ez((lt - limitAt) / 0.3) : 0;
+  const counter = (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '3px 12px', borderRadius: 10, fontFamily: MONO,
+      fontWeight: 600, fontSize: 22, fontVariantNumeric: 'tabular-nums', color: n > 0 ? mixHex('#F5F7FF', OK, 0.5 + 0.5 * lim) : FAINT,
+      background: alpha(OK, 0.06 + 0.12 * lim), border: `1.5px solid ${alpha(OK, 0.22 + 0.55 * lim)}`,
+      boxShadow: lim > 0 ? `0 0 ${22 * lim}px ${alpha(OK, 0.35 * lim)}` : 'none' }}>
+      {lim > 0 && <Icon name="check" size={20} color={OK} stroke={3} style={{ transform: `scale(${spr(lt - limitAt, PUNCH.k, PUNCH.d)})` }} />}
+      <span>{String(n).padStart(2, '0')}/60</span>
+    </div>
+  );
+  const agent = <Badge variant="violet" icon="sparkle" size={18} at={agentAt}>agent</Badge>;
+  return (
+    <Window y={y} title="publish.md" icon="file" width={580} at={at} enter="fromRight" right={agent} padding="14px 28px 22px">
+      <MdHead right={counter}>## Title</MdHead>
+      <Slot fillAt={titleAt} activeAt={writeAt} minH={70}>
+        <div style={{ fontFamily: SANS, fontWeight: 600, fontSize: 26, lineHeight: '35px', color: TEXT, textWrap: 'pretty' }}>
+          <Typed text={PUB_TITLE} at={titleAt} speed={TITLE_SPEED} bar cursorColor={CYAN} />
+        </div>
+      </Slot>
+      <div style={{ position: 'relative', height: 8, borderRadius: 8, marginTop: 10, background: 'rgba(255,255,255,0.08)' }}>
+        <div style={{ width: `${(n / 60) * 100}%`, height: '100%', borderRadius: 8, background: GRAD,
+          boxShadow: n > 0 ? `0 0 14px ${alpha(CYAN, 0.5)}` : 'none' }} />
+      </div>
+      <div style={{ height: 16 }} />
+      <MdHead>## Description</MdHead>
+      <Slot fillAt={descAt} activeAt={writeAt} minH={38} bars={[0.8]}>
+        <div style={{ fontFamily: SANS, fontWeight: 500, fontSize: 24, lineHeight: '38px', color: TEXT, ...enter.wipe(lt - descAt, 0.5) }}>
+          Dry run first, then publish once.
+        </div>
+      </Slot>
+      <Slot fillAt={musicAt} activeAt={writeAt} minH={76} bars={[0.72, 0.3]}>
+        <div style={{ ...enter.wipe(lt - musicAt, 0.45) }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, height: 38 }}>
+            <Icon name="wave" size={26} color={CYAN} />
+            <span style={{ fontFamily: SANS, fontWeight: 500, fontSize: 24, color: MUTED, whiteSpace: 'nowrap' }}>Music: Clean Soul, Kevin MacLeod</span>
+          </div>
+          <div style={{ display: 'flex', paddingLeft: 36, marginTop: 4 }}>
+            <Badge variant="ok" size={18} at={musicAt + 0.15}>CC BY 4.0</Badge>
+          </div>
+        </div>
+      </Slot>
+      <div style={{ height: 14 }} />
+      <MdHead>## Tags</MdHead>
+      <Slot fillAt={tagsAt} activeAt={writeAt} minH={52} bars={[0.25, 0.2]}>
+        <div style={{ display: 'flex', gap: 12, paddingTop: 6 }}>
+          {['reelsmith', 'shorts', 'tutorial'].map((tg, i) => (
+            <Chip key={tg} mono size={22} color={i === 0 ? 'violet' : 'cyan'} variant="soft" at={tagsAt + i * 0.14}>{tg}</Chip>
+          ))}
+        </div>
+      </Slot>
+    </Window>
+  );
+}
+
+// The three-step publish flow (docs/publishing.md): notes → dry run → publish.
+function StepTrack({ y, at, litAt }) {
+  const { localTime: lt } = useSprite();
+  const steps = ['notes', 'dry run', 'publish'];
+  return (
+    <div style={{ position: 'absolute', top: y, left: 0, right: 0, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+      {steps.map((st, i) => {
+        const dt = lt - at - i * 0.14;
+        const on = i === 0 && lt >= litAt ? ez((lt - litAt) / 0.3) : 0;
+        const punch = i === 0 ? spr(lt - litAt, PUNCH.k, PUNCH.d) : 1;
+        const line = i > 0 ? ez((lt - at - i * 0.14 + 0.1) / 0.3) : 0;
+        return (
+          <React.Fragment key={st}>
+            {i > 0 && (
+              <div style={{ width: 28, height: 3, borderRadius: 2, background: 'rgba(255,255,255,0.16)', transformOrigin: 'left center',
+                transform: `scaleX(${line})` }} />
+            )}
+            <div style={{ height: 48, display: 'flex', alignItems: 'center', gap: 10, padding: '0 18px 0 9px', borderRadius: 999,
+              background: on > 0 ? `linear-gradient(90deg, ${alpha(VIOLET, 0.3 * on)}, ${alpha(CYAN, 0.16 * on)}), ${CODE_BG}` : CODE_BG,
+              border: `1.5px solid ${on > 0 ? alpha(CYAN, 0.3 + 0.6 * on) : 'rgba(255,255,255,0.14)'}`,
+              boxShadow: on > 0 ? `0 0 ${30 * on}px ${alpha(VIOLET, 0.45 * on)}` : 'none',
+              ...enter.pop(dt), transform: `${enter.pop(dt).transform || ''} scale(${0.94 + 0.06 * punch})` }}>
+              <div style={{ width: 30, height: 30, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                background: on > 0 ? GRAD_DIAG : 'rgba(255,255,255,0.08)', fontFamily: DISPLAY, fontWeight: 700, fontSize: 18,
+                color: on > 0 ? '#FFFFFF' : FAINT }}>{i + 1}</div>
+              <span style={{ fontFamily: SANS, fontWeight: 600, fontSize: 24, color: on > 0 ? TEXT : FAINT, whiteSpace: 'nowrap' }}>{st}</span>
+            </div>
+          </React.Fragment>
+        );
+      })}
+    </div>
+  );
+}
+
+function Scene2() {
+  const win = useSceneWindow(2);
+  const cueFirst = useWordCue(2, "first");
+  const cueNotesCmd = useWordCue(2, "reelsmith publish notes");
+  const cueYour = useWordCue(2, "your agent");
+  const cueAgent = useWordCue(2, "agent writes");
+  const cueFile = useWordCue(2, "publish.md");
+  const cueTitle = useWordCue(2, "title");
+  const cueSixty = useWordCue(2, "60");
+  const cueDesc = useWordCue(2, "description");
+  const cueTags = useWordCue(2, "tags");
+  const cueMusic = useWordCue(2, "and the music");
+  return (
+    <Sprite {...win}>
+      <SceneRoot idx={2} enter="wipe">
+        <Glow x={560} y={560} r={300} color={CYAN} opacity={0.14} breathe={0.03} />
+        <StepTrack y={92} at={cueFirst} litAt={cueFirst + 0.3} />
+        <Terminal y={166} width={580} fontSize={22} title="~/my-channel" command={CMD_NOTES} at={cueNotesCmd} speed={32} rows={[
+          { text: 'wrote videos/my-video/publish.md', status: 'ok', at: cueYour },
+        ]} />
+        <PublishMd y={352} at={cueYour} agentAt={cueAgent} writeAt={cueFile} titleAt={cueTitle} limitAt={cueSixty} descAt={cueDesc}
+          tagsAt={cueTags} musicAt={cueMusic} />
+        <SubtitleRail sceneIdx={2} bottom={150} fontSize={28} variant="clean" accentColor={CYAN} fontFamily="Inter" />
+      </SceneRoot>
+    </Sprite>
+  );
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
+// Scene 3 · targets: three publish plugins dock into the core
+// ═════════════════════════════════════════════════════════════════════════════
+// PluginDock geometry (kit): width 620, height 520, tiles 156×96 at ±227 / +165 from the centre.
+const DOCK_Y = 190;
+const KIND_TAGS = [
+  { x: 360 - 227, y: DOCK_Y + 260 - 48, color: VIOLET, cue: 'yt' },
+  { x: 360, y: DOCK_Y + 260 + 165 - 48, color: CYAN, cue: 'meta' },
+  { x: 360 + 227, y: DOCK_Y + 260 - 48, color: BLUE, cue: 'dc' },
+];
+
+function KindTag({ x, y, at, color }) {
+  return (
+    <div style={{ position: 'absolute', left: x, top: y - 15, zIndex: 8, transform: 'translateX(-50%)' }}>
+      <Badge variant={color} size={18} mono upper={false} at={at} style={{ background: CODE_BG }}>kind: publish</Badge>
+    </div>
+  );
+}
+
+function Scene3() {
+  const win = useSceneWindow(3);
+  const cueEvery = useWordCue(3, "every publish");
+  const cuePublish = useWordCue(3, "publish target");
+  const cueTarget = useWordCue(3, "target is");
+  const cueIsA = useWordCue(3, "is a plugin");
+  const cuePlugin = useWordCue(3, "plugin");
+  const cueYoutube = useWordCue(3, "youtube shorts");
+  const cueInstagram = useWordCue(3, "instagram");
+  const cueFacebook = useWordCue(3, "facebook reels");
+  const cueDiscord = useWordCue(3, "and discord");
+  const tagAt = { yt: cueYoutube + 0.4, meta: cueInstagram + 0.4, dc: cueDiscord + 0.4 };
+  return (
+    <Sprite {...win}>
+      <SceneRoot idx={3} enter="fade" pattern="grid">
+        <Glow x={360} y={DOCK_Y + 260} r={300} color={VIOLET} opacity={0.26} breathe={0.04} />
+        <Title y={104} size={58} ats={[cueEvery, cueTarget, cueIsA, cueIsA + 0.15, cuePlugin]} text="Every target|is a *plugin*" />
+        <PluginDock y={DOCK_Y} at={cuePublish} core={{ label: 'reelsmith', sub: 'core', icon: 'cog' }} tiles={[
+          { label: 'youtube', sub: 'Shorts', icon: 'play', color: VIOLET, at: cueYoutube, slot: 'left' },
+          { label: 'meta', sub: 'IG + FB Reels', icon: 'video', color: CYAN, at: cueInstagram, slot: 'bottom' },
+          { label: 'discord', sub: 'team review', icon: 'chat', color: BLUE, at: cueDiscord, slot: 'right' },
+        ]} />
+        {KIND_TAGS.map((k, i) => <KindTag key={i} x={k.x} y={k.y} color={k.color} at={tagAt[k.cue]} />)}
+        <div style={{ position: 'absolute', top: DOCK_Y + 260 + 165 + 48 + 26, left: 0, right: 0, display: 'flex',
+          justifyContent: 'center', gap: 14 }}>
+          <Chip icon="video" color="cyan" variant="outline" size={22} at={cueInstagram + 0.3}>Instagram</Chip>
+          <Chip icon="globe" color="cyan" variant="outline" size={22} at={cueFacebook}>Facebook</Chip>
+        </div>
+        <Chip y={DOCK_Y + 260 + 165 + 48 + 104} mono icon="plug" color="ghost" variant="ghost" size={22} at={cuePlugin}>
+          plugins/publish-*/plugin.js
+        </Chip>
+        <SubtitleRail sceneIdx={3} bottom={150} fontSize={28} variant="clean" accentColor={CYAN} fontFamily="Inter" />
+      </SceneRoot>
+    </Sprite>
+  );
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
+// Scene 4 · dry run: the full check, printed, nothing sent
+// ═════════════════════════════════════════════════════════════════════════════
+function DryRunBanner({ y, at }) {
+  const { localTime: lt } = useSprite();
+  const dt = lt - at;
+  const flash = dt >= 0 ? Math.exp(-dt * 3) : 0;
+  const s = spr(dt - 0.1, PUNCH.k, PUNCH.d);
+  return (
+    <div style={{ position: 'absolute', top: y, left: 0, right: 0, display: 'flex', justifyContent: 'center', zIndex: 6 }}>
+      <div style={{ width: 560, height: 104, borderRadius: 22, position: 'relative', overflow: 'hidden',
+        border: `2px solid ${alpha(CYAN, 0.85)}`, background: `linear-gradient(90deg, ${alpha(CYAN, 0.16)}, ${alpha(VIOLET, 0.14)}), ${CODE_BG}`,
+        boxShadow: `${SHADOW}, 0 0 ${30 + 50 * flash}px ${alpha(CYAN, 0.25 + 0.4 * flash)}`, display: 'flex',
+        alignItems: 'center', gap: 20, padding: '0 26px', ...enter.wipe(dt, 0.45) }}>
+        <div style={{ position: 'absolute', inset: 0, opacity: 0.6,
+          backgroundImage: `repeating-linear-gradient(135deg, ${alpha(CYAN, 0.1)} 0 14px, rgba(0,0,0,0) 14px 28px)`,
+          backgroundSize: '39.6px 100%', backgroundPosition: `${(lt * 22) % 39.6}px 0` }} />
+        <div style={{ position: 'relative', width: 62, height: 62, borderRadius: 18, flexShrink: 0, display: 'flex',
+          alignItems: 'center', justifyContent: 'center', background: alpha(CYAN, 0.2), transform: `scale(${0.5 + 0.5 * s})` }}>
+          <Icon name="shield" size={34} color={CYAN} />
+        </div>
+        <div style={{ position: 'relative' }}>
+          <div style={{ fontFamily: DISPLAY, fontWeight: 800, fontSize: 34, letterSpacing: '0.06em', color: CYAN, lineHeight: 1.05 }}>DRY RUN</div>
+          <div style={{ fontFamily: SANS, fontWeight: 500, fontSize: 24, color: TEXT, marginTop: 4 }}>nothing left your machine</div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// The three targets, each ticked when "dry run" is said.
+function TargetTicks({ y, at, tickAt }) {
+  const { localTime: lt } = useSprite();
+  const targets = [['youtube', 'play', VIOLET], ['meta', 'video', CYAN], ['discord', 'chat', BLUE]];
+  return (
+    <div style={{ position: 'absolute', top: y, left: 0, right: 0, display: 'flex', justifyContent: 'center', gap: 18 }}>
+      {targets.map(([name, icon, c], i) => {
+        const tdt = lt - tickAt - i * 0.12;
+        return (
+          <div key={name} style={{ position: 'relative' }}>
+            <Chip mono icon={icon} color={c} variant="outline" size={22} at={at + i * 0.14}>{name}</Chip>
+            <div style={{ position: 'absolute', right: -8, top: -10, width: 28, height: 28, borderRadius: '50%', background: INK,
+              border: `2px solid ${OK}`, display: 'flex', alignItems: 'center', justifyContent: 'center',
+              opacity: tdt >= 0 ? 1 : 0, transform: `scale(${spr(tdt, PUNCH.k, PUNCH.d)})`, boxShadow: `0 0 14px ${alpha(OK, 0.5)}` }}>
+              <Icon name="check" size={16} color={OK} stroke={3.4} />
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function Scene4() {
+  const win = useSceneWindow(4);
+  const cueEvery = useWordCue(4, "every target");
+  const cueTarget = useWordCue(4, "target supports");
+  const cueSupports = useWordCue(4, "supports");
+  const cueDry = useWordCue(4, "dry run");
+  const cueRun = useWordCue(4, "run");
+  const cueCmd = useWordCue(4, "reelsmith publish");
+  const cueCreds = useWordCue(4, "credentials");
+  const cueSize = useWordCue(4, "file size");
+  const cueMeta = useWordCue(4, "metadata");
+  const cuePrints = useWordCue(4, "prints exactly");
+  const cueExactly = useWordCue(4, "exactly what");
+  const cueNothing = useWordCue(4, "nothing leaves");
+  return (
+    <Sprite {...win}>
+      <SceneRoot idx={4} enter="wipe">
+        <Glow x={200} y={420} r={300} color={CYAN} opacity={0.12} breathe={0.03} />
+        <Title y={96} size={52} ats={[cueEvery, cueTarget, cueSupports, cueDry, cueRun]} text="Every target|supports *dry* *run*" />
+        <TargetTicks y={236} at={cueEvery + 0.2} tickAt={cueDry} />
+        <Terminal y={312} width={600} fontSize={22} title="~/my-channel" command={CMD_DRY} at={cueCmd} speed={30} rows={[
+          { text: 'credentials', right: 'yt-token.json', status: 'ok', at: cueCreds },
+          { text: 'output.mp4', right: '41 MB', status: 'ok', at: cueSize },
+          { text: 'title', right: '58/60', status: 'ok', at: cueMeta },
+          { text: 'description · 3 tags', status: 'ok', at: cueMeta + 0.18 },
+          { text: 'would send → videos.insert', status: 'info', at: cuePrints },
+          { text: '  privacy  "private"', dim: true, at: cueExactly + 0.1 },
+          { text: '  title    "Ship one video to…"', dim: true, at: cueExactly + 0.28 },
+        ]} />
+        <DryRunBanner y={738} at={cueNothing} />
+        <SubtitleRail sceneIdx={4} bottom={150} fontSize={28} variant="clean" accentColor={CYAN} fontFamily="Inter" />
+      </SceneRoot>
+    </Sprite>
+  );
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
+// Scene 5 · the real thing: drop the flag, the result is saved next to the video
+// ═════════════════════════════════════════════════════════════════════════════
+// Terminal geometry (kit): window top y + 1 px border + 50 px title bar + 20 px padding, 33 px lines at 22 px.
+const T5_Y = 104;
+const T5_ROW = (i) => T5_Y + 1 + 50 + 20 + i * 33;
+
+function FlagStrike({ at }) {
+  const { localTime: lt } = useSprite();
+  const p = lt >= at ? ezio((lt - at) / 0.35) : 0;
+  const y = T5_ROW(1) + 15; // centre of the "--dry-run" glyphs (measured: text box 210–239 px)
+  return (
+    <>
+      <div style={{ position: 'absolute', left: 89 + 15 * 13.2 - 5, top: y, width: 128 * p, height: 5, borderRadius: 4, zIndex: 7,
+        background: DANGER, transform: 'rotate(-1.5deg)', transformOrigin: 'left center', boxShadow: `0 0 14px ${alpha(DANGER, 0.6)}` }} />
+      <Badge x={424} y={T5_ROW(1) + 2} z={7} variant="danger" icon="x" size={18} at={at + 0.25}>flag dropped</Badge>
+    </>
+  );
+}
+
+function Scene5() {
+  const win = useSceneWindow(5);
+  const cueDrop = useWordCue(5, "drop the flag");
+  const cueFlag = useWordCue(5, "flag when");
+  const cueReady = useWordCue(5, "you are ready");
+  const cueResult = useWordCue(5, "result");
+  const cueUrl = useWordCue(5, "url");
+  const cueId = useWordCue(5, "id");
+  const cueSaved = useWordCue(5, "saved");
+  const cueNext = useWordCue(5, "next to the video");
+  const cueNever = useWordCue(5, "never upload");
+  const typedAt = cueFlag + typeDuration(CMD_REAL, 40);
+  return (
+    <Sprite {...win}>
+      <SceneRoot idx={5} enter="push">
+        <Glow x={560} y={680} r={300} color={OK} opacity={0.1} breathe={0.03} />
+        <Terminal y={T5_Y} width={600} fontSize={22} title="~/my-channel" speed={40} steps={[
+          { text: '$ reelsmith publish my-video', dim: true, at: 0 },
+          { text: '  --to=youtube --dry-run', dim: true, at: 0 },
+          { text: 'dry run · nothing sent', status: 'ok', dim: true, at: 0 },
+          { cmd: CMD_REAL, at: cueFlag },
+          { text: 'uploading output.mp4', right: '41 MB', status: 'info', at: typedAt + 0.15 },
+          { text: 'uploaded · privacy: private', status: 'ok', at: cueResult },
+          { text: `url  youtube.com/shorts/${YT_ID}`, color: CYAN, at: cueUrl },
+          { text: `id   ${YT_ID}`, color: WARN, at: cueId },
+          { text: 'wrote publish/youtube.json', status: 'ok', at: cueSaved },
+        ]} />
+        <FlagStrike at={cueDrop} />
+        <FileTree y={528} width={520} title="videos/my-video/" at={cueReady} rows={[
+          { name: 'output.mp4', at: cueReady + 0.15 },
+          { name: 'publish.md', at: cueReady + 0.3 },
+          { name: 'publish/', at: cueNext },
+          { name: 'youtube.json', depth: 1, at: cueNext + 0.2, badge: 'new', badgeVariant: 'ok', hotAt: cueNext + 0.4, note: 'id · url' },
+        ]} />
+        <Badge y={808} variant="warn" icon="lock" size={22} at={cueNever}>re-run refuses · id exists</Badge>
+        <SubtitleRail sceneIdx={5} bottom={150} fontSize={28} variant="clean" accentColor={CYAN} fontFamily="Inter" />
+      </SceneRoot>
+    </Sprite>
+  );
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
+// Scene 6 · secrets: two lock cards, never the repo, doctor says who's ready
+// ═════════════════════════════════════════════════════════════════════════════
+// The card frame slides in dim at `showAt`; at `at` (its word) it lights up and fills in.
+function LockCard({ showAt, at, en, color, where, name, lines, badge }) {
+  const { localTime: lt } = useSprite();
+  const dt = lt - at;
+  const on = dt >= 0 ? ez(dt / 0.35) : 0;
+  const lk = spr(dt, PUNCH.k, PUNCH.d);
+  return (
+    <div style={{ width: 296, padding: '20px 20px 18px', borderRadius: 22, background: CARD, position: 'relative',
+      border: `1.5px solid ${on > 0 ? alpha(color, 0.15 + 0.4 * on) : 'rgba(255,255,255,0.10)'}`,
+      boxShadow: `${SHADOW}, inset 0 1px 0 rgba(255,255,255,0.05)${on > 0 ? `, 0 0 ${34 * on}px ${alpha(color, 0.25 * on)}` : ''}`,
+      ...entry(en, lt - showAt) }}>
+      <div style={{ position: 'absolute', left: 0, top: 0, height: 3, width: `${on * 100}%`, borderRadius: '22px 22px 0 0', background: color }} />
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+        <div style={{ width: 48, height: 48, borderRadius: 14, display: 'flex', alignItems: 'center', justifyContent: 'center',
+          background: alpha(color, 0.06 + 0.14 * on), transform: `scale(${0.85 + 0.15 * (dt >= 0 ? lk : 1)}) rotate(${dt >= 0 ? (1 - lk) * -20 : 0}deg)` }}>
+          <Icon name="lock" size={28} color={on > 0.5 ? color : FAINT} />
+        </div>
+        <span style={{ fontFamily: SANS, fontWeight: 500, fontSize: 22, color: on > 0.5 ? MUTED : FAINT }}>{where}</span>
+      </div>
+      <div style={{ position: 'relative', fontFamily: MONO, fontWeight: 600, fontSize: name.length > 12 ? 22 : 28, color: TEXT, marginTop: 16,
+        whiteSpace: 'nowrap', height: 36, display: 'flex', alignItems: 'center' }}>
+        {on < 1 && <div style={{ position: 'absolute', left: 0, top: 12, width: '62%', height: 12, borderRadius: 6,
+          background: 'rgba(255,255,255,0.08)', opacity: 1 - on }} />}
+        {dt >= 0 && <span style={{ ...enter.wipe(dt, 0.4) }}>{name}</span>}
+      </div>
+      <div style={{ marginTop: 6 }}>
+        {lines.map((l, i) => (
+          <div key={i} style={{ fontFamily: MONO, fontSize: 22, lineHeight: '32px', color: MUTED, whiteSpace: 'nowrap',
+            ...enter.fadeIn(dt - 0.25 - i * 0.12, 0.3) }}>{l}</div>
+        ))}
+      </div>
+      <div style={{ marginTop: 12, display: 'flex' }}>
+        <Badge variant="ok" icon="check" size={18} at={at + 0.5}>{badge}</Badge>
+      </div>
+    </div>
+  );
+}
+
+function RepoCard({ y, at }) {
+  const { localTime: lt } = useSprite();
+  return (
+    <div style={{ position: 'absolute', top: y, left: 0, right: 0, display: 'flex', justifyContent: 'center' }}>
+      <div style={{ width: 608, height: 96, borderRadius: 22, background: CODE_BG, border: `1.5px dashed ${alpha(DANGER, 0.5)}`,
+        boxShadow: SHADOW, display: 'flex', alignItems: 'center', gap: 18, padding: '0 24px', ...enter.slideUp(lt - at, 0.4) }}>
+        <div style={{ width: 54, height: 54, borderRadius: 15, display: 'flex', alignItems: 'center', justifyContent: 'center',
+          background: 'rgba(255,255,255,0.06)' }}>
+          <Icon name="folder" size={30} color={MUTED} />
+        </div>
+        <div>
+          <div style={{ fontFamily: MONO, fontWeight: 600, fontSize: 24, color: TEXT }}>my-channel/</div>
+          <div style={{ fontFamily: SANS, fontSize: 22, color: MUTED, marginTop: 2 }}>the git repo</div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function Scene6() {
+  const win = useSceneWindow(6);
+  const cueCreds = useWordCue(6, "credentials");
+  const cueEnv = useWordCue(6, ".env");
+  const cueConfig = useWordCue(6, "config directory");
+  const cueNever = useWordCue(6, "never in the repo");
+  const cueRepo = useWordCue(6, "repo");
+  const cueDoctor = useWordCue(6, "reelsmith doctor");
+  const cueTells = useWordCue(6, "tells you");
+  const cueWhich = useWordCue(6, "which target");
+  return (
+    <Sprite {...win}>
+      <SceneRoot idx={6} enter="iris">
+        <Glow x={360} y={300} r={320} color={VIOLET} opacity={0.2} breathe={0.04} />
+        <Kicker y={96} at={cueCreds}>Credentials · local only</Kicker>
+        <div style={{ position: 'absolute', top: 146, left: 0, right: 0, display: 'flex', justifyContent: 'center', gap: 16 }}>
+          <LockCard showAt={cueCreds} at={cueEnv} en="fromLeft" color={VIOLET} where="project root" name=".env" badge="gitignored"
+            lines={['META_SYSTEM_TOKEN', 'DISCORD_BOT_TOKEN']} />
+          <LockCard showAt={cueCreds + 0.15} at={cueConfig} en="fromRight" color={CYAN} where="your machine" name="~/.config/reelsmith" badge="mode 0600"
+            lines={['youtube-client.json', 'yt-token.json']} />
+        </div>
+        <RepoCard y={432} at={cueNever} />
+        <Stamp x={404} y={440} at={cueRepo} rotate={-8} size={40}>never</Stamp>
+        <Card y={560} width={560} at={cueDoctor} title="$ reelsmith doctor" titleMono icon="terminal" color={CYAN} padding="18px 26px 10px"
+          enter="rise">
+          <StatusRows card={false} width={508} mono fontSize={24} rows={[
+            { label: 'publish · youtube', state: 'ok', detail: 'ready', at: cueDoctor + 0.15, doneAt: cueTells },
+            { label: 'publish · meta', state: 'warn', detail: 'missing token', at: cueDoctor + 0.3, doneAt: cueTells + 0.3 },
+            { label: 'publish · discord', state: 'ok', detail: 'ready', at: cueDoctor + 0.45, doneAt: cueWhich },
+          ]} />
+        </Card>
+        <SubtitleRail sceneIdx={6} bottom={150} fontSize={28} variant="clean" accentColor={CYAN} fontFamily="Inter" />
+      </SceneRoot>
+    </Sprite>
+  );
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
+// Scene 7 · close: the five stages of the series line up, go make something
+// ═════════════════════════════════════════════════════════════════════════════
+const STAGES = [
+  { label: 'Script', icon: 'file', ep: '04' },
+  { label: 'Voice', icon: 'mic', ep: '05' },
+  { label: 'Animation', icon: 'sparkle', ep: '06' },
+  { label: 'Gates', icon: 'shield', ep: '09' },
+  { label: 'Publish', icon: 'send', ep: '10' },
+];
+const ROW_H = 62;
+const ROW_GAP = 12;
+const ROWS_Y = 292;
+
+// Rows slide in dim at `showAt` (the series recap), each lights and ticks on its own word.
+function StageRows({ showAt, ats }) {
+  const { localTime: lt } = useSprite();
+  // connector through the icons grows to the last lit row
+  let reach = 0;
+  ats.forEach((a, i) => { if (i > 0) reach += (ROW_H + ROW_GAP) * spr(lt - a, 200, 22); });
+  return (
+    <div style={{ position: 'absolute', top: ROWS_Y, left: 0, right: 0, display: 'flex', justifyContent: 'center' }}>
+      <div style={{ position: 'relative', width: 440 }}>
+        <div style={{ position: 'absolute', left: 10 + 22 - 1.5, top: ROW_H / 2, width: 3, height: reach, borderRadius: 2,
+          background: GRAD, boxShadow: `0 0 12px ${alpha(CYAN, 0.5)}`, transformOrigin: 'top' }} />
+        {STAGES.map((st, i) => {
+          const dt = lt - ats[i];
+          const lit = dt >= 0 ? ez(dt / 0.3) : 0;
+          const punch = dt >= 0 ? 0.96 + 0.04 * spr(dt, PUNCH.k, PUNCH.d) : 0.96;
+          const inStyle = enter.push(lt - showAt - i * 0.08, i % 2 ? 'right' : 'left', 90);
+          const c = mixHex(VIOLET, CYAN, i / (STAGES.length - 1));
+          const ck = spr(dt - 0.18, PUNCH.k, PUNCH.d);
+          const last = i === STAGES.length - 1;
+          return (
+            <div key={st.label} style={{ position: 'relative', height: ROW_H, marginTop: i ? ROW_GAP : 0, borderRadius: 18,
+              display: 'flex', alignItems: 'center', gap: 16, padding: '0 20px 0 10px',
+              background: `linear-gradient(90deg, ${alpha(c, 0.03 + 0.21 * lit)}, ${alpha(CODE_BG, 0.92)}), ${CODE_BG}`,
+              border: `1.5px solid ${lit > 0 ? alpha(c, 0.25 + 0.6 * lit) : 'rgba(255,255,255,0.10)'}`,
+              boxShadow: `${SHADOW}${lit > 0 ? `, 0 0 ${(last ? 40 : 24) * lit}px ${alpha(c, (last ? 0.45 : 0.28) * lit)}` : ''}`,
+              ...inStyle, transform: `${inStyle.transform || ''} scale(${punch})` }}>
+              <div style={{ width: 44, height: 44, borderRadius: 13, flexShrink: 0, display: 'flex', alignItems: 'center',
+                justifyContent: 'center', background: `linear-gradient(${alpha(c, 0.07 + 0.18 * lit)}, ${alpha(c, 0.07 + 0.18 * lit)}), ${CODE_BG}` }}>
+                <Icon name={st.icon} size={26} color={lit > 0.5 ? c : FAINT} />
+              </div>
+              <div style={{ flex: 1, fontFamily: DISPLAY, fontWeight: 700, fontSize: 28, color: lit > 0.5 ? TEXT : FAINT }}>{st.label}</div>
+              <div style={{ fontFamily: MONO, fontSize: 22, color: lit > 0.5 ? MUTED : 'rgba(245,247,255,0.25)' }}>ep {st.ep}</div>
+              <div style={{ width: 30, height: 30, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                background: alpha(OK, 0.18), border: `1.5px solid ${alpha(OK, 0.55)}`, transform: `scale(${ck})`, opacity: dt > 0.18 ? 1 : 0 }}>
+                <Icon name="check" size={18} color={OK} stroke={3} />
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function Scene7() {
+  const win = useSceneWindow(7);
+  const cueThats = useWordCue(7, "thats the whole");
+  const cueWhole = useWordCue(7, "whole series");
+  const cueScript = useWordCue(7, "script");
+  const cueVoice = useWordCue(7, "voice");
+  const cueAnim = useWordCue(7, "animation");
+  const cueGates = useWordCue(7, "gates");
+  const cuePublish = useWordCue(7, "publish");
+  const cueGo = useWordCue(7, "go make");
+  const cueMake = useWordCue(7, "make something");
+  const cueSomething = useWordCue(7, "something");
+  return (
+    <Sprite {...win}>
+      <SceneRoot idx={7} enter="zoom">
+        <Glow x={360} y={780} r={340} color={VIOLET} opacity={0.3} breathe={0.05} at={cueGo} />
+        <Glow x={360} y={200} r={260} color={CYAN} opacity={0.12} breathe={0.03} />
+        <Kicker y={96} at={cueThats}>Series finale · 10 of 10</Kicker>
+        <Wordmark y={146} at={cueWhole} size={66} />
+        <StageRows showAt={cueThats + 0.1} ats={[cueScript, cueVoice, cueAnim, cueGates, cuePublish]} />
+        <Title y={690} size={66} enter="pop" ats={[cueGo, cueMake, cueSomething]} text="Go make|*something.*" />
+        <SubtitleRail sceneIdx={7} bottom={150} fontSize={28} variant="clean" accentColor={CYAN} fontFamily="Inter" />
+      </SceneRoot>
+    </Sprite>
+  );
+}
+
+function App() {
+  return (
+    <Stage width={720} height={1280} scenesSrc="scenes.json" background={INK} loop={false} autoplay={true} persistKey="tut-10-publish">
+      <Scene1 />
+      <Scene2 />
+      <Scene3 />
+      <Scene4 />
+      <Scene5 />
+      <Scene6 />
+      <Scene7 />
+    </Stage>
+  );
+}
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>

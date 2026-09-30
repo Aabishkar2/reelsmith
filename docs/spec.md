@@ -1,4 +1,6 @@
-# video-gen-v2 — System Spec (contracts for all builders)
+# Pipeline internals (take analysis, alignment, cut)
+
+> **Note:** this document describes the internals of the recording, analysis, alignment, cut and TTS pipeline that Reelsmith inherited from its predecessor. The contract for the framework as a whole (CLI, config, plugins, styles, skills) is [framework-spec.md](framework-spec.md). Paths below that start with `scripts/` now live in `tools/`, and `node pipeline/cli.js …` commands are available as `reelsmith …`.
 
 Successor to `../video-gen` (v1). v1 pipeline: `video.md` → Gemini TTS → Whisper → `scenes.json` → Claude writes React HTML → Playwright frames → FFmpeg MP4.
 

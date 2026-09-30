@@ -1,0 +1,844 @@
+[
+  {
+    "idx": 1,
+    "dur": 6.174,
+    "file": "voiceover/s1.mp3",
+    "words": [
+      {
+        "word": "Reelsmith",
+        "start": 0,
+        "end": 0.678
+      },
+      {
+        "word": "gives",
+        "start": 0.678,
+        "end": 0.87
+      },
+      {
+        "word": "you",
+        "start": 0.87,
+        "end": 0.991
+      },
+      {
+        "word": "two",
+        "start": 0.991,
+        "end": 1.217
+      },
+      {
+        "word": "ways",
+        "start": 1.217,
+        "end": 1.478
+      },
+      {
+        "word": "to",
+        "start": 1.478,
+        "end": 1.583
+      },
+      {
+        "word": "get",
+        "start": 1.583,
+        "end": 1.704
+      },
+      {
+        "word": "a",
+        "start": 1.704,
+        "end": 1.791
+      },
+      {
+        "word": "voice.",
+        "start": 1.791,
+        "end": 2.052
+      },
+      {
+        "word": "A",
+        "start": 2.278,
+        "end": 2.452
+      },
+      {
+        "word": "text",
+        "start": 2.452,
+        "end": 2.649
+      },
+      {
+        "word": "to",
+        "start": 2.649,
+        "end": 2.748
+      },
+      {
+        "word": "speech",
+        "start": 2.748,
+        "end": 3.043
+      },
+      {
+        "word": "model",
+        "start": 3.043,
+        "end": 3.287
+      },
+      {
+        "word": "or",
+        "start": 3.287,
+        "end": 3.652
+      },
+      {
+        "word": "your",
+        "start": 3.652,
+        "end": 3.809
+      },
+      {
+        "word": "own",
+        "start": 3.809,
+        "end": 4.017
+      },
+      {
+        "word": "recording.",
+        "start": 4.017,
+        "end": 4.4
+      },
+      {
+        "word": "Both",
+        "start": 4.574,
+        "end": 5.009
+      },
+      {
+        "word": "end",
+        "start": 5.009,
+        "end": 5.235
+      },
+      {
+        "word": "in",
+        "start": 5.235,
+        "end": 5.357
+      },
+      {
+        "word": "the",
+        "start": 5.357,
+        "end": 5.443
+      },
+      {
+        "word": "same",
+        "start": 5.443,
+        "end": 5.635
+      },
+      {
+        "word": "files.",
+        "start": 5.635,
+        "end": 5.93
+      }
+    ]
+  },
+  {
+    "idx": 2,
+    "dur": 9.435,
+    "file": "voiceover/s2.mp3",
+    "words": [
+      {
+        "word": "Text",
+        "start": 0.243,
+        "end": 0.429
+      },
+      {
+        "word": "to",
+        "start": 0.429,
+        "end": 0.522
+      },
+      {
+        "word": "speech",
+        "start": 0.522,
+        "end": 0.8
+      },
+      {
+        "word": "has",
+        "start": 0.8,
+        "end": 0.957
+      },
+      {
+        "word": "two",
+        "start": 0.957,
+        "end": 1.113
+      },
+      {
+        "word": "modes.",
+        "start": 1.113,
+        "end": 1.391
+      },
+      {
+        "word": "Sentence",
+        "start": 1.739,
+        "end": 2.157
+      },
+      {
+        "word": "mode",
+        "start": 2.157,
+        "end": 2.348
+      },
+      {
+        "word": "calls",
+        "start": 2.348,
+        "end": 2.643
+      },
+      {
+        "word": "the",
+        "start": 2.643,
+        "end": 2.783
+      },
+      {
+        "word": "model",
+        "start": 2.783,
+        "end": 3.009
+      },
+      {
+        "word": "once",
+        "start": 3.009,
+        "end": 3.304
+      },
+      {
+        "word": "per",
+        "start": 3.304,
+        "end": 3.461
+      },
+      {
+        "word": "line,",
+        "start": 3.461,
+        "end": 3.739
+      },
+      {
+        "word": "caches",
+        "start": 4,
+        "end": 4.261
+      },
+      {
+        "word": "every",
+        "start": 4.261,
+        "end": 4.574
+      },
+      {
+        "word": "clip",
+        "start": 4.574,
+        "end": 4.817
+      },
+      {
+        "word": "and",
+        "start": 4.817,
+        "end": 5.148
+      },
+      {
+        "word": "joins",
+        "start": 5.148,
+        "end": 5.391
+      },
+      {
+        "word": "them",
+        "start": 5.391,
+        "end": 5.565
+      },
+      {
+        "word": "with",
+        "start": 5.565,
+        "end": 5.739
+      },
+      {
+        "word": "clean",
+        "start": 5.739,
+        "end": 6
+      },
+      {
+        "word": "gaps.",
+        "start": 6,
+        "end": 6.296
+      },
+      {
+        "word": "Change",
+        "start": 6.73,
+        "end": 6.922
+      },
+      {
+        "word": "one",
+        "start": 6.922,
+        "end": 7.165
+      },
+      {
+        "word": "line",
+        "start": 7.165,
+        "end": 7.461
+      },
+      {
+        "word": "and",
+        "start": 7.461,
+        "end": 7.757
+      },
+      {
+        "word": "only",
+        "start": 7.757,
+        "end": 8.104
+      },
+      {
+        "word": "that",
+        "start": 8.104,
+        "end": 8.33
+      },
+      {
+        "word": "line",
+        "start": 8.33,
+        "end": 8.504
+      },
+      {
+        "word": "is",
+        "start": 8.504,
+        "end": 8.643
+      },
+      {
+        "word": "regenerated.",
+        "start": 8.643,
+        "end": 9.217
+      }
+    ]
+  },
+  {
+    "idx": 3,
+    "dur": 9.365,
+    "file": "voiceover/s3.mp3",
+    "words": [
+      {
+        "word": "Performance",
+        "start": 0.217,
+        "end": 0.704
+      },
+      {
+        "word": "mode",
+        "start": 0.704,
+        "end": 0.965
+      },
+      {
+        "word": "sends",
+        "start": 0.965,
+        "end": 1.209
+      },
+      {
+        "word": "the",
+        "start": 1.209,
+        "end": 1.365
+      },
+      {
+        "word": "whole",
+        "start": 1.365,
+        "end": 1.591
+      },
+      {
+        "word": "script",
+        "start": 1.591,
+        "end": 1.887
+      },
+      {
+        "word": "in",
+        "start": 1.887,
+        "end": 2.113
+      },
+      {
+        "word": "one",
+        "start": 2.113,
+        "end": 2.357
+      },
+      {
+        "word": "call",
+        "start": 2.357,
+        "end": 2.617
+      },
+      {
+        "word": "with",
+        "start": 2.617,
+        "end": 2.93
+      },
+      {
+        "word": "a",
+        "start": 2.93,
+        "end": 3.035
+      },
+      {
+        "word": "direction",
+        "start": 3.035,
+        "end": 3.33
+      },
+      {
+        "word": "prompt.",
+        "start": 3.33,
+        "end": 3.661
+      },
+      {
+        "word": "Style,",
+        "start": 3.904,
+        "end": 4.357
+      },
+      {
+        "word": "pace,",
+        "start": 4.565,
+        "end": 4.878
+      },
+      {
+        "word": "accent.",
+        "start": 5.104,
+        "end": 5.4
+      },
+      {
+        "word": "It",
+        "start": 5.609,
+        "end": 5.904
+      },
+      {
+        "word": "sounds",
+        "start": 5.904,
+        "end": 6.113
+      },
+      {
+        "word": "more",
+        "start": 6.113,
+        "end": 6.304
+      },
+      {
+        "word": "like",
+        "start": 6.304,
+        "end": 6.513
+      },
+      {
+        "word": "one",
+        "start": 6.513,
+        "end": 6.774
+      },
+      {
+        "word": "person",
+        "start": 6.774,
+        "end": 7.07
+      },
+      {
+        "word": "talking.",
+        "start": 7.07,
+        "end": 7.33
+      },
+      {
+        "word": "And",
+        "start": 7.539,
+        "end": 7.817
+      },
+      {
+        "word": "it",
+        "start": 7.817,
+        "end": 7.939
+      },
+      {
+        "word": "is",
+        "start": 7.939,
+        "end": 8.183
+      },
+      {
+        "word": "what",
+        "start": 8.183,
+        "end": 8.339
+      },
+      {
+        "word": "you're",
+        "start": 8.339,
+        "end": 8.478
+      },
+      {
+        "word": "hearing",
+        "start": 8.478,
+        "end": 8.704
+      },
+      {
+        "word": "right",
+        "start": 8.704,
+        "end": 8.896
+      },
+      {
+        "word": "now.",
+        "start": 8.896,
+        "end": 9.07
+      }
+    ]
+  },
+  {
+    "idx": 4,
+    "dur": 7.209,
+    "file": "voiceover/s4.mp3",
+    "words": [
+      {
+        "word": "Prefer",
+        "start": 0.296,
+        "end": 0.557
+      },
+      {
+        "word": "your",
+        "start": 0.557,
+        "end": 0.765
+      },
+      {
+        "word": "own",
+        "start": 0.765,
+        "end": 0.957
+      },
+      {
+        "word": "voice?",
+        "start": 0.957,
+        "end": 1.217
+      },
+      {
+        "word": "Run",
+        "start": 1.374,
+        "end": 1.896
+      },
+      {
+        "word": "reelsmith",
+        "start": 1.896,
+        "end": 2.452
+      },
+      {
+        "word": "record.",
+        "start": 2.452,
+        "end": 2.73
+      },
+      {
+        "word": "A",
+        "start": 3.009,
+        "end": 3.304
+      },
+      {
+        "word": "teleprompter",
+        "start": 3.304,
+        "end": 3.809
+      },
+      {
+        "word": "opens",
+        "start": 3.809,
+        "end": 4.087
+      },
+      {
+        "word": "in",
+        "start": 4.087,
+        "end": 4.209
+      },
+      {
+        "word": "your",
+        "start": 4.209,
+        "end": 4.313
+      },
+      {
+        "word": "browser,",
+        "start": 4.313,
+        "end": 4.643
+      },
+      {
+        "word": "scrolls",
+        "start": 4.957,
+        "end": 5.252
+      },
+      {
+        "word": "at",
+        "start": 5.252,
+        "end": 5.339
+      },
+      {
+        "word": "your",
+        "start": 5.339,
+        "end": 5.461
+      },
+      {
+        "word": "pace,",
+        "start": 5.461,
+        "end": 5.722
+      },
+      {
+        "word": "and",
+        "start": 5.774,
+        "end": 6.087
+      },
+      {
+        "word": "records",
+        "start": 6.087,
+        "end": 6.417
+      },
+      {
+        "word": "one",
+        "start": 6.417,
+        "end": 6.643
+      },
+      {
+        "word": "long",
+        "start": 6.643,
+        "end": 6.87
+      },
+      {
+        "word": "take.",
+        "start": 6.87,
+        "end": 7.078
+      }
+    ]
+  },
+  {
+    "idx": 5,
+    "dur": 8.261,
+    "file": "voiceover/s5.mp3",
+    "words": [
+      {
+        "word": "Then,",
+        "start": 0.13,
+        "end": 0.617
+      },
+      {
+        "word": "reelsmith",
+        "start": 0.826,
+        "end": 1.4
+      },
+      {
+        "word": "Analyze",
+        "start": 1.4,
+        "end": 1.852
+      },
+      {
+        "word": "runs",
+        "start": 1.852,
+        "end": 2.078
+      },
+      {
+        "word": "Whisper",
+        "start": 2.078,
+        "end": 2.478
+      },
+      {
+        "word": "and",
+        "start": 2.478,
+        "end": 2.652
+      },
+      {
+        "word": "aligns",
+        "start": 2.652,
+        "end": 3
+      },
+      {
+        "word": "your",
+        "start": 3,
+        "end": 3.104
+      },
+      {
+        "word": "take",
+        "start": 3.104,
+        "end": 3.261
+      },
+      {
+        "word": "to",
+        "start": 3.261,
+        "end": 3.383
+      },
+      {
+        "word": "the",
+        "start": 3.383,
+        "end": 3.487
+      },
+      {
+        "word": "script.",
+        "start": 3.487,
+        "end": 3.748
+      },
+      {
+        "word": "It",
+        "start": 3.957,
+        "end": 4.357
+      },
+      {
+        "word": "flags",
+        "start": 4.357,
+        "end": 4.739
+      },
+      {
+        "word": "fillers,",
+        "start": 4.739,
+        "end": 5.278
+      },
+      {
+        "word": "stutters,",
+        "start": 5.574,
+        "end": 5.922
+      },
+      {
+        "word": "long",
+        "start": 6.183,
+        "end": 6.461
+      },
+      {
+        "word": "pauses,",
+        "start": 6.461,
+        "end": 6.826
+      },
+      {
+        "word": "and",
+        "start": 7.017,
+        "end": 7.209
+      },
+      {
+        "word": "lines",
+        "start": 7.209,
+        "end": 7.504
+      },
+      {
+        "word": "you",
+        "start": 7.504,
+        "end": 7.643
+      },
+      {
+        "word": "skipped.",
+        "start": 7.643,
+        "end": 7.904
+      }
+    ]
+  },
+  {
+    "idx": 6,
+    "dur": 9.643,
+    "file": "voiceover/s6.mp3",
+    "words": [
+      {
+        "word": "Re",
+        "start": 0.357,
+        "end": 0.487
+      },
+      {
+        "word": "record",
+        "start": 0.487,
+        "end": 0.878
+      },
+      {
+        "word": "only",
+        "start": 0.878,
+        "end": 1.261
+      },
+      {
+        "word": "the",
+        "start": 1.261,
+        "end": 1.4
+      },
+      {
+        "word": "flagged",
+        "start": 1.4,
+        "end": 1.748
+      },
+      {
+        "word": "lines",
+        "start": 1.748,
+        "end": 1.991
+      },
+      {
+        "word": "and",
+        "start": 1.991,
+        "end": 2.304
+      },
+      {
+        "word": "run",
+        "start": 2.304,
+        "end": 2.478
+      },
+      {
+        "word": "reelsmith",
+        "start": 2.478,
+        "end": 2.913
+      },
+      {
+        "word": "cut.",
+        "start": 2.913,
+        "end": 3.104
+      },
+      {
+        "word": "Fillers",
+        "start": 3.47,
+        "end": 3.991
+      },
+      {
+        "word": "are",
+        "start": 3.991,
+        "end": 4.096
+      },
+      {
+        "word": "trimmed,",
+        "start": 4.096,
+        "end": 4.322
+      },
+      {
+        "word": "the",
+        "start": 4.513,
+        "end": 4.774
+      },
+      {
+        "word": "best",
+        "start": 4.774,
+        "end": 4.93
+      },
+      {
+        "word": "attempt",
+        "start": 4.93,
+        "end": 5.174
+      },
+      {
+        "word": "of",
+        "start": 5.174,
+        "end": 5.33
+      },
+      {
+        "word": "each",
+        "start": 5.33,
+        "end": 5.522
+      },
+      {
+        "word": "line",
+        "start": 5.522,
+        "end": 5.713
+      },
+      {
+        "word": "is",
+        "start": 5.713,
+        "end": 5.852
+      },
+      {
+        "word": "kept,",
+        "start": 5.852,
+        "end": 6.078
+      },
+      {
+        "word": "and",
+        "start": 6.217,
+        "end": 6.687
+      },
+      {
+        "word": "you",
+        "start": 6.687,
+        "end": 6.965
+      },
+      {
+        "word": "get",
+        "start": 6.965,
+        "end": 7.139
+      },
+      {
+        "word": "scenes.json",
+        "start": 7.139,
+        "end": 8.078
+      },
+      {
+        "word": "plus",
+        "start": 8.078,
+        "end": 8.357
+      },
+      {
+        "word": "a",
+        "start": 8.357,
+        "end": 8.565
+      },
+      {
+        "word": "clean",
+        "start": 8.565,
+        "end": 8.843
+      },
+      {
+        "word": "voiceover.",
+        "start": 8.843,
+        "end": 9.261
+      }
+    ]
+  }
+]

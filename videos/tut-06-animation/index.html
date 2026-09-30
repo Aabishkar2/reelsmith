@@ -1,0 +1,651 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>How the animation stays in sync</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@600;700;800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+  <script type="text/babel" src="../../runtime/animations.jsx"></script>
+  <script type="text/babel" src="../../styles/motion/kit.jsx"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { width: 100%; height: 100%; background: #0B0F19; overflow: hidden; }
+    #root { width: 100%; height: 100vh; position: relative; }
+  </style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+// tut-06-animation · "How the animation stays in sync" (motion style, episode 6)
+//
+// Every reveal below is bound to a useWordCue() phrase from scenes.json. The few
+// demo sub-clocks (the phone's fake subtitle in scene 1, the voice track in
+// scene 3, the Whisper lens in scene 5) are driven by real cue / word times too.
+
+// ── Local helpers (names chosen so they never collide with runtime globals) ──
+const ease3 = (p) => Easing.easeOutCubic(clamp(p, 0, 1));
+const springy = (dt, k = 320, d = 30) => (!(dt > 0) ? 0 : dt > 8 ? 1 : spring(dt, k, d));
+const monoS = (size, color, extra) => ({ fontFamily: MONO, fontSize: size, color, whiteSpace: 'nowrap', ...extra });
+const gradText = { backgroundImage: GRAD, WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent' };
+const hex2 = (h) => { const n = parseInt(String(h).slice(1, 7), 16); return [(n >> 16) & 255, (n >> 8) & 255, n & 255]; };
+// blend(VIOLET, OK, 0.5, 0.3) → rgba halfway between the two hex colours at alpha 0.3
+function blend(a, b, p, al = 1) {
+  const A = hex2(a), B = hex2(b), q = clamp(p, 0, 1);
+  return `rgba(${A.map((v, i) => Math.round(v + (B[i] - v) * q)).join(',')},${al})`;
+}
+const DRIFT = 0.5; // how early the "AI video" overlay fires in scene 1 (the point of the hook)
+
+// Type out coloured segments, character by character.
+function TypedSegs({ segs, at, speed = 30, cursor = true }) {
+  const lt = useSprite().localTime;
+  const total = segs.reduce((a, g) => a + g.s.length, 0);
+  const n = clamp(Math.floor((lt - at) * speed), 0, total);
+  let left = n;
+  const out = segs.map((g, i) => {
+    const take = clamp(left, 0, g.s.length);
+    left -= take;
+    if (take <= 0) return null;
+    return <span key={i} style={{ color: g.c, ...(g.style || {}) }}>{g.s.slice(0, take)}</span>;
+  });
+  const typing = lt >= at && n < total;
+  return (
+    <span style={{ whiteSpace: 'pre' }}>
+      {out}
+      {cursor && typing && <span style={{ display: 'inline-block', width: '0.58em', height: '1.1em', verticalAlign: '-0.2em', background: CYAN, marginLeft: 1 }} />}
+    </span>
+  );
+}
+
+// ── Scene 1 · hook: text that shows up before the voice ─────────────────────
+// A fake AI short on a phone: its $103B card pops DRIFT seconds before its own
+// subtitle reaches "103". On "impossible" the card snaps onto the word.
+function PhoneDemo({ cardAt, fixAt, words }) {
+  const { localTime: lt, duration } = useSprite();
+  const ok = lt >= fixAt ? ease3((lt - fixAt) / 0.35) : 0;
+  let cur = -1;
+  words.forEach((wd, i) => { if (lt >= wd.at) cur = i; });
+  const chunk = cur >= 0 ? words[cur].chunk : -1;
+  const prog = clamp(lt / Math.max(0.01, duration), 0, 1);
+  return (
+    <div style={{ position: 'absolute', inset: 0, background: INK, overflow: 'hidden' }}>
+      <div style={{ position: 'absolute', inset: 0, background: `radial-gradient(ellipse 85% 50% at 12% 8%, ${alpha(VIOLET, 0.38)}, transparent 70%), radial-gradient(ellipse 70% 45% at 92% 96%, ${alpha(CYAN, 0.2)}, transparent 70%)` }} />
+      <div style={{ position: 'absolute', left: 30, top: 70, ...enter.slideUp(lt - 0.05) }}>
+        <div style={{ fontFamily: SANS, fontWeight: 600, fontSize: 22, letterSpacing: '0.2em', color: CYAN }}>CLOUD COSTS</div>
+        <div style={{ fontFamily: DISPLAY, fontWeight: 800, fontSize: 52, lineHeight: 1.05, color: TEXT, marginTop: 8, letterSpacing: '-0.02em' }}>The bill</div>
+      </div>
+      <div style={{ position: 'absolute', left: 28, top: 206, width: 304, height: 176, ...enter.pop(lt - cardAt) }}>
+        <div style={{ position: 'absolute', inset: 0, borderRadius: 26, background: alpha(VIOLET, 0.16), border: `3px solid ${alpha(VIOLET, 0.75)}` }} />
+        <div style={{ position: 'absolute', inset: 0, borderRadius: 26, background: alpha(OK, 0.12), border: `3px solid ${OK}`, opacity: ok }} />
+        <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{ fontFamily: DISPLAY, fontWeight: 800, fontSize: 98, lineHeight: 1, letterSpacing: '-0.04em', ...gradText }}>$103B</div>
+          <div style={{ fontFamily: SANS, fontWeight: 500, fontSize: 28, color: MUTED, marginTop: 10 }}>a year</div>
+        </div>
+        {lt >= fixAt && (
+          <div style={{ position: 'absolute', left: -16, top: -16, width: 50, height: 50, borderRadius: '50%', background: OK,
+            display: 'flex', alignItems: 'center', justifyContent: 'center', transform: `scale(${springy(lt - fixAt, 200, 14)})`,
+            boxShadow: `0 0 24px ${alpha(OK, 0.6)}` }}>
+            <Icon name="check" size={30} color={INK} stroke={3.4} />
+          </div>
+        )}
+      </div>
+      {chunk >= 0 && (
+        <div style={{ position: 'absolute', left: 14, right: 14, top: 468, display: 'flex', justifyContent: 'center', columnGap: 12,
+          fontFamily: SANS, fontWeight: 600, fontSize: 40 }}>
+          {words.map((wd, i) => (wd.chunk !== chunk ? null : (
+            <span key={i} style={{ color: i === cur ? CYAN : i < cur ? 'rgba(245,247,255,0.5)' : 'rgba(245,247,255,0.9)',
+              textShadow: '0 2px 10px rgba(0,0,0,0.8)' }}>{wd.w}</span>
+          )))}
+        </div>
+      )}
+      <div style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: 7, background: 'rgba(255,255,255,0.16)' }}>
+        <div style={{ width: `${prog * 100}%`, height: '100%', background: CYAN }} />
+      </div>
+    </div>
+  );
+}
+
+// Two-lane timeline: the voice (with the word "103") and the text overlay.
+function SyncLanes({ appearAt, early, word, bracketAt, textAt, markAt, fixAt }) {
+  const lt = useSprite().localTime;
+  const W = 404, L = 96, T = 3; // track width px, label column px, seconds shown
+  const X = (t) => clamp(t / T, 0, 1) * W;
+  const s = springy(lt - fixAt, 200, 15);
+  const bx = X(early) + (X(word) - X(early)) * s;
+  const fixed = lt >= fixAt ? ease3((lt - fixAt) / 0.3) : 0;
+  const drift = -DRIFT * clamp(1 - s, 0, 1);
+  const col = fixed > 0.5 ? OK : DANGER;
+  const label = drift < -0.005 ? `−${Math.abs(drift).toFixed(2)} s early` : '0.00 s · synced';
+  const markP = lt >= markAt ? ease3((lt - markAt) / 0.7) : 0;
+  const textP = lt >= textAt && lt < fixAt ? ease3((lt - textAt) / 0.7) : 0; // the early block flashes on "text"
+  const textPunch = 1 + 0.08 * Math.sin(Math.PI * clamp((lt - textAt) / 0.35, 0, 1));
+  const mx = L + X(word);
+  return (
+    <div style={{ position: 'relative', height: 196 }}>
+      <div style={{ position: 'absolute', left: 0, top: 40, ...monoS(20, FAINT), letterSpacing: '0.1em' }}>VOICE</div>
+      <div style={{ position: 'absolute', left: 0, top: 104, ...monoS(20, FAINT), letterSpacing: '0.1em' }}>TEXT</div>
+      <div style={{ position: 'absolute', left: L - 8, top: 22, width: W + 16, height: 60, borderRadius: 12, background: 'rgba(255,255,255,0.035)' }} />
+      <div style={{ position: 'absolute', left: L - 8, top: 92, width: W + 16, height: 50, borderRadius: 12, background: 'rgba(255,255,255,0.035)' }} />
+      <div style={{ position: 'absolute', left: L, top: 23 }}>
+        <Waveform width={W} height={58} bars={34} seed={9} at={appearAt} active={[appearAt, Infinity]} />
+      </div>
+      {/* the spoken word "103" */}
+      <div style={{ position: 'absolute', left: mx - 1, top: 16, width: 2, height: 132, background: CYAN, boxShadow: `0 0 10px ${alpha(CYAN, 0.7)}`, ...enter.wipe(lt - appearAt, 0.4, 'down') }} />
+      <div style={{ position: 'absolute', left: mx - 50, width: 100, top: -14, textAlign: 'center', ...monoS(22, CYAN, { fontWeight: 600 }), ...enter.drop(lt - appearAt - 0.1) }}>"103"</div>
+      {markP > 0 && markP < 1 && (
+        <div style={{ position: 'absolute', left: mx - 10 - 26 * markP, top: 42 - 26 * markP, width: 20 + 52 * markP, height: 20 + 52 * markP,
+          borderRadius: '50%', border: `3px solid ${CYAN}`, opacity: 1 - markP }} />
+      )}
+      {/* the text overlay block */}
+      <div style={{ position: 'absolute', left: L + bx, top: 97, width: W + 4 - bx, height: 40, borderRadius: '10px 4px 4px 10px',
+        background: `linear-gradient(90deg, ${blend(VIOLET, OK, fixed, 0.34)}, ${blend(VIOLET, OK, fixed, 0.06)})`,
+        borderLeft: `4px solid ${blend(VIOLET, OK, fixed, 1)}`, borderTop: `1.5px solid ${blend(VIOLET, OK, fixed, 0.6)}`,
+        borderBottom: `1.5px solid ${blend(VIOLET, OK, fixed, 0.6)}`, paddingLeft: 12,
+        display: 'flex', alignItems: 'center', justifyContent: 'flex-start', ...monoS(22, TEXT, { fontWeight: 600 }),
+        boxShadow: textP > 0 && textP < 1 ? `0 0 0 ${3 + 10 * textP}px ${alpha(DANGER, 0.5 * (1 - textP))}` : 'none',
+        ...enter.push(lt - appearAt - 0.15, 'left'), ...(lt >= appearAt + 0.6 ? { transform: `scale(${textPunch})`, transformOrigin: 'left center' } : {}) }}>$103B</div>
+      {/* the gap between them */}
+      <div style={{ position: 'absolute', left: L + bx, top: 148, width: Math.max(0, X(word) - bx), height: 14, ...enter.wipe(lt - bracketAt, 0.4) }}>
+        <div style={{ position: 'absolute', left: 0, right: 0, top: 6, height: 2, background: col }} />
+        <div style={{ position: 'absolute', left: 0, top: 0, width: 2, height: 14, background: col }} />
+        <div style={{ position: 'absolute', right: 0, top: 0, width: 2, height: 14, background: col }} />
+      </div>
+      <div style={{ position: 'absolute', left: L + (bx + X(word)) / 2 - 130, width: 260, top: 164, textAlign: 'center',
+        ...monoS(22, col, { fontWeight: 600 }), ...enter.slideUp(lt - bracketAt - 0.12) }}>{label}</div>
+    </div>
+  );
+}
+
+function Scene1() {
+  const win = useSceneWindow(1);
+  const cueAI = useWordCue(1, "AI");
+  const cueMade = useWordCue(1, "made");
+  const cueVideos = useWordCue(1, "videos");
+  const cueDrift = useWordCue(1, "drift");
+  const cueThe = useWordCue(1, "The text");
+  const cueText = useWordCue(1, "text");
+  const cueVoice = useWordCue(1, "voice");
+  const cueReelsmith = useWordCue(1, "Reelsmith");
+  const cueImpossible = useWordCue(1, "impossible");
+  const cueEarly = cueDrift - DRIFT; // the fake overlay fires DRIFT s before its word
+  const phoneWords = [
+    { w: 'the', at: cueAI, chunk: 0 }, { w: 'bill', at: cueMade, chunk: 0 }, { w: 'hit', at: cueVideos, chunk: 0 },
+    { w: '103', at: cueDrift, chunk: 1 }, { w: 'billion', at: cueThe, chunk: 1 },
+  ];
+  return (
+    <Sprite {...win}>
+      {({ localTime }) => (
+        <SceneRoot idx={1} pattern="dots">
+          <Glow x={360} y={330} r={300} color={VIOLET} opacity={0.26} breathe={0.04} />
+          <Kicker y={62} at={0}>Episode 06 · Sync</Kicker>
+          <PhoneFrame y={112} width={262} at={0}>
+            <PhoneDemo cardAt={cueEarly} fixAt={cueImpossible} words={phoneWords} />
+          </PhoneFrame>
+          <Badge x={432} y={228} at={cueDrift} variant="danger" icon="warn" size={22} upper={false}><Strike at={cueImpossible} color={TEXT} thickness={3} rotate={-2} dim={0.45}>0.5 s early</Strike></Badge>
+          <Badge x={432} y={282} at={cueImpossible} variant="ok" icon="check" size={22} upper={false}>on the word</Badge>
+          <Card y={594} width={560} at={cueAI} enter="rise" padding="18px 22px 14px" title="timeline" icon="clock" color={CYAN}>
+            <SyncLanes appearAt={cueAI} early={cueEarly} word={cueDrift} bracketAt={cueDrift} textAt={cueText} markAt={cueVoice} fixAt={cueImpossible} />
+          </Card>
+          <div style={{ position: 'absolute', top: 894, left: 0, right: 0, display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 16 }}>
+            <Logo size={46} at={cueReelsmith} />
+            <span style={{ fontFamily: DISPLAY, fontWeight: 700, fontSize: 36, color: TEXT, letterSpacing: '-0.02em', ...enter.push(localTime - cueReelsmith - 0.08, 'right') }}>Reelsmith</span>
+            <Chip at={cueImpossible + 0.15} mono color="cyan" size={22} variant="outline">useWordCue</Chip>
+          </div>
+          <SubtitleRail sceneIdx={1} bottom={150} fontSize={28} variant="clean" accentColor={CYAN} fontFamily="Inter" />
+        </SceneRoot>
+      )}
+    </Sprite>
+  );
+}
+
+// ── Scene 2 · structure: one HTML file, sprites, scenes.json ────────────────
+const S2_HTML = [
+  '<Stage scenesSrc="scenes.json">',
+  '  <Scene1 /> <Scene2 /> …',
+  '</Stage>',
+  'function Scene2() {',
+  '  return (',
+  '    <Sprite {...useSceneWindow(2)}>',
+  { text: '      …scene 2…', dim: true },
+  '    </Sprite>',
+  '  );',
+  '}',
+];
+const S2_JSON = [
+  '[',
+  '  { "idx": 1, "dur": 6.322, … },',
+  '  { "idx": 2, "dur": 7.878, … },',
+  '  …',
+  ']',
+];
+
+function Scene2() {
+  const win = useSceneWindow(2);
+  const cueThe = useWordCue(2, "The animation");
+  const cueReact = useWordCue(2, "React");
+  const cueRuntime = useWordCue(2, "runtime");
+  const cueEach = useWordCue(2, "Each scene");
+  const cueSprite = useWordCue(2, "sprite");
+  const cueWindow = useWordCue(2, "window");
+  const cueComes = useWordCue(2, "comes from");
+  const cueJson = useWordCue(2, "scenes.json");
+  // canvas y of CodeCard line i: top + border + title bar + body padding + i * lh
+  const lineY = (top, i) => top + 1 + 50 + 16 + i * 32 + 16;
+  return (
+    <Sprite {...win}>
+      {({ localTime }) => (
+      <SceneRoot idx={2} enter="wipe" pattern="grid">
+        <Kicker y={70} at={0.3}>01 · One file</Kicker>
+        <CodeCard y={112} title="index.html" at={cueThe} stagger={0.1} fontSize={22} lineHeight={1.45} lines={S2_HTML}
+          highlight={[{ line: 5, at: cueSprite }]} />
+        <div style={{ position: 'absolute', top: 538, left: 0, right: 0, display: 'flex', justifyContent: 'center', gap: 12 }}>
+          <Chip at={cueReact} icon="code" size={22} enter="fromLeft">React 18</Chip>
+          <Chip at={cueRuntime} icon="bolt" mono color="cyan" size={22}>runtime/animations.jsx</Chip>
+        </div>
+        <CodeCard y={610} title="scenes.json" at={cueEach} fontSize={22} lineHeight={1.45} lines={S2_JSON} enter="rise"
+          highlight={[{ line: 2, at: cueJson, color: CYAN }]} />
+        <div style={{ position: 'absolute', top: 872, left: 0, right: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
+          <span style={{ ...monoS(22, MUTED), ...enter.wipe(localTime - cueWindow, 0.4) }}>useSceneWindow(2) returns</span>
+          <Badge at={cueWindow + 0.2} variant="cyan" mono upper={false} size={24}>{'{ start: 5.82, end: 14.2 }'}</Badge>
+        </div>
+        <Arrow from={[622, lineY(112, 5)]} to={[622, lineY(610, 2)]} curve={-44} at={cueComes} dur={0.45} />
+        <SubtitleRail sceneIdx={2} bottom={150} fontSize={28} variant="clean" accentColor={CYAN} fontFamily="Inter" />
+      </SceneRoot>
+      )}
+    </Sprite>
+  );
+}
+
+// ── Scene 3 · the cue: never hand-type a delay ──────────────────────────────
+function S3Code({ cueInside, cueHard, cueDelay, cueYou, cueCall, cuePhrase, cueGet }) {
+  const lt = useSprite().localTime;
+  const hl = lt >= cuePhrase ? ease3((lt - cuePhrase) / 0.25) : 0;
+  const row = (at, en) => ({ height: 48, display: 'flex', alignItems: 'center', whiteSpace: 'pre', ...entry(en, lt - at) });
+  const phraseStyle = hl > 0 ? { background: alpha(CYAN, 0.2 * hl), boxShadow: `0 0 0 2px ${alpha(CYAN, 0.75 * hl)}`, borderRadius: 6 } : null;
+  return (
+    <div style={{ fontFamily: MONO, fontSize: 26, color: CODE.text }}>
+      <div style={row(cueInside, 'fadeIn')}><span style={{ color: CODE.cm, fontStyle: 'italic' }}>{'// inside a scene'}</span></div>
+      <div style={row(cueHard, 'fromLeft')}>
+        <Strike at={cueDelay} thickness={5} rotate={-1.2}>
+          <span>
+            <span style={{ color: CODE.tag }}>{'<Badge'}</span>
+            <span style={{ color: CODE.prop }}>{' at'}</span>
+            <span style={{ color: CODE.punct }}>{'={'}</span>
+            <span style={{ color: CODE.num }}>4.5</span>
+            <span style={{ color: CODE.punct }}>{'} />'}</span>
+          </span>
+        </Strike>
+        <Badge at={cueDelay + 0.15} variant="danger" size={20} upper={false} style={{ marginLeft: 20 }}>hand-typed</Badge>
+      </div>
+      <div style={row(cueYou, 'none')}>
+        <TypedSegs at={cueYou} speed={32} segs={[{ s: 'const', c: CODE.kw }, { s: ' cue ', c: CODE.text }, { s: '=', c: CODE.punct }]} />
+      </div>
+      <div style={row(cueCall, 'none')}>
+        <TypedSegs at={cueCall} speed={36} segs={[
+          { s: '  useWordCue', c: CODE.fn }, { s: '(', c: CODE.punct }, { s: '3', c: CODE.num }, { s: ', ', c: CODE.punct },
+          { s: '"phrase"', c: CODE.str, style: phraseStyle }, { s: ');', c: CODE.punct },
+        ]} />
+      </div>
+      <div style={row(cueGet, 'fromLeft')}>
+        <span style={{ color: CODE.tag }}>{'<Badge'}</span>
+        <span style={{ color: CODE.prop }}>{' at'}</span>
+        <span style={{ color: CODE.punct }}>{'={'}</span>
+        <span style={{ color: CODE.text }}>cue</span>
+        <span style={{ color: CODE.punct }}>{'} />'}</span>
+        <Badge at={cueGet + 0.2} variant="ok" icon="check" size={20} upper={false} style={{ marginLeft: 20 }}>on cue</Badge>
+      </div>
+    </div>
+  );
+}
+
+// The voice around "phrase": a waveform with the real playhead, a tick per
+// Whisper word, the hand-typed guess (red, dashed) and the cue pin (cyan).
+function VoiceTrack({ A, B, words, guess, guessAt, pinAt, at }) {
+  const lt = useSprite().localTime;
+  const W = 500;
+  const X = (t) => clamp((t - A) / (B - A), 0, 1) * W;
+  const pin = springy(lt - pinAt, 260, 18);
+  const px = X(pinAt);
+  return (
+    <div style={{ position: 'relative', width: W, height: 178, marginLeft: 8 }}>
+      <div style={{ position: 'absolute', left: px - 80, width: 160, top: 0, textAlign: 'center', ...monoS(24, CYAN, { fontWeight: 600 }), ...enter.drop(lt - pinAt, 40) }}>"phrase"</div>
+      {lt >= pinAt && (
+        <div style={{ position: 'absolute', left: px - 1.5, top: 36, width: 3, height: 108 * clamp(pin, 0, 1.2), background: CYAN,
+          borderRadius: 2, boxShadow: `0 0 14px ${alpha(CYAN, 0.8)}` }} />
+      )}
+      {lt >= pinAt && (
+        <div style={{ position: 'absolute', left: px - 8, top: 30, width: 16, height: 16, borderRadius: '50%', background: CYAN,
+          transform: `scale(${springy(lt - pinAt, 200, 14)})` }} />
+      )}
+      <div style={{ position: 'absolute', left: 0, top: 46 }}>
+        <Waveform width={W} height={86} bars={44} seed={21} at={at} sweep={[A, B]} />
+      </div>
+      {words.filter((w) => w.start >= A && w.start <= B).map((w, i) => (
+        <div key={i} style={{ position: 'absolute', left: X(w.start) - 1, top: 138, width: 2, height: 10, borderRadius: 1,
+          background: lt >= w.start ? CYAN : 'rgba(255,255,255,0.28)', ...enter.fadeIn(lt - at) }} />
+      ))}
+      <div style={{ position: 'absolute', left: X(guess) - 1, top: 40, height: 110, borderLeft: `2px dashed ${DANGER}`, ...enter.wipe(lt - guessAt, 0.4, 'down') }} />
+      <div style={{ position: 'absolute', left: X(guess) - 168, width: 160, top: 150, textAlign: 'right', ...monoS(22, DANGER, { fontWeight: 600 }), ...enter.slideUp(lt - guessAt - 0.1) }}>guess 4.5</div>
+    </div>
+  );
+}
+
+function Scene3() {
+  const win = useSceneWindow(3);
+  const cueInside = useWordCue(3, "Inside");
+  const cueScene = useWordCue(3, "scene");
+  const cueHard = useWordCue(3, "hard code");
+  const cueDelay = useWordCue(3, "delay");
+  const cueYou = useWordCue(3, "You call");
+  const cueCall = useWordCue(3, "call");
+  const cuePhrase = useWordCue(3, "phrase");
+  const cueGet = useWordCue(3, "get");
+  const cueSecond = useWordCue(3, "second");
+  const words3 = useWordTimings(3);
+  return (
+    <Sprite {...win}>
+      {({ localTime }) => (
+      <SceneRoot idx={3} enter="up" pattern="dots">
+        <Kicker y={70} at={0.3}>02 · The cue</Kicker>
+        <Window y={116} width={600} title="index.html · Scene 3" icon="code" at={cueInside} padding="16px 28px 18px">
+          <S3Code cueInside={cueInside} cueHard={cueHard} cueDelay={cueDelay} cueYou={cueYou} cueCall={cueCall} cuePhrase={cuePhrase} cueGet={cueGet} />
+        </Window>
+        <Card y={472} width={560} at={cueScene} enter="fromBottom" padding="16px 22px 12px" title="scene 3 · the voice" icon="wave" color={CYAN}>
+          <VoiceTrack A={cueHard - 0.3} B={cueSecond + 0.25} words={words3} guess={4.5} guessAt={cueHard + 0.25} pinAt={cuePhrase} at={cueScene} />
+        </Card>
+        <Glow x={360} y={830} r={240} color={CYAN} opacity={0.16} at={cueSecond} />
+        <Card y={758} width={520} at={cueYou} enter="rise" padding="16px 26px 18px" glowAt={cueSecond} color={CYAN}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 18, height: 70 }}>
+            <span style={monoS(34, CODE.prop)}>cue</span>
+            <span style={monoS(34, CODE.punct)}>=</span>
+            {localTime < cueSecond
+              ? <span style={monoS(40, FAINT)}>…</span>
+              : <Counter value={cuePhrase} from={4.5} decimals={2} suffix=" s" at={cueSecond} dur={0.3} size={66} gradient enter="pop" />}
+          </div>
+          <div style={{ textAlign: 'center', fontFamily: SANS, fontWeight: 500, fontSize: 24, color: MUTED, marginTop: 8, ...enter.slideUp(localTime - cueSecond - 0.15) }}>the second “phrase” is spoken</div>
+        </Card>
+        <SubtitleRail sceneIdx={3} bottom={150} fontSize={28} variant="clean" accentColor={CYAN} fontFamily="Inter" />
+      </SceneRoot>
+      )}
+    </Sprite>
+  );
+}
+
+// ── Scene 4 · pure: no timers, no randomness, no CSS transitions ───────────
+const BANS = [
+  { token: 'setTimeout()', fix: 'localTime' },     // sync-ok (on-screen text, not code)
+  { token: 'Math.random()', fix: 'seededRandom' }, // sync-ok (on-screen text, not code)
+  { token: 'transition:', fix: 'spring()' },       // sync-ok (on-screen text, not code)
+];
+
+function BanRow({ at, strikeAt, token, fix }) {
+  const lt = useSprite().localTime;
+  const red = lt >= strikeAt ? ease3((lt - strikeAt) / 0.3) : 0;
+  const x = springy(lt - strikeAt, 200, 14);
+  return (
+    <div style={{ width: 560, height: 76, display: 'flex', alignItems: 'center', gap: 16, padding: '0 18px 0 16px', borderRadius: 18,
+      background: CODE_BG, border: `1.5px solid ${red > 0 ? alpha(DANGER, 0.2 + 0.4 * red) : CARD_BORDER}`, boxShadow: SHADOW,
+      ...enter.push(lt - at, 'left') }}>
+      <div style={{ width: 44, height: 44, borderRadius: 12, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
+        background: alpha(DANGER, 0.1 + 0.12 * red), transform: `scale(${0.8 + 0.2 * x})` }}>
+        <Icon name="x" size={24} color={DANGER} stroke={3} />
+      </div>
+      <span style={monoS(28, CODE.text)}><Strike at={strikeAt} thickness={5} rotate={-1.5}>{token}</Strike></span>
+      <div style={{ marginLeft: 'auto' }}>
+        <Chip at={strikeAt + 0.3} mono color="ok" size={22} icon="arrow" enter="fromRight">{fix}</Chip>
+      </div>
+    </div>
+  );
+}
+
+// Every frame, and the renderer at work: seek to a time, capture that frame, move on.
+function FrameStrip({ at, rendererAt, seekAt, shotAt, moveAt }) {
+  const lt = useSprite().localTime;
+  const frames = [100, 101, 102, 103, 104];
+  const CW = 88, GAP = 14, CH = 152;
+  const pos = track(lt, [[0, 0], [seekAt, 2], [moveAt, 3]], 240, 22);
+  const live = lt >= rendererAt;
+  const seek = lt >= seekAt;
+  const moved = lt >= moveAt;
+  const tval = moved ? '3.433' : '3.400';
+  const flash = lt >= shotAt ? Math.exp(-(lt - shotAt) * 6) : 0;
+  const shot = springy(lt - shotAt, 200, 14);
+  return (
+    <div>
+      <div style={{ position: 'relative', height: CH + 34 }}>
+        {frames.map((f, i) => {
+          const cur = Math.abs(pos - i) < 0.5;
+          return (
+            <div key={f} style={{ position: 'absolute', left: i * (CW + GAP), top: 0, width: CW, ...enter.pop(lt - at - i * 0.08, 0.7) }}>
+              <div style={{ position: 'relative', width: CW, height: CH, borderRadius: 10, overflow: 'hidden',
+                background: `linear-gradient(165deg, ${alpha(VIOLET, 0.42)} 0%, ${INK} 72%)`, border: '1px solid rgba(255,255,255,0.12)',
+                opacity: !live || cur ? 1 : 0.5 }}>
+                <div style={{ position: 'absolute', left: 10, top: 16, height: 7, width: 26 + i * 11, borderRadius: 4, background: 'rgba(255,255,255,0.85)' }} />
+                <div style={{ position: 'absolute', left: 10, top: 30, height: 5, width: 40, borderRadius: 3, background: 'rgba(255,255,255,0.4)' }} />
+                <div style={{ position: 'absolute', left: 8 + i * 12, top: 64, width: 22, height: 22, borderRadius: '50%', background: CYAN, boxShadow: `0 0 12px ${alpha(CYAN, 0.7)}` }} />
+                <div style={{ position: 'absolute', left: 10, right: 10, bottom: 16, height: 26, borderRadius: 6, background: alpha(VIOLET, 0.35), border: `1px solid ${alpha(VIOLET, 0.8)}` }} />
+                {i === 2 && flash > 0.01 && <div style={{ position: 'absolute', inset: 0, background: '#FFFFFF', opacity: 0.85 * flash }} />}
+              </div>
+              {i === 2 && lt >= shotAt && (
+                <div style={{ position: 'absolute', right: -10, top: -10, width: 34, height: 34, borderRadius: '50%', background: OK,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', transform: `scale(${shot})`, boxShadow: `0 0 16px ${alpha(OK, 0.6)}` }}>
+                  <Icon name="check" size={20} color={INK} stroke={3.4} />
+                </div>
+              )}
+              <div style={{ marginTop: 8, textAlign: 'center', ...monoS(20, live && cur ? CYAN : FAINT) }}>#{f}</div>
+            </div>
+          );
+        })}
+        {live && (
+          <div style={{ position: 'absolute', left: pos * (CW + GAP) - 6, top: -6, width: CW + 12, height: CH + 12, borderRadius: 14,
+            border: `3px solid ${CYAN}`, boxShadow: `0 0 20px ${alpha(CYAN, 0.55)}`, pointerEvents: 'none', ...enter.pop(lt - rendererAt) }} />
+        )}
+      </div>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 12, ...enter.wipe(lt - rendererAt, 0.45) }}>
+        <div style={{ padding: '8px 16px', borderRadius: 12, background: 'rgba(255,255,255,0.05)', border: `1px solid ${alpha(CYAN, 0.35)}`, ...monoS(26, CODE.text) }}>
+          <span style={{ color: CODE.fn }}>setTime</span>
+          <span style={{ color: CODE.punct }}>(</span>
+          <span style={{ color: seek ? CODE.num : FAINT, display: 'inline-block', ...(seek ? enter.drop(lt - (moved ? moveAt : seekAt), 18) : {}) }}>{seek ? tval : 't'}</span>
+          <span style={{ color: CODE.punct }}>)</span>
+        </div>
+        <div style={monoS(24, seek ? TEXT : FAINT, { fontWeight: 600 })}>→ frame {seek ? (moved ? 103 : 102) : 'n'}</div>
+      </div>
+    </div>
+  );
+}
+
+function Scene4() {
+  const win = useSceneWindow(4);
+  const cueFrame = useWordCue(4, "frame");
+  const cuePure = useWordCue(4, "pure");
+  const cueFunction = useWordCue(4, "function");
+  const cueNoTimers = useWordCue(4, "No timers");
+  const cueTimers = useWordCue(4, "timers");
+  const cueNoRandom = useWordCue(4, "no random");
+  const cueNumbers = useWordCue(4, "numbers");
+  const cueNoCss = useWordCue(4, "no CSS");
+  const cueTransitions = useWordCue(4, "transitions");
+  const cueRenderer = useWordCue(4, "renderer");
+  const cueSeeks = useWordCue(4, "seeks");
+  const cueTakes = useWordCue(4, "takes");
+  const cueMoves = useWordCue(4, "moves");
+  const rows = [
+    { ...BANS[0], at: cueNoTimers, strikeAt: cueTimers },
+    { ...BANS[1], at: cueNoRandom, strikeAt: cueNumbers },
+    { ...BANS[2], at: cueNoCss, strikeAt: cueTransitions },
+  ];
+  return (
+    <Sprite {...win}>
+      <SceneRoot idx={4} enter="push" pattern="grid">
+        <Kicker y={70} at={0.3}>03 · Pure frames</Kicker>
+        <Title y={112} ats={[cueFrame, cuePure, cueFunction]} size={54} text="frame = *f(time)*" />
+        <div style={{ position: 'absolute', top: 206, left: 80, width: 560, display: 'flex', flexDirection: 'column', gap: 14 }}>
+          {rows.map((r, i) => <BanRow key={i} {...r} />)}
+        </div>
+        <Card y={500} width={560} at={cueFrame} enter="rise" padding="16px 26px 16px" title="frames · 30 fps" icon="film" color={CYAN} glowAt={cueRenderer}>
+          <FrameStrip at={cueFrame + 0.15} rendererAt={cueRenderer} seekAt={cueSeeks} shotAt={cueTakes} moveAt={cueMoves} />
+        </Card>
+        <SubtitleRail sceneIdx={4} bottom={150} fontSize={28} variant="clean" accentColor={CYAN} fontFamily="Inter" />
+      </SceneRoot>
+    </Sprite>
+  );
+}
+
+// ── Scene 5 · subtitles are free ────────────────────────────────────────────
+// A magnified rail: the scene's own words, centred on the one being spoken,
+// each stamped with its Whisper start time from scenes.json.
+function RailLens({ words, raw }) {
+  const lt = useSprite().localTime;
+  const VIEW = 532, GAP = 20;
+  const widths = words.map((w) => Math.max(70, w.word.length * 21 + 24));
+  const centers = [];
+  let acc = 0;
+  widths.forEach((wd) => { centers.push(acc + wd / 2); acc += wd + GAP; });
+  let cur = -1;
+  words.forEach((w, i) => { if (lt >= w.start) cur = i; });
+  const keys = [[0, centers[0] || 0]].concat(words.map((w, i) => [w.start, centers[i]]));
+  const cx = track(lt, keys, 260, 30);
+  return (
+    <div style={{ position: 'relative', width: VIEW, height: 124, overflow: 'hidden' }}>
+      <div style={{ position: 'absolute', left: VIEW / 2 - 118, width: 236, top: 2, bottom: 2, borderRadius: 16,
+        background: alpha(CYAN, 0.07), border: `1px solid ${alpha(CYAN, 0.28)}` }} />
+      <div style={{ position: 'absolute', left: VIEW / 2 - cx, top: 0, height: '100%' }}>
+        {words.map((w, i) => {
+          const dx = centers[i] - cx;
+          const vis = clamp(1 - (Math.abs(dx) + widths[i] / 2 - 226) / 30, 0, 1); // edge stays ≥ 104 px from the canvas side
+          const isCur = i === cur;
+          const past = i < cur;
+          const stamp = lt >= w.start ? ease3((lt - w.start) / 0.25) : 0;
+          return (
+            <div key={i} style={{ position: 'absolute', left: centers[i] - widths[i] / 2, width: widths[i], top: 14, textAlign: 'center', opacity: vis }}>
+              <div style={{ fontFamily: SANS, fontWeight: 600, fontSize: 40, lineHeight: 1.1, whiteSpace: 'nowrap',
+                color: isCur ? CYAN : past ? 'rgba(245,247,255,0.42)' : 'rgba(245,247,255,0.85)',
+                textShadow: isCur ? `0 0 22px ${alpha(CYAN, 0.45)}` : 'none' }}>{w.word}</div>
+              <div style={{ marginTop: 12, ...monoS(22, isCur ? CYAN : MUTED, { fontWeight: isCur ? 600 : 400 }), opacity: stamp,
+                transform: `translateY(${(1 - stamp) * 10}px)` }}>{raw[i] ? raw[i].start.toFixed(2) : ''}</div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function Scene5() {
+  const win = useSceneWindow(5);
+  const cueSubtitles = useWordCue(5, "Subtitles");
+  const cueAre = useWordCue(5, "are");
+  const cueFree = useWordCue(5, "free");
+  const cueDrop = useWordCue(5, "Drop");
+  const cueSubtitle = useWordCue(5, "subtitle rail");
+  const cueRail = useWordCue(5, "rail");
+  const cueHighlights = useWordCue(5, "highlights");
+  const cueWhispers = useWordCue(5, "Whispers"); // = "Whisper's" (validate-sync's regex stops at an apostrophe)
+  const words5 = useWordTimings(5);
+  const scenes = useScenes();
+  const s5 = scenes ? scenes.find((s) => s.idx === 5) : null;
+  const raw5 = s5 && s5.words ? s5.words : [];
+  return (
+    <Sprite {...win}>
+      <SceneRoot idx={5} enter="iris" pattern="dots">
+        <Kicker y={70} at={0.3}>04 · Free subtitles</Kicker>
+        <Title y={112} ats={[cueSubtitles, cueAre, cueFree]} size={60} text="Subtitles are|*free*." />
+        <CodeCard y={272} title="index.html · Scene 5" lang="jsx" at={cueDrop} fontSize={22} highlight={[{ line: 2, at: cueRail, color: CYAN }]} lines={[
+          '<SceneRoot idx={5}>',
+          { text: '  …your scene…', dim: true },
+          { text: '  <SubtitleRail sceneIdx={5} />', type: true, at: cueSubtitle },
+          '</SceneRoot>',
+        ]} />
+        <Card y={536} width={580} at={cueSubtitles} enter="rise" glowAt={cueHighlights} padding="16px 24px 14px" title="rail · Whisper timestamps" icon="words" color={CYAN}>
+          <RailLens words={words5} raw={raw5} />
+        </Card>
+        <Chip y={790} at={cueWhispers} icon="mic" mono color="cyan" size={24}>stt-whisper · turbo</Chip>
+        <SubtitleRail sceneIdx={5} bottom={150} fontSize={28} variant="clean" accentColor={CYAN} fontFamily="Inter" />
+      </SceneRoot>
+    </Sprite>
+  );
+}
+
+// ── Scene 6 · two linters guard all of this ─────────────────────────────────
+function GuardTile({ at, activeAt, label, sub, en }) {
+  const lt = useSprite().localTime;
+  const a = lt >= activeAt ? ease3((lt - activeAt) / 0.35) : 0;
+  const chk = springy(lt - activeAt, 200, 14);
+  return (
+    <div style={{ position: 'relative', width: 256, height: 184, padding: '22px 22px', borderRadius: 22, background: CODE_BG,
+      border: `1.5px solid ${alpha(OK, 0.22 + 0.55 * a)}`, boxShadow: `${SHADOW}${a > 0 ? `, 0 0 ${42 * a}px ${alpha(OK, 0.32 * a)}` : ''}`,
+      ...entry(en, lt - at) }}>
+      <div style={{ width: 54, height: 54, borderRadius: 15, display: 'flex', alignItems: 'center', justifyContent: 'center', background: alpha(OK, 0.14 + 0.1 * a) }}>
+        <Icon name="shield" size={30} color={OK} />
+      </div>
+      <div style={{ fontFamily: MONO, fontWeight: 600, fontSize: 24, color: TEXT, marginTop: 18, whiteSpace: 'nowrap' }}>{label}</div>
+      <div style={{ fontFamily: SANS, fontWeight: 500, fontSize: 24, color: MUTED, marginTop: 6, whiteSpace: 'nowrap' }}>{sub}</div>
+      {lt >= activeAt && (
+        <div style={{ position: 'absolute', top: 18, right: 18, width: 40, height: 40, borderRadius: '50%', background: OK,
+          display: 'flex', alignItems: 'center', justifyContent: 'center', transform: `scale(${chk})`, boxShadow: `0 0 18px ${alpha(OK, 0.6)}` }}>
+          <Icon name="check" size={24} color={INK} stroke={3.4} />
+        </div>
+      )}
+    </div>
+  );
+}
+
+function Scene6() {
+  const win = useSceneWindow(6);
+  const cueTwo = useWordCue(6, "Two linters");
+  const cueLinters = useWordCue(6, "linters");
+  const cueCheck = useWordCue(6, "Check sync");
+  const cueWall = useWordCue(6, "wall clock");
+  const cueValidate = useWordCue(6, "Validate");
+  const cueRail = useWordCue(6, "rail");
+  const cueResolves = useWordCue(6, "resolves");
+  const cueBoth = useWordCue(6, "Both");
+  const cuePass = useWordCue(6, "pass");
+  const cueRender = useWordCue(6, "render");
+  return (
+    <Sprite {...win}>
+      <SceneRoot idx={6} enter="zoom" pattern="grid">
+        <Kicker y={70} at={0.3}>05 · Two linters</Kicker>
+        <Terminal y={112} width={600} title="~/reelsmith" command="reelsmith lint tut-06-animation" at={cueTwo} finalPrompt rows={[
+          { text: 'check-sync', status: 'ok', right: '0 errors', at: cueCheck },
+          { text: '  bans Date.now · timers · rAF', dim: true, at: cueWall },
+          { text: 'validate-sync', status: 'ok', right: '0 warnings', at: cueValidate },
+          { text: '  6/6 scenes have a rail', dim: true, at: cueRail },
+          { text: '  57/57 cues resolve', dim: true, at: cueResolves },
+        ]} />
+        <div style={{ position: 'absolute', top: 492, left: 0, right: 0, display: 'flex', justifyContent: 'center', gap: 24 }}>
+          <GuardTile at={cueLinters} activeAt={cueCheck + 0.3} label="check-sync" sub="no wall clock" en="fromLeft" />
+          <GuardTile at={cueLinters + 0.15} activeAt={cueResolves + 0.2} label="validate-sync" sub="rails + cues" en="fromRight" />
+        </div>
+        <Arrow from={[220, 690]} to={[318, 764]} curve={-18} at={cueBoth} color={OK} />
+        <Arrow from={[500, 690]} to={[402, 764]} curve={18} at={cueBoth + 0.1} color={OK} />
+        <Glow x={360} y={800} r={230} color={OK} opacity={0.2} at={cuePass} breathe={0.04} />
+        <Badge y={776} at={cuePass} variant="ok" icon="check" size={30}>ready to render</Badge>
+        <Chip y={858} at={cueRender} mono color="ghost" variant="ghost" size={22}>next: reelsmith sheet</Chip>
+        <SubtitleRail sceneIdx={6} bottom={150} fontSize={28} variant="clean" accentColor={CYAN} fontFamily="Inter" />
+      </SceneRoot>
+    </Sprite>
+  );
+}
+
+function App() {
+  return (
+    <Stage width={720} height={1280} scenesSrc="scenes.json" background={INK} loop={false} autoplay={true} persistKey="tut-06-animation">
+      <Scene1 />
+      <Scene2 />
+      <Scene3 />
+      <Scene4 />
+      <Scene5 />
+      <Scene6 />
+    </Stage>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>

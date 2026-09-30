@@ -1,0 +1,725 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Does devotion guarantee success?</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,500;1,9..144,600;1,9..144,700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+  <script type="text/babel" src="../../runtime/animations.jsx"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { width: 100%; height: 100%; background: #0b0906; overflow: hidden; }
+    #root { width: 100%; height: 100vh; position: relative; }
+  </style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+// ── Style (owner-approved override: warm reflective, not the red tech brand) ──
+const BG = '#0b0906';
+const GOLD = '#e0a458';
+const GOLD2 = '#f2c46d';
+const CREAM = '#f5efe6';
+const SERIF = "'Fraunces', Georgia, serif";
+const COND = "'Manrope', sans-serif";
+const BODY = "'Manrope', sans-serif";
+const TS = '0 2px 22px rgba(0,0,0,0.65), 0 1px 3px rgba(0,0,0,0.5)';
+const GLOW_TS = '0 0 28px rgba(242,196,109,0.55), 0 2px 16px rgba(0,0,0,0.6)';
+const img = (n) => `images/${n}.jpg`;
+
+// ── Motion helpers (all pure functions of time) ────────────────────────────────
+const e3 = (t) => Easing.easeOutCubic(clamp(t, 0, 1));
+const eio = (t) => Easing.easeInOutCubic(clamp(t, 0, 1));
+const after = (lt, cue, d) => e3((lt - cue) / d);
+
+// Entry styles. Every text overlay is enter-only (no early exits).
+function slideUp(localTime, inDur = 0.45) {
+  const t = clamp(localTime / inDur, 0, 1);
+  const e = Easing.easeOutCubic(t);
+  return { opacity: e, transform: `translateY(${(1 - e) * 22}px)` };
+}
+function rise(lt, cue, d = 0.5, dist = 28) {
+  const p = after(lt, cue, d);
+  return { opacity: p, transform: `translateY(${(1 - p) * dist}px)` };
+}
+function pop(lt, cue, k = 200, d = 14) {
+  const s = spring(lt - cue, k, d);
+  return { opacity: clamp((lt - cue) / 0.15, 0, 1), transform: `scale(${0.5 + 0.5 * s})` };
+}
+function reveal(lt, cue, d = 0.6) {
+  const p = eio((lt - cue) / d);
+  return { clipPath: `inset(0 ${(1 - p) * 100}% 0 0)`, transform: `translateX(${(1 - p) * -16}px)`, opacity: p > 0 ? 1 : 0 };
+}
+function blurIn(lt, cue, d = 0.6) {
+  const p = after(lt, cue, d);
+  return { opacity: p, filter: `blur(${(1 - p) * 14}px)`, transform: `scale(${1.1 - 0.1 * p})` };
+}
+function drop(lt, cue) {
+  const s = spring(lt - cue, 260, 17);
+  return { opacity: clamp((lt - cue) / 0.12, 0, 1), transform: `translateY(${(1 - s) * -70}px)` };
+}
+
+// ── Photo layers ────────────────────────────────────────────────────────────────
+// One shot: Ken Burns zoom + drift over its own lifetime.
+function Shot({ src, t, dur, pos = 'center', z0 = 1.04, z1 = 1.14, x0 = 0, x1 = 0, y0 = 0, y1 = 0, filter }) {
+  const p = Easing.easeInOutSine(clamp(t / Math.max(0.01, dur), 0, 1));
+  const s = z0 + (z1 - z0) * p;
+  const x = x0 + (x1 - x0) * p;
+  const y = y0 + (y1 - y0) * p;
+  return (
+    <img src={img(src)} alt="" style={{
+      position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', objectPosition: pos,
+      transform: `scale(${s}) translate(${x}%, ${y}%)`, transformOrigin: 'center', filter,
+    }} />
+  );
+}
+
+// Transition style for an incoming layer, e = 0..1.
+function trStyle(type, e) {
+  switch (type) {
+    case 'wipe':   return { clipPath: `inset(0 ${(1 - e) * 100}% 0 0)` };
+    case 'wipeUp': return { clipPath: `inset(${(1 - e) * 100}% 0 0 0)` };
+    case 'iris':   return { clipPath: `circle(${e * 76}% at 50% 50%)` };
+    case 'zoom':   return { opacity: e, transform: `scale(${1.3 - 0.3 * e})` };
+    case 'slide':  return { transform: `translateX(${(1 - e) * 100}%)` };
+    case 'blur':   return { opacity: e, filter: `blur(${(1 - e) * 16}px)` };
+    default:       return { opacity: e };
+  }
+}
+
+// Sequence of shots cut on word cues. shots: [{ src, at, tr, ...kenBurns }]
+function PhotoSeq({ lt, dur, shots, trDur = 0.5, filter, height = '100%', top = 0 }) {
+  let a = 0;
+  for (let i = 0; i < shots.length; i++) if (lt >= shots[i].at) a = i;
+  const layer = (i, style) => {
+    const s = shots[i];
+    const end = i < shots.length - 1 && isFinite(shots[i + 1].at) ? shots[i + 1].at + trDur : dur;
+    return (
+      <div key={i} style={{ position: 'absolute', inset: 0, overflow: 'hidden', ...style }}>
+        <Shot {...s} filter={s.filter || filter} t={lt - s.at} dur={Math.max(0.5, end - s.at)} />
+      </div>
+    );
+  };
+  const tp = a > 0 ? clamp((lt - shots[a].at) / trDur, 0, 1) : 1;
+  return (
+    <div style={{ position: 'absolute', left: 0, right: 0, top, height, overflow: 'hidden', background: BG }}>
+      {a > 0 && tp < 1 && layer(a - 1, {})}
+      {layer(a, a > 0 ? trStyle(shots[a].tr || 'dissolve', eio(tp)) : {})}
+    </div>
+  );
+}
+
+// Warm dark grades so text always reads over photos.
+function Grade({ kind = 'topbottom', dim = 0 }) {
+  const bgs = {
+    topbottom: 'linear-gradient(to bottom, rgba(11,9,6,0.9) 0%, rgba(11,9,6,0.5) 26%, rgba(11,9,6,0.22) 48%, rgba(11,9,6,0.5) 70%, rgba(11,9,6,0.94) 100%)',
+    left: 'linear-gradient(to right, rgba(11,9,6,0.92) 0%, rgba(11,9,6,0.7) 52%, rgba(11,9,6,0.3) 100%), linear-gradient(to bottom, rgba(11,9,6,0.7) 0%, rgba(11,9,6,0) 30%, rgba(11,9,6,0) 65%, rgba(11,9,6,0.92) 100%)',
+    center: 'radial-gradient(ellipse 80% 55% at 50% 50%, rgba(11,9,6,0.55) 0%, rgba(11,9,6,0.2) 70%), linear-gradient(to bottom, rgba(11,9,6,0.9) 0%, rgba(11,9,6,0.35) 30%, rgba(11,9,6,0.35) 65%, rgba(11,9,6,0.94) 100%)',
+  };
+  return (
+    <React.Fragment>
+      <div style={{ position: 'absolute', inset: 0, background: bgs[kind] }} />
+      <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(165deg, rgba(242,196,109,0.14) 0%, rgba(11,9,6,0) 45%, rgba(224,164,88,0.10) 100%)', mixBlendMode: 'screen' }} />
+      {dim > 0 && <div style={{ position: 'absolute', inset: 0, background: `rgba(11,9,6,${dim})` }} />}
+    </React.Fragment>
+  );
+}
+
+// Soft light orb (the "inner peace" motif). Pulses on a time-driven sine.
+function Glow({ x, y, r, strength = 1, lt }) {
+  const pulse = 1 + 0.05 * Math.sin(lt * 2.2);
+  const R = r * pulse;
+  return (
+    <div style={{
+      position: 'absolute', left: x - R, top: y - R, width: R * 2, height: R * 2, borderRadius: '50%',
+      background: 'radial-gradient(circle, rgba(255,226,160,0.62) 0%, rgba(242,196,109,0.34) 26%, rgba(224,164,88,0.12) 52%, rgba(224,164,88,0) 70%)',
+      opacity: strength, mixBlendMode: 'screen', pointerEvents: 'none',
+    }} />
+  );
+}
+
+// Scene entry transitions — each runs in the 0.5 s scene overlap, over the outgoing scene.
+function Enter({ type, lt, children }) {
+  const p = eio(lt / 0.5);
+  let inner = {};
+  let edge = null;
+  if (type === 'wipe') {
+    inner = { clipPath: `inset(0 ${(1 - p) * 100}% 0 0)` };
+    if (p < 1) edge = <div style={{ position: 'absolute', top: 0, bottom: 0, left: p * 720 - 70, width: 140, background: 'linear-gradient(to right, rgba(242,196,109,0), rgba(255,230,170,0.95), rgba(242,196,109,0))', filter: 'blur(8px)', mixBlendMode: 'screen' }} />;
+  } else if (type === 'wipeUp') {
+    inner = { clipPath: `inset(${(1 - p) * 100}% 0 0 0)` };
+    if (p < 1) edge = <div style={{ position: 'absolute', left: 0, right: 0, top: (1 - p) * 1280 - 70, height: 140, background: 'linear-gradient(to bottom, rgba(242,196,109,0), rgba(255,230,170,0.95), rgba(242,196,109,0))', filter: 'blur(8px)', mixBlendMode: 'screen' }} />;
+  } else if (type === 'push') {
+    inner = { transform: `translateX(${(1 - p) * 100}%)`, boxShadow: '-30px 0 60px rgba(0,0,0,0.6)' };
+  } else if (type === 'zoom') {
+    inner = { opacity: p, transform: `scale(${1.4 - 0.4 * p})` };
+  } else if (type === 'iris') {
+    inner = { clipPath: `circle(${p * 76}% at 50% 50%)` };
+    const R = p * 0.76 * 1040;
+    if (p < 1) edge = <div style={{ position: 'absolute', left: 360 - R, top: 640 - R, width: R * 2, height: R * 2, borderRadius: '50%', border: '4px solid rgba(242,196,109,0.9)', boxShadow: '0 0 30px rgba(242,196,109,0.8)' }} />;
+  } else if (type === 'glow') {
+    inner = { opacity: p };
+    const f = Math.sin(Math.PI * clamp(lt / 0.5, 0, 1));
+    if (lt < 0.5) edge = <div style={{ position: 'absolute', inset: 0, opacity: 0.9 * f, background: 'radial-gradient(ellipse at 55% 45%, rgba(255,240,205,1) 0%, rgba(242,196,109,0.85) 35%, rgba(224,164,88,0.3) 70%, rgba(11,9,6,0) 100%)', mixBlendMode: 'screen' }} />;
+  } else if (type === 'dissolve') {
+    inner = { opacity: p };
+  }
+  return (
+    <div style={{ position: 'absolute', inset: 0 }}>
+      <div style={{ position: 'absolute', inset: 0, overflow: 'hidden', background: BG, ...inner }}>{children}</div>
+      {edge}
+    </div>
+  );
+}
+
+// ── Typographic building blocks ───────────────────────────────────────────────
+function Label({ lt, cue, text, top, left = 56, center = false, color = GOLD, size = 24 }) {
+  const line = after(lt, cue, 0.5);
+  return (
+    <div style={{
+      position: 'absolute', top, left: center ? 0 : left, right: center ? 0 : undefined,
+      display: 'flex', alignItems: 'center', justifyContent: center ? 'center' : 'flex-start', gap: 14,
+    }}>
+      <div style={{ width: 44 * line, height: 2, background: color }} />
+      <div style={{
+        fontFamily: COND, fontWeight: 700, fontSize: size, letterSpacing: '0.24em', textTransform: 'uppercase',
+        color, textShadow: TS, ...reveal(lt, cue + 0.1, 0.5),
+      }}>{text}</div>
+      {center && <div style={{ width: 44 * line, height: 2, background: color }} />}
+    </div>
+  );
+}
+
+function Chip({ children, style, size = 42 }) {
+  return (
+    <div style={{
+      display: 'inline-block', padding: '6px 26px 10px', borderRadius: 999,
+      border: `2px solid ${GOLD}`, background: 'rgba(11,9,6,0.62)',
+      fontFamily: SERIF, fontStyle: 'italic', fontWeight: 500, fontSize: size, color: CREAM, lineHeight: 1.15,
+      whiteSpace: 'nowrap', ...style,
+    }}>{children}</div>
+  );
+}
+
+function StrikeLine({ p, rot = -4, thick = 7 }) {
+  return (
+    <div style={{
+      position: 'absolute', left: '-4%', top: '54%', height: thick, width: `${p * 108}%`,
+      background: GOLD2, borderRadius: thick, transform: `rotate(${rot}deg)`, transformOrigin: 'left center',
+      boxShadow: '0 0 18px rgba(242,196,109,0.75)',
+    }} />
+  );
+}
+
+// ── Scene 1 · Hook: the question ──────────────────────────────────────────────
+function Scene1() {
+  const win = useSceneWindow(1);
+  const cGod = useWordCue(1, "god");
+  const cGuar = useWordCue(1, "guarantee");
+  const cSucc = useWordCue(1, "successful");
+  const cPeace = useWordCue(1, "peaceful");
+  const cThink = useWordCue(1, "lets think");
+  return (
+    <Sprite {...win}>{({ localTime: lt, duration }) => {
+      const strike = eio((lt - cThink - 0.15) / 0.55);
+      return (
+        <div style={{ position: 'absolute', inset: 0, background: BG, overflow: 'hidden' }}>
+          <PhotoSeq lt={lt} dur={duration} shots={[
+            { src: 'hand-rays', at: 0, z0: 1.32, z1: 1.06, x0: 1.5, x1: -1.5, y0: -2, y1: 1 },
+            { src: 'sea-sunrise', at: cPeace, tr: 'wipe', z0: 1.14, z1: 1.04, y0: 1, y1: -1 },
+          ]} />
+          <Grade kind="topbottom" />
+          <div style={{
+            position: 'absolute', right: -70, top: 330, fontFamily: SERIF, fontStyle: 'italic', fontWeight: 700,
+            fontSize: 700, lineHeight: 1, color: GOLD2, opacity: 0.24, mixBlendMode: 'screen',
+            transform: `rotate(${-10 + lt * 1.8}deg) translateY(${-lt * 8}px)`,
+          }}>?</div>
+          <Label lt={lt} cue={0} top={128} text="A question worth asking" />
+          <div style={{ position: 'absolute', left: 56, right: 40, top: 178, fontFamily: SERIF, fontWeight: 700, fontSize: 74, lineHeight: 1.06, color: CREAM, textShadow: TS }}>
+            <div style={rise(lt, 0.05, 0.45)}>Does devotion</div>
+            <div style={rise(lt, cGod, 0.45)}>to God</div>
+          </div>
+          <div style={{ position: 'absolute', left: 50, top: 336, ...blurIn(lt, cGuar, 0.45) }}>
+            <span style={{
+              position: 'relative', display: 'inline-block', padding: '0 10px',
+              fontFamily: SERIF, fontStyle: 'italic', fontWeight: 700, fontSize: 112, lineHeight: 1.1,
+              color: strike > 0.5 ? 'rgba(245,239,230,0.6)' : GOLD2, textShadow: GLOW_TS,
+            }}>
+              guarantee
+              <StrikeLine p={strike} />
+            </span>
+          </div>
+          <div style={{ position: 'absolute', left: 56, top: 500, display: 'flex', gap: 18, alignItems: 'center' }}>
+            <Chip style={{ ...pop(lt, cSucc), transformOrigin: 'left center' }}>success</Chip>
+            <div style={{ fontFamily: SERIF, fontSize: 44, color: GOLD2, textShadow: TS, ...pop(lt, cPeace + 0.05) }}>&amp;</div>
+            <Chip style={{ ...pop(lt, cPeace), transformOrigin: 'left center' }}>peace</Chip>
+            <div style={{ fontFamily: SERIF, fontStyle: 'italic', fontWeight: 700, fontSize: 70, color: GOLD2, textShadow: GLOW_TS, ...pop(lt, cThink + 0.2, 220, 12) }}>?</div>
+          </div>
+          <SubtitleRail sceneIdx={1} bottom={170} fontSize={26} variant="clean" accentColor={GOLD2} />
+        </div>
+      );
+    }}</Sprite>
+  );
+}
+
+// ── Scene 2 · Split screen: devoted & struggling vs not religious & at peace ──
+function Scene2() {
+  const win = useSceneWindow(2);
+  const cDeep = useWordCue(2, "deeply devoted");
+  const cStr = useWordCue(2, "struggle");
+  const cArent = useWordCue(2, "arent very");
+  const cSucc = useWordCue(2, "successful meaningful");
+  const cMean = useWordCue(2, "meaningful");
+  const cPeace = useWordCue(2, "peaceful");
+  const cSo = useWordCue(2, "so devotion");
+  const cDec = useWordCue(2, "decides");
+  return (
+    <Sprite {...win}>{({ localTime: lt, duration }) => {
+      const lit = after(lt, cArent, 0.9);
+      const seam = spring(lt - 0.15, 180, 22);
+      const band = spring(lt - cSo, 200, 22);
+      return (
+        <Enter type="wipe" lt={lt}>
+          {/* top half — struggle, cool and desaturated */}
+          <PhotoSeq lt={lt} dur={duration} top={0} height={640} filter="grayscale(0.55) brightness(1.0) contrast(1.08)" shots={[
+            { src: 'rain-window', at: 0, z0: 1.18, z1: 1.04 },
+            { src: 'storm', at: cStr, tr: 'dissolve', z0: 1.05, z1: 1.2, x0: -2, x1: 2 },
+          ]} />
+          <div style={{ position: 'absolute', left: 0, right: 0, top: 0, height: 640, background: 'linear-gradient(to bottom, rgba(11,9,6,0.55), rgba(11,9,6,0.15) 40%, rgba(11,9,6,0.85))' }} />
+          {/* bottom half — lights up warm on "aren't very religious" */}
+          <PhotoSeq lt={lt} dur={duration} top={640} height={640} filter={`grayscale(${1 - lit}) brightness(${0.5 + 0.55 * lit}) saturate(${0.6 + 0.6 * lit})`} shots={[
+            { src: 'summit-sit', at: 0, z0: 1.18, z1: 1.06, pos: 'center 60%' },
+            { src: 'summit-dusk', at: cMean, tr: 'wipeUp', z0: 1.04, z1: 1.14, pos: 'center 70%' },
+          ]} />
+          <div style={{ position: 'absolute', left: 0, right: 0, top: 640, height: 640, background: 'linear-gradient(to bottom, rgba(11,9,6,0.8), rgba(11,9,6,0.1) 45%, rgba(11,9,6,0.92))' }} />
+
+          {/* top label */}
+          <Label lt={lt} cue={cDeep} top={402} text="Deeply devoted" color={GOLD} />
+          <div style={{ position: 'absolute', left: 52, top: 436, fontFamily: SERIF, fontStyle: 'italic', fontWeight: 700, fontSize: 70, color: CREAM, textShadow: TS, padding: '0 6px 8px', ...reveal(lt, cStr, 0.55) }}>&amp; struggling</div>
+
+          {/* seam + vs medallion */}
+          <div style={{ position: 'absolute', left: 0, right: 0, top: 638, height: 4, background: GOLD, transform: `scaleX(${seam})`, boxShadow: '0 0 18px rgba(242,196,109,0.6)' }} />
+          <div style={{
+            position: 'absolute', left: 360 - 40, top: 640 - 40, width: 80, height: 80, borderRadius: 40,
+            background: BG, border: `3px solid ${GOLD2}`, display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontFamily: SERIF, fontStyle: 'italic', fontWeight: 700, fontSize: 36, color: GOLD2, ...pop(lt, cArent),
+          }}>vs</div>
+
+          {/* bottom label */}
+          <Label lt={lt} cue={cArent} top={746} text="Not very religious" color={GOLD2} />
+          <div style={{ position: 'absolute', left: 52, top: 780, fontFamily: SERIF, fontStyle: 'italic', fontWeight: 700, fontSize: 70, color: CREAM, textShadow: TS, padding: '0 6px 8px', ...reveal(lt, cSucc - 0.2, 0.55) }}>&amp; at peace</div>
+          <div style={{ position: 'absolute', left: 48, right: 48, top: 890, display: 'flex', gap: 12, justifyContent: 'flex-start' }}>
+            <Chip size={30} style={{ ...pop(lt, cSucc), padding: '4px 18px 7px' }}>successful</Chip>
+            <Chip size={30} style={{ ...pop(lt, cMean), padding: '4px 18px 7px' }}>meaningful</Chip>
+            <Chip size={30} style={{ ...pop(lt, cPeace), padding: '4px 18px 7px' }}>peaceful</Chip>
+          </div>
+
+          {/* the verdict band opens over the seam */}
+          <div style={{
+            position: 'absolute', left: 32, right: 32, top: 552, height: 176, borderRadius: 14,
+            background: 'rgba(11,9,6,0.93)', border: `2px solid ${GOLD}`,
+            transform: `scaleY(${band})`, opacity: clamp((lt - cSo) / 0.1, 0, 1),
+            display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+            boxShadow: '0 20px 60px rgba(0,0,0,0.6)',
+          }}>
+            <div style={{ fontFamily: SERIF, fontWeight: 700, fontSize: 56, color: CREAM, lineHeight: 1.1, ...rise(lt, cSo + 0.1, 0.4) }}>Devotion alone</div>
+            <div style={{ fontFamily: SERIF, fontStyle: 'italic', fontWeight: 500, fontSize: 48, color: GOLD2, lineHeight: 1.2, padding: '0 6px 4px', ...reveal(lt, cDec, 0.5) }}>doesn’t decide it.</div>
+          </div>
+          <SubtitleRail sceneIdx={2} bottom={170} fontSize={26} variant="clean" accentColor={GOLD2} />
+        </Enter>
+      );
+    }}</Sprite>
+  );
+}
+
+// ── Scene 3 · What success depends on: a list that builds ─────────────────────
+function Scene3() {
+  const win = useSceneWindow(3);
+  const cSuccess = useWordCue(3, "success seems");
+  const c0 = useWordCue(3, "aware");
+  const c1 = useWordCue(3, "understand");
+  const c2 = useWordCue(3, "disciplined");
+  const c3 = useWordCue(3, "push yourself");
+  const c4 = useWordCue(3, "react");
+  const c5 = useWordCue(3, "think");
+  const c6 = useWordCue(3, "take risks");
+  const c7 = useWordCue(3, "failure");
+  const c8 = useWordCue(3, "hard times");
+  const cThese = useWordCue(3, "these things");
+  const rows = [
+    [c0, 'Awareness'], [c1, 'Understanding'], [c2, 'Discipline'], [c3, 'Pushing yourself'], [c4, 'How you react'],
+    [c5, 'Thinking & adapting'], [c6, 'Taking risks'], [c7, 'Learning from failure'], [c8, 'Getting through'],
+  ];
+  const Y0 = 236, RH = 66;
+  return (
+    <Sprite {...win}>{({ localTime: lt, duration }) => {
+      let active = -1;
+      rows.forEach(([c], i) => { if (lt >= c) active = i; });
+      const allOn = lt >= cThese;
+      const keys = [[0, Y0], ...rows.map(([c], i) => [c, Y0 + i * RH])];
+      const lead = track(lt, keys, 320, 30);
+      const trail = track(lt, keys, 140, 22);
+      const barTop = Math.min(lead, trail) + 8;
+      const barH = Math.abs(lead - trail) + 46;
+      const bracket = after(lt, cThese, 0.7);
+      return (
+        <Enter type="push" lt={lt}>
+          <PhotoSeq lt={lt} dur={duration} shots={[
+            { src: 'desk-night', at: 0, z0: 1.14, z1: 1.04, x0: 2, x1: 0 },
+            { src: 'compass', at: c0, tr: 'dissolve', z0: 1.04, z1: 1.14 },
+            { src: 'fog-figure', at: c1, tr: 'blur', z0: 1.16, z1: 1.06, x0: -2, x1: 1 },
+            { src: 'runner', at: c2, tr: 'slide', z0: 1.06, z1: 1.16, x0: 2, x1: -2 },
+            { src: 'climber', at: c3, tr: 'wipeUp', z0: 1.04, z1: 1.14, y0: 2, y1: -2 },
+            { src: 'dark-sea', at: c4, tr: 'zoom', z0: 1.2, z1: 1.06 },
+            { src: 'chess-king', at: c5, tr: 'dissolve', z0: 1.04, z1: 1.14, pos: 'center 40%' },
+            { src: 'leap', at: c6, tr: 'wipe', z0: 1.14, z1: 1.04, x0: -2, x1: 2 },
+            { src: 'stairs', at: c7, tr: 'iris', z0: 1.04, z1: 1.16, y0: 2, y1: -1 },
+            { src: 'summit-sit', at: cThese, tr: 'blur', z0: 1.16, z1: 1.06 },
+          ]} />
+          <Grade kind="left" />
+          <Label lt={lt} cue={cSuccess} top={150} text="What success depends on" />
+          {/* stretchy active-row indicator, then a bracket over the whole list */}
+          <div style={{ position: 'absolute', left: 50, top: barTop, width: 5, height: barH, borderRadius: 3, background: GOLD2, opacity: (active >= 0 ? 1 : 0) * (1 - bracket), boxShadow: '0 0 14px rgba(242,196,109,0.7)' }} />
+          <div style={{ position: 'absolute', left: 50, top: Y0 + 4, width: 5, height: bracket * (rows.length * RH - 14), borderRadius: 3, background: GOLD2, boxShadow: '0 0 14px rgba(242,196,109,0.7)' }} />
+          {rows.map(([c, text], i) => {
+            const on = allOn ? lt >= cThese + 0.07 * i : i === active;
+            const col = on ? GOLD2 : 'rgba(245,239,230,0.82)';
+            return (
+              <div key={i} style={{ position: 'absolute', left: 72, top: Y0 + i * RH, height: RH, display: 'flex', alignItems: 'center', gap: 16 }}>
+                <div style={{ width: 40, fontFamily: SERIF, fontStyle: 'italic', fontWeight: 700, fontSize: 26, color: GOLD, textShadow: TS, ...pop(lt, c, 260, 18) }}>{String(i + 1).padStart(2, '0')}</div>
+                <div style={{
+                  fontFamily: SERIF, fontWeight: on ? 700 : 500, fontSize: on ? 44 : 40, color: col, whiteSpace: 'nowrap',
+                  textShadow: on ? GLOW_TS : TS, padding: '0 4px 6px', ...reveal(lt, c + 0.05, 0.45),
+                }}>{text}</div>
+              </div>
+            );
+          })}
+          <div style={{ position: 'absolute', left: 72, top: Y0 + rows.length * RH + 14, fontFamily: SERIF, fontStyle: 'italic', fontWeight: 700, fontSize: 48, color: CREAM, textShadow: TS, padding: '0 6px 8px', ...reveal(lt, cThese + 0.3, 0.6) }}>
+            These shape your life.
+          </div>
+          <SubtitleRail sceneIdx={3} bottom={170} fontSize={26} variant="clean" accentColor={GOLD2} />
+        </Enter>
+      );
+    }}</Sprite>
+  );
+}
+
+// ── Scene 4 · The turn ─────────────────────────────────────────────────────────
+const MEANINGLESS_TOP = 842;
+function Scene4() {
+  const win = useSceneWindow(4);
+  const cBut = useWordCue(4, "but");
+  const cDev = useWordCue(4, "devotion");
+  const cMeaningless = useWordCue(4, "meaningless");
+  return (
+    <Sprite {...win}>{({ localTime: lt, duration }) => (
+      <Enter type="glow" lt={lt}>
+        <PhotoSeq lt={lt} dur={duration} shots={[{ src: 'candle', at: 0, z0: 1.0, z1: 1.2, pos: 'center 45%' }]} />
+        <Grade kind="topbottom" />
+        <div style={{ position: 'absolute', left: 0, right: 0, top: 150, textAlign: 'center', fontFamily: SERIF, fontStyle: 'italic', fontWeight: 700, fontSize: 190, lineHeight: 1, color: GOLD2, textShadow: GLOW_TS, ...blurIn(lt, cBut, 0.5) }}>But</div>
+        <div style={{ position: 'absolute', left: 0, right: 0, top: 730, textAlign: 'center', fontFamily: SERIF, fontWeight: 700, fontSize: 84, color: CREAM, textShadow: TS, ...rise(lt, cDev, 0.35) }}>devotion</div>
+        <div style={{ position: 'absolute', left: 0, right: 0, top: MEANINGLESS_TOP, display: 'flex', justifyContent: 'center' }}>
+          <div style={{ fontFamily: SERIF, fontStyle: 'italic', fontWeight: 500, fontSize: 84, lineHeight: 1.1, color: CREAM, textShadow: TS, padding: '0 8px 10px', ...reveal(lt, cMeaningless - 0.1, 0.3) }}>meaningless</div>
+        </div>
+        <SubtitleRail sceneIdx={4} bottom={170} fontSize={26} variant="clean" accentColor={GOLD2} />
+      </Enter>
+    )}</Sprite>
+  );
+}
+
+// ── Scene 5 · A different purpose: light and the gifts it gives ───────────────
+function Scene5() {
+  const win = useSceneWindow(5);
+  const cDiff = useWordCue(5, "different purpose");
+  const cTruly = useWordCue(5, "truly believe");
+  const cWatch = useWordCue(5, "watching over");
+  const cGood = useWordCue(5, "good and meaningful");
+  const cInner = useWordCue(5, "inner peace");
+  const cNot = useWordCue(5, "not knowing");
+  const cConf = useWordCue(5, "confidence");
+  const cBec = useWordCue(5, "because even");
+  const cFeel = useWordCue(5, "dont feel");
+  const gifts = [[cInner, 'inner peace'], [cNot, 'calm in the unknown'], [cConf, 'confidence to risk'], [cFeel, 'you’re not alone']];
+  const BIG_TOP = 700;
+  return (
+    <Sprite {...win}>{({ localTime: lt, duration }) => {
+      // match-cut: "meaningless" is where scene 4 left it, gets struck, then rises
+      const strike = eio((lt - 0.2) / 0.45);
+      const m = spring(lt - cDiff, 140, 22);
+      const mTop = MEANINGLESS_TOP + (118 - MEANINGLESS_TOP) * m;
+      const nGifts = gifts.filter(([c]) => lt >= c).length;
+      const orb = spring(lt - cInner, 90, 16);
+      const beliefDim = 1 - 0.55 * after(lt, cInner, 0.8);
+      return (
+        <Enter type="dissolve" lt={lt}>
+          <PhotoSeq lt={lt} dur={duration} shots={[
+            { src: 'candle', at: 0, z0: 1.2, z1: 1.3, pos: 'center 45%' },
+            { src: 'rays-mountains', at: cTruly, tr: 'blur', z0: 1.04, z1: 1.14, y0: 1, y1: -1 },
+            { src: 'walk-golden', at: cGood, tr: 'wipe', z0: 1.14, z1: 1.04, x0: -1, x1: 1 },
+            { src: 'lone-sunrise', at: cInner, tr: 'dissolve', z0: 1.04, z1: 1.14 },
+            { src: 'fog-steps', at: cNot, tr: 'zoom', z0: 1.16, z1: 1.04 },
+            { src: 'hand-sunset', at: cConf, tr: 'slide', z0: 1.04, z1: 1.14, x0: 1, x1: -1 },
+            { src: 'two-figures', at: cBec, tr: 'wipeUp', z0: 1.12, z1: 1.03 },
+          ]} />
+          <Grade kind="center" />
+          <Glow x={360} y={BIG_TOP + 44} r={(250 + 26 * nGifts) * orb} strength={clamp(orb, 0, 1)} lt={lt} />
+
+          <div style={{ position: 'absolute', left: 0, right: 0, top: mTop, display: 'flex', justifyContent: 'center', transform: `scale(${1 - 0.55 * m})`, transformOrigin: 'center top', opacity: 1 - 0.4 * m }}>
+            <div style={{ position: 'relative', fontFamily: SERIF, fontStyle: 'italic', fontWeight: 500, fontSize: 84, lineHeight: 1.1, color: CREAM, textShadow: TS, padding: '0 8px 10px' }}>
+              meaningless
+              <StrikeLine p={strike} thick={8} />
+            </div>
+          </div>
+          <div style={{ position: 'absolute', left: 0, right: 0, top: 176, display: 'flex', justifyContent: 'center' }}>
+            <div style={{ fontFamily: SERIF, fontStyle: 'italic', fontWeight: 700, fontSize: 64, color: GOLD2, textShadow: GLOW_TS, padding: '0 8px 10px', ...reveal(lt, cDiff + 0.1, 0.6) }}>a different purpose.</div>
+          </div>
+          <div style={{ position: 'absolute', left: 40, right: 40, top: 292, textAlign: 'center', fontFamily: SERIF, fontWeight: 500, fontSize: 42, lineHeight: 1.22, color: CREAM, textShadow: TS, opacity: beliefDim }}>
+            <div style={rise(lt, cTruly, 0.5)}>If you believe God</div>
+            <div style={rise(lt, cWatch, 0.5)}>is watching over you</div>
+          </div>
+          <Label lt={lt} cue={cGood} top={410} center text="and you live a good life" size={22} />
+
+          {gifts.map(([c, text], i) => {
+            const next = i < gifts.length - 1 ? gifts[i + 1][0] : Infinity;
+            const mv = spring(lt - next, 140, 22);
+            const ent = after(lt, c, 0.6);
+            const slotTop = 470 + i * 50;
+            const top = BIG_TOP + (slotTop - BIG_TOP) * mv;
+            const scale = (1 - 0.5 * mv) * (1.1 - 0.1 * ent);
+            return (
+              <div key={i} style={{
+                position: 'absolute', left: 0, right: 0, top, textAlign: 'center', whiteSpace: 'nowrap',
+                fontFamily: SERIF, fontStyle: 'italic', fontWeight: 700, fontSize: 72, lineHeight: 1.15,
+                color: mv > 0.5 ? CREAM : GOLD2, textShadow: GLOW_TS,
+                opacity: ent, filter: `blur(${(1 - ent) * 12}px)`, transform: `scale(${scale})`, transformOrigin: 'center top',
+              }}>{text}</div>
+            );
+          })}
+          <SubtitleRail sceneIdx={5} bottom={170} fontSize={26} variant="clean" accentColor={GOLD2} />
+        </Enter>
+      );
+    }}</Sprite>
+  );
+}
+
+// ── Scene 6 · Not a replacement: devotion as the foundation ───────────────────
+function Scene6() {
+  const win = useSceneWindow(6);
+  const cDev = useWordCue(6, "devotion");
+  const cRep = useWordCue(6, "replacement");
+  const cDis = useWordCue(6, "discipline");
+  const cAw = useWordCue(6, "awareness");
+  const cClear = useWordCue(6, "clear thinking");
+  const cISee = useWordCue(6, "i see it");
+  const cMakes = useWordCue(6, "makes the person");
+  const cStrong = useWordCue(6, "stronger");
+  const tiles = [[cDis, 'Discipline'], [cAw, 'Awareness'], [cClear, 'Clear thinking']];
+  return (
+    <Sprite {...win}>{({ localTime: lt, duration }) => {
+      const beam = spring(lt - cISee, 170, 20);
+      const lift = spring(lt - cMakes, 140, 20);
+      const strong = after(lt, cStrong, 0.4);
+      return (
+        <Enter type="zoom" lt={lt}>
+          <PhotoSeq lt={lt} dur={duration} shots={[
+            { src: 'tree-dusk', at: 0, z0: 1.16, z1: 1.04, y0: -1, y1: 1 },
+            { src: 'stairs', at: cDis, tr: 'dissolve', z0: 1.04, z1: 1.14, pos: 'center 60%' },
+            { src: 'tree-sun', at: cISee, tr: 'zoom', z0: 1.04, z1: 1.14 },
+          ]} />
+          <Grade kind="topbottom" dim={0.25} />
+          <div style={{ position: 'absolute', left: 0, right: 0, top: 128, textAlign: 'center', fontFamily: SERIF, fontWeight: 700, fontSize: 84, color: CREAM, textShadow: TS, ...rise(lt, cDev, 0.45) }}>Devotion</div>
+          <div style={{ position: 'absolute', left: 0, right: 0, top: 238, display: 'flex', justifyContent: 'center', alignItems: 'baseline', gap: 18 }}>
+            <div style={{ fontFamily: SERIF, fontWeight: 700, fontSize: 76, color: GOLD2, textShadow: GLOW_TS, ...pop(lt, cRep, 220, 13) }}>≠</div>
+            <div style={{ fontFamily: SERIF, fontStyle: 'italic', fontWeight: 500, fontSize: 54, color: CREAM, textShadow: TS, padding: '0 6px 8px', ...reveal(lt, cRep + 0.1, 0.5) }}>a replacement</div>
+          </div>
+          <div style={{ position: 'absolute', left: 0, right: 0, top: 0, transform: `translateY(${-40 * lift}px)` }}>
+            {tiles.map(([c, text], i) => (
+              <div key={i} style={{
+                position: 'absolute', left: 125, width: 470, top: 404 + i * 92, height: 78, borderRadius: 10,
+                background: 'rgba(11,9,6,0.66)', border: `2px solid ${strong > 0 ? GOLD2 : 'rgba(245,239,230,0.55)'}`,
+                boxShadow: `0 0 ${30 * strong}px rgba(242,196,109,${0.6 * strong})`,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontFamily: COND, fontWeight: 800, fontSize: 42, letterSpacing: '0.12em', textTransform: 'uppercase', color: CREAM,
+                ...drop(lt, c),
+              }}>{text}</div>
+            ))}
+            <div style={{
+              position: 'absolute', left: 80, width: 560, top: 690, height: 80, borderRadius: 10,
+              background: `linear-gradient(90deg, ${GOLD}, ${GOLD2}, ${GOLD})`, transform: `scaleX(${beam})`,
+              boxShadow: `0 0 ${24 + 30 * strong}px rgba(242,196,109,0.65)`, opacity: clamp((lt - cISee) / 0.1, 0, 1),
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontFamily: COND, fontWeight: 800, fontSize: 42, letterSpacing: '0.34em', color: BG,
+            }}><span style={{ opacity: after(lt, cISee + 0.2, 0.3) }}>DEVOTION</span></div>
+          </div>
+          <SubtitleRail sceneIdx={6} bottom={170} fontSize={26} variant="clean" accentColor={GOLD2} />
+        </Enter>
+      );
+    }}</Sprite>
+  );
+}
+
+// ── Scene 7 · You still have to: push-up ticker ───────────────────────────────
+function Scene7() {
+  const win = useSceneWindow(7);
+  const cYou = useWordCue(7, "you still");
+  const cLearn = useWordCue(7, "learn");
+  const cDec = useWordCue(7, "make the decisions");
+  const cWork = useWordCue(7, "work hard");
+  const cRisk = useWordCue(7, "take risks");
+  const cFace = useWordCue(7, "face your problems");
+  const cLive = useWordCue(7, "live with");
+  const lines = [[cLearn, 'learn how it works'], [cDec, 'make the decisions'], [cWork, 'work hard'], [cRisk, 'take risks'], [cFace, 'face your problems'], [cLive, 'live with the results']];
+  const BASE = 720, STEP = 74;
+  return (
+    <Sprite {...win}>{({ localTime: lt, duration }) => (
+      <Enter type="iris" lt={lt}>
+        <PhotoSeq lt={lt} dur={duration} shots={[
+          { src: 'book-light', at: 0, z0: 1.14, z1: 1.04, x0: 1, x1: -1 },
+          { src: 'fork', at: cDec, tr: 'wipe', z0: 1.04, z1: 1.16 },
+          { src: 'climber', at: cWork, tr: 'zoom', z0: 1.16, z1: 1.06, pos: 'center 40%' },
+          { src: 'storm', at: cFace, tr: 'dissolve', z0: 1.04, z1: 1.14, x0: 2, x1: -2 },
+          { src: 'summit-dusk', at: cLive, tr: 'wipeUp', z0: 1.14, z1: 1.06 },
+        ]} />
+        <Grade kind="topbottom" dim={0.2} />
+        <div style={{ position: 'absolute', left: 0, right: 0, top: 128, display: 'flex', justifyContent: 'center' }}>
+          <div style={{ fontFamily: COND, fontWeight: 800, fontSize: 66, letterSpacing: '0.06em', textTransform: 'uppercase', color: GOLD2, textShadow: TS, padding: '0 6px', ...reveal(lt, cYou, 0.5) }}>You still have to</div>
+        </div>
+        <div style={{ position: 'absolute', left: 250, right: 250, top: 212, height: 3, background: GOLD, transform: `scaleX(${after(lt, cYou + 0.2, 0.5)})` }} />
+        {lines.map(([c, text], i) => {
+          let up = 0;
+          for (let j = i + 1; j < lines.length; j++) up += spring(lt - lines[j][0], 220, 24);
+          const older = i < lines.length - 1 ? spring(lt - lines[i + 1][0], 220, 24) : 0;
+          const ent = spring(lt - c, 240, 22);
+          return (
+            <div key={i} style={{
+              position: 'absolute', left: 0, right: 0, top: BASE - STEP * up, textAlign: 'center', whiteSpace: 'nowrap',
+              fontFamily: SERIF, fontStyle: 'italic', fontWeight: 700, fontSize: 68, lineHeight: 1.1,
+              color: older > 0.5 ? 'rgba(245,239,230,0.85)' : GOLD2, textShadow: older > 0.5 ? TS : GLOW_TS,
+              opacity: clamp((lt - c) / 0.15, 0, 1) * (1 - 0.25 * clamp(up - 1, 0, 3) / 3),
+              transform: `translateY(${(1 - ent) * 90}px) scale(${1 - 0.4 * older})`, transformOrigin: 'center center',
+            }}>{text}</div>
+          );
+        })}
+        <SubtitleRail sceneIdx={7} bottom={170} fontSize={26} variant="clean" accentColor={GOLD2} />
+      </Enter>
+    )}</Sprite>
+  );
+}
+
+// ── Scene 8 · The walk: a path that draws itself ──────────────────────────────
+const P0 = [150, 1160], P1 = [660, 1010], P2 = [40, 720], P3 = [452, 488];
+function bez(t) {
+  const u = 1 - t;
+  const a = u * u * u, b = 3 * u * u * t, c = 3 * u * t * t, d = t * t * t;
+  return [a * P0[0] + b * P1[0] + c * P2[0] + d * P3[0], a * P0[1] + b * P1[1] + c * P2[1] + d * P3[1]];
+}
+const PATH_PTS = Array.from({ length: 121 }, (_, i) => bez(i / 120));
+function Scene8() {
+  const win = useSceneWindow(8);
+  const cDecide = useWordCue(8, "doesnt decide");
+  const cEnd = useWordCue(8, "end up");
+  const cBut = useWordCue(8, "but it can");
+  const cChange = useWordCue(8, "change");
+  const cGoing = useWordCue(8, "going");
+  return (
+    <Sprite {...win}>{({ localTime: lt, duration }) => {
+      const p = Easing.easeInOutSine(clamp((lt - cBut) / Math.max(0.5, cGoing + 0.35 - cBut), 0, 1));
+      const n = Math.max(1, Math.round(p * 120));
+      const drawn = PATH_PTS.slice(0, n + 1).map(([x, y]) => `${x.toFixed(1)},${y.toFixed(1)}`).join(' ');
+      const head = PATH_PTS[n];
+      const faint = after(lt, 0.1, 0.6);
+      const pinDim = 1 - 0.5 * after(lt, cChange, 0.5);
+      return (
+        <Enter type="wipeUp" lt={lt}>
+          <PhotoSeq lt={lt} dur={duration} shots={[
+            { src: 'walk-dusk', at: 0, z0: 1.04, z1: 1.14, pos: 'center 55%' },
+            { src: 'footprints', at: cChange, tr: 'dissolve', z0: 1.16, z1: 1.06, y0: 2, y1: -2 },
+          ]} />
+          <Grade kind="topbottom" dim={0.15} />
+          <svg width="720" height="1280" style={{ position: 'absolute', inset: 0 }}>
+            <polyline points={PATH_PTS.map(([x, y]) => `${x},${y}`).join(' ')} fill="none" stroke="rgba(242,196,109,0.7)" strokeWidth="5" strokeDasharray="2 16" strokeLinecap="round" opacity={faint} />
+            {p > 0 && <polyline points={drawn} fill="none" stroke={GOLD2} strokeWidth="7" strokeLinecap="round" strokeLinejoin="round" style={{ filter: 'drop-shadow(0 0 10px rgba(242,196,109,0.85))' }} />}
+            {p > 0 && <circle cx={head[0]} cy={head[1]} r={11} fill="#fff4d6" style={{ filter: 'drop-shadow(0 0 12px rgba(242,196,109,1))' }} />}
+          </svg>
+          {/* destination pin */}
+          <div style={{ position: 'absolute', left: P3[0] - 22, top: P3[1] - 22, width: 44, height: 44, borderRadius: 22, border: `3px solid ${GOLD2}`, background: 'rgba(11,9,6,0.6)', opacity: pinDim, ...pop(lt, cEnd) }} />
+          <div style={{ position: 'absolute', left: 150, top: P3[1] - 14, fontFamily: COND, fontWeight: 700, fontSize: 24, letterSpacing: '0.2em', color: CREAM, textShadow: TS, opacity: pinDim, ...reveal(lt, cEnd + 0.1, 0.4) }}>WHERE YOU END UP</div>
+          <div style={{ position: 'absolute', left: 0, right: 0, top: 136, textAlign: 'center', fontFamily: SERIF, fontWeight: 500, fontSize: 52, color: CREAM, textShadow: TS, ...rise(lt, cDecide, 0.5) }}>Not where you end up.</div>
+          <div style={{ position: 'absolute', left: 0, right: 0, top: 214, textAlign: 'center', fontFamily: SERIF, fontStyle: 'italic', fontWeight: 700, fontSize: 108, color: GOLD2, textShadow: GLOW_TS, ...blurIn(lt, cChange, 0.5) }}>How you walk.</div>
+          <SubtitleRail sceneIdx={8} bottom={170} fontSize={26} variant="clean" accentColor={GOLD2} />
+        </Enter>
+      );
+    }}</Sprite>
+  );
+}
+
+// ── Scene 9 · Close: the ledger, then the final line in the light ─────────────
+function Scene9() {
+  const win = useSceneWindow(9);
+  const cValue = useWordCue(9, "value");
+  const cWhat = useWordCue(9, "what you do");
+  const cHow = useWordCue(9, "how you think");
+  const cShape = useWordCue(9, "shape your success");
+  const cDevG = useWordCue(9, "devotion gives");
+  const cPeace = useWordCue(9, "peace");
+  const cConf = useWordCue(9, "confidence");
+  const cMean = useWordCue(9, "meaning");
+  const cWhile = useWordCue(9, "while you do it");
+  const words = [[cPeace, 'peace'], [cConf, 'confidence'], [cMean, 'meaning']];
+  return (
+    <Sprite {...win}>{({ localTime: lt, duration }) => {
+      const dark = after(lt, cWhile, 1.2);
+      const orb = spring(lt - cWhile, 60, 14);
+      return (
+        <Enter type="glow" lt={lt}>
+          <PhotoSeq lt={lt} dur={duration} shots={[
+            { src: 'sea-sunrise', at: 0, z0: 1.04, z1: 1.14 },
+            { src: 'lone-sunrise', at: cWhat, tr: 'wipe', z0: 1.14, z1: 1.04 },
+            { src: 'clouds-gold', at: cDevG, tr: 'blur', z0: 1.06, z1: 1.2, y0: 1, y1: -2 },
+          ]} />
+          <Grade kind="topbottom" dim={0.28 + 0.5 * dark} />
+          <Glow x={360} y={610} r={320 * orb} strength={clamp(orb, 0, 1) * 0.9} lt={lt} />
+          <Label lt={lt} cue={cValue} top={128} text="Where its value is" />
+          <div style={{ position: 'absolute', left: 56, right: 40, top: 178, fontFamily: SERIF, fontWeight: 500, fontSize: 46, lineHeight: 1.2, color: CREAM, textShadow: TS }}>
+            <span style={{ display: 'inline-block', ...rise(lt, cWhat, 0.4) }}>What you do</span>{' '}
+            <span style={{ display: 'inline-block', color: GOLD2, ...pop(lt, cHow - 0.1) }}>+</span>{' '}
+            <span style={{ display: 'inline-block', ...rise(lt, cHow, 0.4) }}>how you think</span>
+          </div>
+          <div style={{ position: 'absolute', left: 52, top: 296, fontFamily: SERIF, fontStyle: 'italic', fontWeight: 700, fontSize: 58, color: GOLD2, textShadow: GLOW_TS, padding: '0 6px 10px', ...reveal(lt, cShape, 0.55) }}>→ shape your success</div>
+          <div style={{ position: 'absolute', left: 56, top: 400, height: 2, width: 608 * after(lt, cDevG - 0.2, 0.6), background: GOLD }} />
+          <div style={{ position: 'absolute', left: 56, top: 424, fontFamily: SERIF, fontWeight: 500, fontSize: 46, color: CREAM, textShadow: TS, ...rise(lt, cDevG, 0.4) }}>Devotion gives you</div>
+          {words.map(([c, text], i) => (
+            <div key={i} style={{ position: 'absolute', left: 56, top: 494 + i * 88, fontFamily: SERIF, fontStyle: 'italic', fontWeight: 700, fontSize: 80, lineHeight: 1.1, color: GOLD2, textShadow: GLOW_TS, transformOrigin: 'left center', ...pop(lt, c, 220, 15) }}>{text}</div>
+          ))}
+          <div style={{ position: 'absolute', left: 56, top: 770, fontFamily: SERIF, fontStyle: 'italic', fontWeight: 500, fontSize: 52, color: CREAM, textShadow: TS, padding: '0 6px 10px', ...reveal(lt, cWhile, 0.7) }}>while you do it.</div>
+          <SubtitleRail sceneIdx={9} bottom={170} fontSize={26} variant="clean" accentColor={GOLD2} />
+        </Enter>
+      );
+    }}</Sprite>
+  );
+}
+
+function App() {
+  return (
+    <Stage width={720} height={1280} scenesSrc="scenes.json" background={BG} loop={false} autoplay={true} persistKey="devotion-tts">
+      <Scene1 />
+      <Scene2 />
+      <Scene3 />
+      <Scene4 />
+      <Scene5 />
+      <Scene6 />
+      <Scene7 />
+      <Scene8 />
+      <Scene9 />
+    </Stage>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>

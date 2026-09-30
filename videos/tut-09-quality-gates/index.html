@@ -1,0 +1,721 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>The quality gates that stop bad videos</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@600;700;800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+  <script type="text/babel" src="../../runtime/animations.jsx"></script>
+  <script type="text/babel" src="../../styles/motion/kit.jsx"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { width: 100%; height: 100%; background: #0B0F19; overflow: hidden; }
+    #root { width: 100%; height: 100vh; position: relative; }
+  </style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+// tut-09-quality-gates · Reelsmith tutorial 09 · style: motion
+// Every reveal is bound to useWordCue; every frame is a pure function of localTime.
+
+// ── Local helpers ────────────────────────────────────────────────────────────
+const GATES = ['lint', 'sheet', 'draft', 'approve'];
+// Four stops along the brand gradient (violet → cyan), one per gate / shard.
+const GATE_TONES = ['#7C5CFF', '#5E84F9', '#40ABF4', '#22D3EE'];
+const e3 = (p) => Easing.easeOutCubic(clamp(p, 0, 1));
+const sp = (dt, k = SNAPPY.k, d = SNAPPY.d) => (!(dt > 0) ? 0 : dt > 8 ? 1 : spring(dt, k, d));
+const bump = (dt, dur = 0.4) => (dt >= 0 && dt < dur ? Math.sin(Math.PI * dt / dur) : 0);
+const GRAD_TEXT = { backgroundImage: GRAD, WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent' };
+const scoreTone = (s) => (s >= 8 ? OK : s >= 7 ? WARN : DANGER);
+
+// Gate stepper: lint → sheet → draft → approve. Passed gates are green, the
+// current one lights up on its cue, later ones wait dim.
+function GateStepper({ current, litAt, passAts = [], at = 0.1, y = 92 }) {
+  const { localTime: lt } = useSprite();
+  return (
+    <div style={{ position: 'absolute', top: y, left: 0, right: 0, display: 'flex', justifyContent: 'center', gap: 10, zIndex: 3 }}>
+      {GATES.map((g, i) => {
+        const n = i + 1;
+        const passT = passAts[i] != null ? passAts[i] : n < current ? -Infinity : null;
+        const passed = passT != null && lt >= passT;
+        const cur = n === current && !passed;
+        const lit = cur && lt >= litAt ? e3((lt - litAt) / 0.3) : 0;
+        const b = passed && isFinite(passT) ? bump(lt - passT, 0.4) : cur ? bump(lt - litAt, 0.4) : 0;
+        let bg = 'rgba(255,255,255,0.03)';
+        let border = CARD_BORDER;
+        let color = MUTED;
+        let glow = 'none';
+        if (passed) {
+          bg = alpha(OK, 0.13); border = alpha(OK, 0.55); color = TEXT;
+          if (isFinite(passT)) glow = `0 0 ${26 * bump(lt - passT, 0.8)}px ${alpha(OK, 0.6)}`;
+        } else if (lit > 0) {
+          bg = `linear-gradient(135deg, ${alpha(VIOLET, 0.45 * lit)}, ${alpha(CYAN, 0.22 * lit)})`;
+          border = alpha(CYAN, 0.25 + 0.6 * lit); color = TEXT;
+          glow = `0 0 ${28 * lit}px ${alpha(VIOLET, 0.5 * lit)}`;
+        }
+        return (
+          <div key={g} style={{ ...enter.slideUp(lt - at - i * 0.06, 0.4, 14) }}>
+            <div style={{ width: 132, height: 46, borderRadius: 14, background: bg, border: `1.5px solid ${border}`,
+              boxShadow: glow, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7,
+              transform: `scale(${1 + 0.09 * b})`, fontFamily: MONO, fontWeight: passed || lit > 0.5 ? 600 : 400,
+              fontSize: 22, color }}>
+              {passed && <Icon name="check" size={18} color={OK} stroke={3} />}
+              <span>{g}</span>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+// Gate number tile + gate title (left-aligned under the stepper).
+function GateHead({ n, icon, numAt, title, ats, y = 160, numEnter = 'pop' }) {
+  const { localTime: lt } = useSprite();
+  return (
+    <>
+      <div style={{ position: 'absolute', left: 80, top: y, width: 84, height: 84, zIndex: 3, ...entry(numEnter, lt - numAt) }}>
+        <div style={{ width: '100%', height: '100%', borderRadius: 24, border: '2px solid transparent',
+          background: `linear-gradient(${CODE_BG}, ${CODE_BG}) padding-box, ${GRAD_DIAG} border-box`,
+          boxShadow: `${SHADOW}, 0 0 34px ${alpha(VIOLET, 0.35)}`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          {icon ? <Icon name={icon} size={40} color={CYAN} />
+            : <span style={{ fontFamily: DISPLAY, fontWeight: 800, fontSize: 52, lineHeight: 1, letterSpacing: '-0.04em', ...GRAD_TEXT }}>{n}</span>}
+        </div>
+      </div>
+      <Title x={190} y={y + 16} ats={ats} text={title} size={46} align="left" width={460} z={3} />
+    </>
+  );
+}
+
+// ── Scene 1 pieces: the render button and the four gate bars ────────────────
+function RenderButton({ y, at, hoverAt, lockAt }) {
+  const { localTime: lt } = useSprite();
+  const hov = lt >= hoverAt ? e3((lt - hoverAt) / 0.3) : 0;
+  const dim = lt >= lockAt ? e3((lt - lockAt) / 0.5) : 0;
+  const glow = hov * (1 - dim) * (0.7 + 0.3 * Math.sin((lt - hoverAt) * 7));
+  return (
+    <div style={{ position: 'absolute', top: y, left: 0, right: 0, display: 'flex', justifyContent: 'center', zIndex: 2 }}>
+      <div style={{ ...enter.pop(lt - at, 0.45) }}>
+        <div style={{ width: 420, height: 150, borderRadius: 38, position: 'relative',
+          background: `linear-gradient(170deg, ${mix(DANGER, '#FFFFFF', 0.18)} 0%, ${DANGER} 45%, ${mix(DANGER, '#000000', 0.25)} 100%)`,
+          boxShadow: `0 14px 0 ${mix(DANGER, '#000000', 0.58)}, 0 34px 60px rgba(0,0,0,0.55), 0 0 ${40 + 80 * glow}px ${alpha(DANGER, 0.28 + 0.4 * glow)}, inset 0 2px 0 rgba(255,255,255,0.35)`,
+          transform: `translateY(${-4 * hov * (1 - dim)}px) scale(${1 + 0.025 * hov * (1 - dim)})`,
+          filter: dim > 0 ? `saturate(${1 - 0.35 * dim}) brightness(${1 - 0.2 * dim})` : 'none',
+          display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+            <Icon name="play" size={48} color={TEXT} />
+            <span style={{ fontFamily: DISPLAY, fontWeight: 800, fontSize: 60, color: TEXT, letterSpacing: '0.04em', lineHeight: 1 }}>RENDER</span>
+          </div>
+          <span style={{ fontFamily: MONO, fontSize: 22, color: 'rgba(245,247,255,0.82)' }}>reelsmith render</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function GateBars({ y, ats }) {
+  const { localTime: lt } = useSprite();
+  const W = 560, H = 50, G = 22;
+  return GATES.map((g, i) => {
+    const c = GATE_TONES[i];
+    const dt = lt - ats[i];
+    const land = dt >= 0.1 ? Math.exp(-(dt - 0.1) * 5) : 0;
+    const stripes = `repeating-linear-gradient(135deg, ${alpha(c, 0.8)} 0 9px, ${alpha(INK, 0.9)} 9px 18px)`;
+    return (
+      <div key={g} style={{ position: 'absolute', left: (720 - W) / 2, top: y + i * (H + G), width: W, height: H, zIndex: 4 + i, ...enter.drop(dt, 110) }}>
+        <div style={{ position: 'relative', width: '100%', height: '100%', borderRadius: 14, overflow: 'hidden',
+          background: 'rgba(15,21,36,0.94)', border: `1.5px solid ${alpha(c, 0.85)}`,
+          boxShadow: `0 14px 30px rgba(0,0,0,0.45), 0 0 ${12 + 40 * land}px ${alpha(c, 0.35 + 0.45 * land)}` }}>
+          <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 72, background: stripes }} />
+          <div style={{ position: 'absolute', right: 0, top: 0, bottom: 0, width: 72, background: stripes }} />
+          <div style={{ position: 'absolute', left: 72, right: 72, top: 0, bottom: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 14 }}>
+            <span style={{ width: 32, height: 32, borderRadius: 9, background: c, color: INK, fontFamily: DISPLAY, fontWeight: 800,
+              fontSize: 19, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{i + 1}</span>
+            <span style={{ fontFamily: MONO, fontWeight: 600, fontSize: 26, color: TEXT }}>{g}</span>
+          </div>
+        </div>
+      </div>
+    );
+  });
+}
+
+function LockMedallion({ x, y, at }) {
+  const { localTime: lt } = useSprite();
+  const dt = lt - at;
+  const ring = dt > 0 ? e3(dt / 0.6) : 0;
+  return (
+    <div style={{ position: 'absolute', left: x - 38, top: y - 38, width: 76, height: 76, zIndex: 12, ...enter.pop(dt, 0.3) }}>
+      {dt > 0 && ring < 1 && <div style={{ position: 'absolute', inset: -8, borderRadius: '50%', border: `3px solid ${DANGER}`,
+        transform: `scale(${1 + ring * 0.6})`, opacity: 0.8 * (1 - ring) }} />}
+      <div style={{ width: '100%', height: '100%', borderRadius: '50%', background: INK, border: `3px solid ${DANGER}`,
+        display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: `0 0 30px ${alpha(DANGER, 0.55)}, ${SHADOW}` }}>
+        <Icon name="lock" size={36} color={DANGER} stroke={2.6} />
+      </div>
+    </div>
+  );
+}
+
+// ── Scene 1 · hook: a render button, four gates slam down in front of it ────
+function Scene1() {
+  const win = useSceneWindow(1);
+  const cueFastest = useWordCue(1, "fastest");
+  const cueShip = useWordCue(1, "ship");
+  const cueA = useWordCue(1, "a bad");
+  const cueBad = useWordCue(1, "bad video");
+  const cueVideo = useWordCue(1, "video");
+  const cueRender = useWordCue(1, "render it");
+  const cueEarly = useWordCue(1, "too early");
+  const cueReelsmith = useWordCue(1, "reelsmith puts");
+  const cueFour = useWordCue(1, "four gates");
+  const cueGates = useWordCue(1, "gates");
+  const cuePuts = useWordCue(1, "puts");
+  const cueFront = useWordCue(1, "front");
+  return (
+    <Sprite {...win}>
+      {({ localTime }) => {
+        // a small camera shake as each gate lands
+        let shake = 0;
+        for (const cueLand of [cueReelsmith, cuePuts, cueFour, cueGates]) {
+          const d = localTime - cueLand - 0.1;
+          if (d >= 0 && d < 0.45) shake += 3.5 * Math.exp(-d * 10) * Math.sin(d * 70);
+        }
+        return (
+          <SceneRoot idx={1}>
+            <Glow x={360} y={580} r={340} color={DANGER} opacity={0.2} breathe={0.04} />
+            <Kicker y={96} at={0.1}>Episode 09 · Quality gates</Kicker>
+            <Title y={196} ats={[cueShip, cueA, cueBad, cueVideo]} size={62} text="Ship a|*bad* *video*" />
+            <div style={{ position: 'absolute', inset: 0, transform: `translateY(${shake}px)` }}>
+              <RenderButton y={504} at={0.05} hoverAt={cueRender} lockAt={cueReelsmith} />
+              <GateBars y={446} ats={[cueReelsmith, cuePuts, cueFour, cueGates]} />
+              <LockMedallion x={612} y={579} at={cueFront} />
+            </div>
+            <Chip y={758} at={cueEarly} icon="warn" color="warn" variant="outline" size={24}>0 of 4 checks run</Chip>
+            <Cursor path={[[cueFastest, 620, 1010], [cueShip, 560, 890], [cueVideo, 470, 750], [cueRender, 392, 598], [cueReelsmith, 392, 598], [cueReelsmith + 0.05, 540, 890]]} />
+            <SubtitleRail sceneIdx={1} bottom={150} fontSize={28} variant="clean" accentColor={CYAN} fontFamily="Inter" />
+          </SceneRoot>
+        );
+      }}
+    </Sprite>
+  );
+}
+
+// ── Scene 2 · gate 1: the linters ───────────────────────────────────────────
+const CHECK_DRIFT = ['setTimeout', 'Math.random', 'delay={7.5}']; // sync-ok (on-screen text, not a delay)
+const VALIDATE_DRIFT = ['cue not spoken', 'no SubtitleRail'];
+const DriftLabel = ({ children, top = 0 }) => (
+  <div style={{ fontFamily: MONO, fontSize: 22, color: MUTED, margin: `${top}px 0 10px` }}>{children}</div>
+);
+
+function Scene2() {
+  const win = useSceneWindow(2);
+  const cueGate = useWordCue(2, "gate 1");
+  const cueOne = useWordCue(2, "1");
+  const cueThe = useWordCue(2, "the linters");
+  const cueLinters = useWordCue(2, "linters");
+  const cueCheck = useWordCue(2, "check sync");
+  const cueValidate = useWordCue(2, "validate sync");
+  const cueFail = useWordCue(2, "fail");
+  const cueAnything = useWordCue(2, "anything");
+  return (
+    <Sprite {...win}>
+      {({ localTime }) => (
+        <SceneRoot idx={2} enter="wipe">
+          <Glow x={360} y={430} r={300} color={VIOLET} opacity={0.18} breathe={0.03} />
+          <GateStepper current={1} litAt={cueGate} />
+          <GateHead n={1} numAt={cueOne} title="The linters" ats={[cueThe, cueLinters]} />
+          <Terminal y={286} width={600} title="~/my-channel" command="reelsmith lint my-video" at={cueLinters} showAt={cueGate} speed={40} rows={[
+            { text: 'check-sync', status: 'err', right: '1 error', at: cueCheck },
+            { text: '└ setTimeout at line 212', color: DANGER, at: cueCheck + 0.25 },
+            { text: 'validate-sync', status: 'ok', right: '0 errors', at: cueValidate },
+            { text: 'lint failed · exit 1', status: 'err', color: DANGER, bold: true, at: cueFail },
+          ]} />
+          <Card y={600} width={600} at={cueFail} title="fails on anything that drifts" icon="warn" color={DANGER}
+            glowAt={cueAnything + 0.3} enter="rise" padding="20px 18px 22px">
+            <DriftLabel>check-sync</DriftLabel>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
+              {CHECK_DRIFT.map((d, i) => (
+                <Chip key={d} at={cueFail + 0.15 + i * 0.12} mono size={22} color="danger" variant="outline">{d}</Chip>
+              ))}
+            </div>
+            <DriftLabel top={16}>validate-sync</DriftLabel>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
+              {VALIDATE_DRIFT.map((d, i) => (
+                <Chip key={d} at={cueAnything + 0.08 + i * 0.12} mono size={22} color="danger" variant="outline">{d}</Chip>
+              ))}
+            </div>
+          </Card>
+          <SubtitleRail sceneIdx={2} bottom={150} fontSize={28} variant="clean" accentColor={CYAN} fontFamily="Inter" />
+        </SceneRoot>
+      )}
+    </Sprite>
+  );
+}
+
+// ── Scene 3 pieces: caption zoom + agent scorecard ──────────────────────────
+function CaptionCard({ x, y, at, hotAt }) {
+  const { localTime: lt } = useSprite();
+  const hot = lt >= hotAt ? e3((lt - hotAt) / 0.3) : 0;
+  return (
+    <Card x={x} y={y} width={258} padding="16px 20px 18px" at={at} enter="fromRight" color={CYAN} glowAt={hotAt}>
+      <div style={{ fontFamily: MONO, fontSize: 20, color: MUTED }}>scene 1 · 4.83s</div>
+      <div style={{ marginTop: 8, fontFamily: SANS, fontWeight: 600, fontSize: 24, color: TEXT, whiteSpace: 'nowrap' }}>
+        gates in <span style={{ color: mix(TEXT, CYAN, hot), textShadow: hot > 0 ? `0 0 16px ${alpha(CYAN, 0.6 * hot)}` : 'none' }}>[front]</span>
+      </div>
+    </Card>
+  );
+}
+
+function ScoreCard({ x, y, at, rows }) {
+  const { localTime: lt } = useSprite();
+  return (
+    <Card x={x} y={y} width={258} padding="18px 20px 10px" at={at} enter="fromRight" title="agent scores" icon="sparkle" color={VIOLET}>
+      {rows.map((r, i) => {
+        const dt = lt - r.at;
+        const c = scoreTone(r.score);
+        const fill = e3((dt - 0.1) / 0.5);
+        return (
+          <div key={r.label} style={{ padding: '7px 0 9px', borderTop: i ? '1px solid rgba(255,255,255,0.06)' : 'none', ...enter.push(dt, 'right', 60) }}>
+            <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between' }}>
+              <span style={{ fontFamily: SANS, fontWeight: 500, fontSize: 24, color: TEXT }}>{r.label}</span>
+              <span style={{ fontFamily: DISPLAY, fontWeight: 700, fontSize: 28, color: c, fontVariantNumeric: 'tabular-nums' }}>{r.score}</span>
+            </div>
+            <div style={{ marginTop: 5, height: 5, borderRadius: 3, background: 'rgba(255,255,255,0.08)' }}>
+              <div style={{ width: `${r.score * 10 * fill}%`, height: '100%', borderRadius: 3, background: c, boxShadow: `0 0 8px ${alpha(c, 0.6)}` }} />
+            </div>
+          </div>
+        );
+      })}
+    </Card>
+  );
+}
+
+// Empty contact-sheet slots (dashed) that the Grid's frames drop into.
+function SheetSlots({ x, y, at }) {
+  const { localTime: lt } = useSprite();
+  const cw = 98, ch = cw * 16 / 9, pitch = ch + 41;
+  return Array.from({ length: 9 }, (_, i) => (
+    <div key={i} style={{ position: 'absolute', left: x + (i % 3) * (cw + 12) + 3, top: y + Math.floor(i / 3) * pitch + 3,
+      width: cw - 6, height: ch - 6, borderRadius: 11, border: '2px dashed rgba(245,247,255,0.16)',
+      background: 'rgba(255,255,255,0.02)', ...enter.fadeIn(lt - at - i * 0.04, 0.3) }} />
+  ));
+}
+
+const SHEET = [
+  { label: '[fastest]', score: 9 }, { label: '[bad]', score: 8 }, { label: '[render]', score: 6 },
+  { label: '[early]', score: 9 }, { label: '[four]', score: 7 }, { label: '[front]', score: 8 },
+  { label: '[gate]', score: 5 }, { label: '[sync]', score: 9 }, { label: '[drift]', score: 6 },
+];
+const WORST = [2, 6, 8];
+const CELL_TONES = [VIOLET, CYAN, VIOLET, CYAN, VIOLET, CYAN, VIOLET, CYAN, VIOLET];
+
+// ── Scene 3 · gate 2: the contact sheet ─────────────────────────────────────
+function Scene3() {
+  const win = useSceneWindow(3);
+  const cueGate = useWordCue(3, "gate 2");
+  const cueTwo = useWordCue(3, "2");
+  const cueThe = useWordCue(3, "the contact");
+  const cueContact = useWordCue(3, "contact sheet");
+  const cueSheet = useWordCue(3, "sheet");
+  const cueCmd = useWordCue(3, "reelsmith sheet");
+  const cueHook = useWordCue(3, "hook frames");
+  const cueThree = useWordCue(3, "three frames");
+  const cueLabelled = useWordCue(3, "labelled");
+  const cueWords = useWordCue(3, "words being spoken");
+  const cueAgent = useWordCue(3, "your agent");
+  const cueScores = useWordCue(3, "scores each frame");
+  const cueHookScore = useWordCue(3, "on hook");
+  const cueRead = useWordCue(3, "readability");
+  const cueMotion = useWordCue(3, "motion");
+  const cueVariety = useWordCue(3, "variety");
+  const cueSync = useWordCue(3, "sync");
+  const cueFixes = useWordCue(3, "fixes");
+  const cells = SHEET.map((c, i) => ({
+    ...c,
+    color: CELL_TONES[i],
+    at: i < 3 ? cueHook + i * 0.12 : cueThree + (i - 3) * 0.1,
+    scoreAt: cueScores + i * 0.07,
+    ringAt: WORST.includes(i) ? cueFixes + 0.15 + WORST.indexOf(i) * 0.12 : i === 5 ? cueLabelled : undefined,
+    ringColor: i === 5 ? CYAN : DANGER,
+  }));
+  return (
+    <Sprite {...win}>
+      {({ localTime }) => (
+        <SceneRoot idx={3} enter="up" pattern="grid">
+          <GateStepper current={2} litAt={cueGate} />
+          <GateHead n={2} numAt={cueTwo} title="The contact sheet" ats={[cueThe, cueContact, cueSheet]} numEnter="drop" />
+          <div style={{ position: 'absolute', left: 80, top: 270, height: 46, padding: '0 18px', borderRadius: 12,
+            background: CODE_BG, border: `1px solid ${CARD_BORDER}`, boxShadow: SHADOW, display: 'flex', alignItems: 'center', gap: 12,
+            fontFamily: MONO, fontSize: 22, color: CODE.text, ...enter.wipe(localTime - cueGate - 0.1, 0.45) }}>
+            <span style={{ color: CYAN, fontWeight: 600 }}>$</span>
+            <Typed text="reelsmith sheet my-video" at={cueCmd} speed={32} />
+          </div>
+          <SheetSlots x={80} y={334} at={cueContact} />
+          <Grid x={80} y={334} cols={3} width={318} gap={12} cells={cells} seed={9} />
+          <CaptionCard x={414} y={334} at={cueLabelled} hotAt={cueWords} />
+          <Arrow from={[404, 602]} to={[470, 448]} curve={-26} at={cueLabelled + 0.1} dur={0.4} width={3} head={12} />
+          <ScoreCard x={414} y={472} at={cueAgent} rows={[
+            { label: 'hook', score: 9, at: cueHookScore },
+            { label: 'readability', score: 8, at: cueRead },
+            { label: 'motion', score: 6, at: cueMotion },
+            { label: 'variety', score: 8, at: cueVariety },
+            { label: 'sync', score: 9, at: cueSync },
+          ]} />
+          <Badge x={414} y={880} at={cueFixes} variant="warn" icon="bolt">fix the 3 worst</Badge>
+          <SubtitleRail sceneIdx={3} bottom={150} fontSize={28} variant="clean" accentColor={CYAN} fontFamily="Inter" />
+        </SceneRoot>
+      )}
+    </Sprite>
+  );
+}
+
+// ── Scene 4 pieces: the low-res draft on a phone ────────────────────────────
+// Inside PhoneFrame's 360×640 virtual screen. The reel is paused on its first
+// frame until the tap, then plays. Its clock is quantised to 15 fps (it is a
+// draft), blurred and overlaid with a pixel grid (0.75× size).
+function DraftScreen({ showAt, playAt }) {
+  const { localTime: lt } = useSprite();
+  const held = 1.2; // the frame the paused preview sits on (seconds into the reel)
+  const raw = lt < playAt ? showAt + held : showAt + held + (lt - playAt);
+  const rt = Math.floor(raw * 15) / 15;
+  const playing = lt >= playAt;
+  const tap = bump(lt - playAt, 0.3);
+  return (
+    <>
+      <div style={{ position: 'absolute', inset: 0, filter: 'blur(1.7px) saturate(1.1)' }}>
+        <MiniReel t={rt} at={showAt} title="Quality gates" kicker="EPISODE 09"
+          words={'four gates stand in front of the render button'.split(' ')} />
+      </div>
+      <div style={{ position: 'absolute', inset: 0, opacity: 0.9,
+        backgroundImage: 'linear-gradient(rgba(11,15,25,0.42) 1.5px, transparent 1.5px), linear-gradient(90deg, rgba(11,15,25,0.42) 1.5px, transparent 1.5px)',
+        backgroundSize: '9px 9px' }} />
+      {!playing && (
+        <div style={{ position: 'absolute', left: 125, top: 265, width: 110, height: 110, borderRadius: '50%',
+          background: 'rgba(11,15,25,0.62)', border: '4px solid rgba(245,247,255,0.9)', display: 'flex',
+          alignItems: 'center', justifyContent: 'center', boxShadow: '0 10px 30px rgba(0,0,0,0.5)' }}>
+          <Icon name="play" size={52} color={TEXT} style={{ marginLeft: 6 }} />
+        </div>
+      )}
+      {playing && tap > 0 && (
+        <div style={{ position: 'absolute', left: 180 - 90 * tap, top: 320 - 90 * tap, width: 180 * tap, height: 180 * tap,
+          borderRadius: '50%', border: `4px solid ${CYAN}`, opacity: 1 - tap * 0.6 }} />
+      )}
+    </>
+  );
+}
+
+// ── Scene 4 · gate 3: the draft ─────────────────────────────────────────────
+function Scene4() {
+  const win = useSceneWindow(4);
+  const cueGate = useWordCue(4, "gate 3");
+  const cueThree = useWordCue(4, "3");
+  const cueThe = useWordCue(4, "the draft");
+  const cueDraft = useWordCue(4, "draft");
+  const cueCmd = useWordCue(4, "reelsmith draft");
+  const cueRenders = useWordCue(4, "renders");
+  const cueLowRes = useWordCue(4, "low res");
+  const cuePreview = useWordCue(4, "preview");
+  const cueVoice = useWordCue(4, "voice");
+  const cueSeconds = useWordCue(4, "seconds");
+  const cueWatch = useWordCue(4, "watch");
+  const cuePhone = useWordCue(4, "phone");
+  const cueCommit = useWordCue(4, "committing");
+  return (
+    <Sprite {...win}>
+      {({ localTime }) => {
+        const tilt = -4 * (1 - e3((localTime - cuePhone) / 0.45));
+        return (
+          <SceneRoot idx={4} enter="wipe">
+            <Glow x={515} y={740} r={260} color={CYAN} opacity={0.16} breathe={0.04} at={cueLowRes} />
+            <GateStepper current={3} litAt={cueGate} />
+            <GateHead n={3} numAt={cueThree} title="The draft" ats={[cueThe, cueDraft]} numEnter="zoom" />
+            <Terminal y={286} width={600} title="~/my-channel" command="reelsmith draft my-video" at={cueCmd} showAt={cueGate} speed={36} rows={[
+              { text: '540×960 · 15 fps', status: 'info', right: '0.75×', at: cueLowRes },
+              { text: 'voice: voiceover.mp3', status: 'ok', at: cueVoice },
+              { text: 'wrote draft.mp4', status: 'ok', right: '30 s', at: cueSeconds },
+            ]} />
+            <Ring x={96} y={574} size={188} stroke={14} at={cueRenders} until={cueSeconds}>
+              <Counter value={30} at={cueRenders} dur={cueSeconds - cueRenders} size={60} suffix="s" enter="none" />
+            </Ring>
+            <div style={{ position: 'absolute', left: 70, width: 240, top: 780, textAlign: 'center', fontFamily: SANS,
+              fontWeight: 500, fontSize: 24, color: MUTED, ...enter.slideUp(localTime - cueRenders - 0.15) }}>draft render time</div>
+            <Badge x={78} y={846} at={cueCommit} variant="ghost" icon="lock" mono upper={false}>output.mp4: not yet</Badge>
+            <PhoneFrame x={400} y={552} width={230} at={cueLowRes} tilt={tilt}>
+              <DraftScreen showAt={cueLowRes} playAt={cuePhone} />
+            </PhoneFrame>
+            <Badge x={392} y={530} z={6} at={cuePreview} variant="warn" mono upper={false}>15 fps · 0.75×</Badge>
+            <Cursor kind="touch" path={[[cueWatch, 650, 1000], [cuePhone - 0.3, 515, 752]]} clicks={[cuePhone]} />
+            <SubtitleRail sceneIdx={4} bottom={150} fontSize={28} variant="clean" accentColor={CYAN} fontFamily="Inter" />
+          </SceneRoot>
+        );
+      }}
+    </Sprite>
+  );
+}
+
+// ── Scene 5 pieces: the fingerprint card ────────────────────────────────────
+// Hex text that resolves left → right from seeded noise (a hash being computed).
+function Scramble({ text, at, seed = 1 }) {
+  const { localTime: lt } = useSprite();
+  const HEX = '0123456789abcdef';
+  const tick = Math.floor(lt * 24);
+  const out = String(text).split('').map((ch, i) => {
+    if (lt < at) return ch === '…' ? ch : ' ';
+    if (lt >= at + 0.2 + i * 0.03 || !/[0-9a-f]/.test(ch)) return ch;
+    return HEX[Math.floor(seededRandom(seed * 1009 + i * 37 + tick * 7)() * 16)];
+  });
+  return <span style={{ whiteSpace: 'pre' }}>{out.join('')}</span>;
+}
+
+function FpRow({ icon, name, role, at, dim, editAt }) {
+  const { localTime: lt } = useSprite();
+  const ed = editAt != null && lt >= editAt ? e3((lt - editAt) / 0.3) : 0;
+  const b = editAt != null ? bump(lt - editAt, 0.45) : 0;
+  const c = ed > 0.5 ? WARN : dim ? FAINT : CYAN;
+  return (
+    <div style={{ ...enter.push(lt - at, 'right', 70) }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 14, height: 46, padding: '0 10px', margin: '0 -10px', borderRadius: 10,
+        background: ed > 0 ? alpha(WARN, 0.13 * ed) : 'transparent', boxShadow: ed > 0 ? `inset 3px 0 0 ${alpha(WARN, ed)}` : 'none',
+        transform: `translateX(${b * 8}px)` }}>
+        <Icon name={ed > 0.5 ? 'code' : icon} size={24} color={c} />
+        <span style={{ fontFamily: MONO, fontSize: 24, color: dim ? MUTED : TEXT }}>{name}</span>
+        <span style={{ marginLeft: 'auto', fontFamily: SANS, fontWeight: ed > 0.5 ? 600 : 500, fontSize: 22, color: ed > 0.5 ? WARN : MUTED }}>
+          {ed > 0.5 ? 'edited' : role}
+        </span>
+        <Icon name={ed > 0.5 ? 'warn' : 'check'} size={24} color={ed > 0.5 ? WARN : dim ? FAINT : OK} stroke={2.8} />
+      </div>
+    </div>
+  );
+}
+
+function FingerprintCard({ y, at, rows, editAt, mismatchAt, badAt }) {
+  const { localTime: lt } = useSprite();
+  const bad = lt >= badAt ? e3((lt - badAt) / 0.35) : 0;
+  const mis = lt >= mismatchAt;
+  return (
+    <Window y={y} width={580} at={at} enter="fromRight" title="preview-approved.json" icon="lock" padding="18px 26px 14px"
+      accent={bad > 0 ? DANGER : true}
+      style={{ border: `1px solid ${bad > 0 ? alpha(DANGER, 0.3 + 0.5 * bad) : CARD_BORDER}`,
+        boxShadow: `${SHADOW}, inset 0 1px 0 rgba(255,255,255,0.05)${bad > 0 ? `, 0 0 ${56 * bad}px ${alpha(DANGER, 0.4 * bad)}` : ''}` }}>
+      <div style={{ fontFamily: SANS, fontWeight: 600, fontSize: 20, letterSpacing: '0.16em', textTransform: 'uppercase', color: FAINT }}>approved fingerprint</div>
+      <div style={{ marginTop: 6, fontFamily: MONO, fontWeight: 600, fontSize: 26, color: mis ? MUTED : TEXT }}>
+        <Strike at={mismatchAt} thickness={4} rotate={-1.5} dim={0.6}>
+          <span style={{ color: CYAN }}>sha256:</span><Scramble text="9f3c71ab…c7e2" at={at + 0.1} seed={3} />
+        </Strike>
+      </div>
+      <div style={{ height: 36, marginTop: 2, display: 'flex', alignItems: 'center', gap: 12, fontFamily: MONO, fontSize: 24,
+        color: DANGER, ...enter.wipe(lt - mismatchAt - 0.12, 0.45) }}>
+        <span>now</span>
+        <span style={{ fontWeight: 600 }}><Scramble text="4be0d93f…18a6" at={mismatchAt + 0.12} seed={7} /></span>
+        <span style={{ fontWeight: 600 }}>≠</span>
+      </div>
+      <div style={{ height: 1, background: CARD_BORDER, margin: '8px 0 4px' }} />
+      {rows.map((r, i) => <FpRow key={r.name} {...r} editAt={i === 0 ? editAt : null} />)}
+    </Window>
+  );
+}
+
+// ── Scene 5 · gate 4: approval ──────────────────────────────────────────────
+function Scene5() {
+  const win = useSceneWindow(5);
+  const cueGate = useWordCue(5, "gate 4");
+  const cueFour = useWordCue(5, "4");
+  const cueApproval = useWordCue(5, "approval");
+  const cueCmd = useWordCue(5, "reelsmith approve");
+  const cueRecords = useWordCue(5, "records");
+  const cueFingerprint = useWordCue(5, "fingerprint");
+  const cueAnimation = useWordCue(5, "animation");
+  const cueTimings = useWordCue(5, "timings");
+  const cueImages = useWordCue(5, "images");
+  const cueChange = useWordCue(5, "change");
+  const cueAny = useWordCue(5, "any of them");
+  const cueTheApproval = useWordCue(5, "the approval");
+  const cmd1 = 'reelsmith approve my-video \\';
+  return (
+    <Sprite {...win}>
+      {({ localTime }) => (
+        <SceneRoot idx={5} enter="push">
+          <Glow x={360} y={760} r={320} color={VIOLET} opacity={0.16} breathe={0.03} />
+          <GateStepper current={4} litAt={cueGate} />
+          <GateHead n={4} numAt={cueFour} title="Approval" ats={[cueApproval]} numEnter="blur" />
+          <Terminal y={286} width={600} fontSize={22} title="~/my-channel" speed={48} showAt={cueGate} steps={[
+            { cmd: cmd1, at: cueCmd },
+            { cmd: '--by=aabishkar', prompt: '>', promptColor: FAINT, at: cueCmd + typeDuration(cmd1, 48) + 0.04 },
+            { text: 'preview approved by aabishkar', status: 'ok', at: cueRecords + 0.1 },
+            { text: 'preview-approved.json', status: 'info', at: cueFingerprint },
+          ]} />
+          <FingerprintCard y={540} at={cueFingerprint} editAt={cueChange} mismatchAt={cueAny} badAt={cueTheApproval} rows={[
+            { icon: 'file', name: 'index.html', role: 'animation', at: cueAnimation },
+            { icon: 'file', name: 'scenes.json', role: 'timings', at: cueTimings },
+            { icon: 'folder', name: 'images/**', role: 'images', at: cueImages },
+            { icon: 'cog', name: 'runtime + kit', role: 'engine', at: cueImages + 0.3, dim: true },
+          ]} />
+          <Stamp y={800} at={cueTheApproval + 0.12} rotate={-9} size={58}>expired</Stamp>
+          <SubtitleRail sceneIdx={5} bottom={150} fontSize={28} variant="clean" accentColor={CYAN} fontFamily="Inter" />
+        </SceneRoot>
+      )}
+    </Sprite>
+  );
+}
+
+// ── Scene 6 pieces: shards → ffmpeg → one output bar ────────────────────────
+function ShardRig({ y, rowAts, fillFrom, ends, pipeAt, ffAt }) {
+  const { localTime: lt } = useSprite();
+  const RH = 46, RG = 12, H = 4 * RH + 3 * RG;
+  const ff = lt >= ffAt ? e3((lt - ffAt) / 0.35) : 0;
+  const ffPulse = bump(lt - ffAt, 0.5);
+  return (
+    <div style={{ position: 'absolute', left: 0, top: y, width: 720, height: H }}>
+      {[0, 1, 2, 3].map((k) => {
+        const c = GATE_TONES[k];
+        const p = clamp((lt - fillFrom) / Math.max(0.01, ends[k] - fillFrom), 0, 1);
+        const done = lt >= ends[k];
+        const cy = k * (RH + RG) + RH / 2;
+        const frames = [];
+        if (lt >= pipeAt && lt < ends[k] + 0.3) {
+          for (let j = 0; j < 3; j++) {
+            const q = ((lt - pipeAt) * 1.5 + j / 3 + k * 0.17) % 1;
+            frames.push(<div key={j} style={{ position: 'absolute', left: 452 + q * 46 - 6, top: cy - 8, width: 12, height: 16,
+              borderRadius: 3, background: c, opacity: 0.95 * Math.sin(Math.PI * q), boxShadow: `0 0 10px ${alpha(c, 0.7)}` }} />);
+          }
+        }
+        return (
+          <React.Fragment key={k}>
+            <div style={{ position: 'absolute', left: 70, top: k * (RH + RG), width: 376, height: RH, display: 'flex',
+              alignItems: 'center', gap: 12, ...enter.push(lt - rowAts[k], 'left', 80) }}>
+              <div style={{ width: 132, flexShrink: 0, display: 'flex', alignItems: 'center', gap: 8, fontFamily: MONO, fontSize: 22, whiteSpace: 'nowrap',
+                color: done ? TEXT : MUTED }}>
+                {done ? <Icon name="check" size={22} color={OK} stroke={3} /> : <Icon name="globe" size={22} color={c} />}
+                <span>shard {k + 1}</span>
+              </div>
+              <div style={{ position: 'relative', flex: 1, height: 16, borderRadius: 8, background: 'rgba(255,255,255,0.08)',
+                overflow: 'hidden', boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.4)' }}>
+                <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: `${p * 100}%`, borderRadius: 8,
+                  background: `linear-gradient(90deg, ${alpha(c, 0.55)}, ${c})`, boxShadow: `0 0 14px ${alpha(c, 0.6)}` }} />
+              </div>
+            </div>
+            <div style={{ position: 'absolute', left: 452, top: cy - 1, width: 50, height: 2, borderRadius: 1,
+              background: lt >= pipeAt ? alpha(c, 0.45) : 'rgba(255,255,255,0.14)', opacity: lt >= rowAts[k] ? 1 : 0 }} />
+            {frames}
+          </React.Fragment>
+        );
+      })}
+      <div style={{ position: 'absolute', left: 508, top: 0, width: 142, height: H, ...enter.pop(lt - rowAts[0], 0.7) }}>
+        <div style={{ width: '100%', height: '100%', borderRadius: 22,
+          background: ff > 0 ? `linear-gradient(160deg, ${alpha(VIOLET, 0.3 * ff)}, ${CODE_BG} 72%)` : CODE_BG,
+          border: `1.5px solid ${ff > 0 ? alpha(CYAN, 0.35 + 0.5 * ff) : CARD_BORDER}`,
+          boxShadow: `${SHADOW}${ff > 0 ? `, 0 0 ${30 + 34 * ffPulse}px ${alpha(VIOLET, 0.35 * ff + 0.2 * ffPulse)}` : ''}`,
+          display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 8,
+          transform: `scale(${1 + 0.04 * ffPulse})` }}>
+          <Icon name="film" size={34} color={ff > 0.5 ? CYAN : FAINT} />
+          <span style={{ fontFamily: DISPLAY, fontWeight: 700, fontSize: 28, color: ff > 0.5 ? TEXT : MUTED }}>ffmpeg</span>
+          <span style={{ fontFamily: MONO, fontSize: 20, color: MUTED }}>H.264</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function OutputBar({ y, segAts, mergeAt, labelAt }) {
+  const { localTime: lt } = useSprite();
+  const W = 580, G = 8;
+  const m = lt >= mergeAt ? e3((lt - mergeAt) / 0.4) : 0;
+  const gap = G * (1 - m);
+  const segW = (W - 3 * gap) / 4;
+  const ri = 11 * (1 - m);
+  const glow = bump(lt - mergeAt, 0.7);
+  return (
+    <div style={{ position: 'absolute', left: 70, top: y, width: W }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: 40, marginBottom: 10 }}>
+        <Badge at={labelAt} variant="ok" icon="check" mono upper={false} size={24}>output.mp4</Badge>
+        <span style={{ fontFamily: MONO, fontSize: 22, color: MUTED, ...enter.wipe(lt - labelAt - 0.15, 0.45) }}>2,700 frames</span>
+      </div>
+      <div style={{ position: 'relative', height: 22 }}>
+        {[0, 1, 2, 3].map((k) => {
+          const dt = lt - segAts[k];
+          const s = sp(dt);
+          const r = k === 0 ? `11px ${ri}px ${ri}px 11px` : k === 3 ? `${ri}px 11px 11px ${ri}px` : `${ri}px`;
+          return (
+            <div key={k} style={{ position: 'absolute', left: k * (segW + gap), top: 0, width: segW, height: 22, borderRadius: r,
+              opacity: dt >= 0 ? clamp(dt / 0.12, 0, 1) : 0, transform: `translateX(${(1 - s) * 70}px)`,
+              background: `linear-gradient(90deg, ${GATE_TONES[k]}, ${GATE_TONES[Math.min(3, k + 1)]})`,
+              boxShadow: `0 0 ${12 + 34 * glow}px ${alpha(GATE_TONES[k], 0.45 + 0.3 * glow)}` }} />
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+const clock = (n) => {
+  const s = Math.max(0, Math.floor(n));
+  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+};
+
+// ── Scene 6 · only then: render ─────────────────────────────────────────────
+function Scene6() {
+  const win = useSceneWindow(6);
+  const cueOnly = useWordCue(6, "only then");
+  const cueThen = useWordCue(6, "then");
+  const cueCmd = useWordCue(6, "reelsmith render");
+  const cueRenderWord = useWordCue(6, "render run");
+  const cueRun = useWordCue(6, "run");
+  const cueFour = useWordCue(6, "four browser");
+  const cueShards = useWordCue(6, "shards");
+  const cueFrames = useWordCue(6, "frames piped");
+  const cueFfmpeg = useWordCue(6, "ffmpeg");
+  const cueShort = useWordCue(6, "90-second short");
+  const cueShortWord = useWordCue(6, "short");
+  const cue90 = useWordCue(6, "90 seconds");
+  return (
+    <Sprite {...win}>
+      {({ localTime }) => {
+        const land = bump(localTime - cue90, 0.5);
+        return (
+          <SceneRoot idx={6} enter="zoom">
+            <Glow x={360} y={620} r={340} color={VIOLET} opacity={0.18} breathe={0.04} />
+            <GateStepper current={4} litAt={0.05} passAts={[null, null, null, cueOnly]} />
+            <GateHead icon="play" numAt={cueOnly} title="Then *render*" ats={[cueThen, cueRenderWord]} />
+            <Terminal y={286} width={600} title="~/my-channel" command="reelsmith render my-video" at={cueCmd} showAt={cueOnly} speed={40} rows={[
+              { text: 'preview approval current', status: 'ok', at: cueRun },
+              { text: '4 shards · 2,700 frames · 30 fps', status: 'info', at: cueFour },
+            ]} />
+            <ShardRig y={520} rowAts={[cueFour, cueFour + 0.1, cueFour + 0.2, cueFour + 0.3]} fillFrom={cueShards}
+              ends={[cueFfmpeg + 0.2, cueFfmpeg + 0.5, cueFfmpeg, cueFfmpeg + 0.35]} pipeAt={cueFrames} ffAt={cueFfmpeg} />
+            <OutputBar y={770} segAts={[cueShort, cueShort + 0.1, cueShort + 0.2, cueShort + 0.3]} mergeAt={cueShortWord} labelAt={cueShortWord} />
+            <div style={{ position: 'absolute', left: 80, top: 876, transform: `scale(${1 + 0.06 * land})`, transformOrigin: 'left center' }}>
+              <Counter value={89} at={cueFour} dur={cue90 - cueFour} size={100} gradient format={clock} enter="pop" />
+            </div>
+            <div style={{ position: 'absolute', left: 330, top: 890, ...enter.push(localTime - cueFour, 'right', 60) }}>
+              <div style={{ fontFamily: SANS, fontWeight: 600, fontSize: 26, color: TEXT }}>render wall time</div>
+              <div style={{ fontFamily: SANS, fontWeight: 500, fontSize: 24, color: MUTED, marginTop: 4 }}>for a 90 s short</div>
+            </div>
+            <SubtitleRail sceneIdx={6} bottom={150} fontSize={28} variant="clean" accentColor={CYAN} fontFamily="Inter" />
+          </SceneRoot>
+        );
+      }}
+    </Sprite>
+  );
+}
+
+function App() {
+  return (
+    <Stage width={720} height={1280} scenesSrc="scenes.json" background={INK} loop={false} autoplay={true} persistKey="tut-09-quality-gates">
+      <Scene1 />
+      <Scene2 />
+      <Scene3 />
+      <Scene4 />
+      <Scene5 />
+      <Scene6 />
+    </Stage>
+  );
+}
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>

@@ -1,0 +1,704 @@
+[
+  {
+    "idx": 1,
+    "dur": 6.452,
+    "file": "voiceover/s1.mp3",
+    "words": [
+      {
+        "word": "Don't",
+        "start": 0,
+        "end": 0.4
+      },
+      {
+        "word": "like",
+        "start": 0.4,
+        "end": 0.522
+      },
+      {
+        "word": "the",
+        "start": 0.522,
+        "end": 0.626
+      },
+      {
+        "word": "voice",
+        "start": 0.626,
+        "end": 0.817
+      },
+      {
+        "word": "provider?",
+        "start": 0.817,
+        "end": 1.2
+      },
+      {
+        "word": "Swap",
+        "start": 1.391,
+        "end": 1.757
+      },
+      {
+        "word": "it.",
+        "start": 1.757,
+        "end": 1.913
+      },
+      {
+        "word": "Need",
+        "start": 2.139,
+        "end": 2.348
+      },
+      {
+        "word": "to",
+        "start": 2.348,
+        "end": 2.452
+      },
+      {
+        "word": "post",
+        "start": 2.452,
+        "end": 2.661
+      },
+      {
+        "word": "somewhere",
+        "start": 2.661,
+        "end": 2.904
+      },
+      {
+        "word": "new?",
+        "start": 2.904,
+        "end": 3.113
+      },
+      {
+        "word": "Add",
+        "start": 3.252,
+        "end": 3.53
+      },
+      {
+        "word": "it.",
+        "start": 3.53,
+        "end": 3.687
+      },
+      {
+        "word": "Reelsmith",
+        "start": 4.174,
+        "end": 4.626
+      },
+      {
+        "word": "is",
+        "start": 4.626,
+        "end": 4.835
+      },
+      {
+        "word": "plugins",
+        "start": 4.835,
+        "end": 5.252
+      },
+      {
+        "word": "all",
+        "start": 5.252,
+        "end": 5.704
+      },
+      {
+        "word": "the",
+        "start": 5.704,
+        "end": 5.843
+      },
+      {
+        "word": "way",
+        "start": 5.843,
+        "end": 5.983
+      },
+      {
+        "word": "down.",
+        "start": 5.983,
+        "end": 6.209
+      }
+    ]
+  },
+  {
+    "idx": 2,
+    "dur": 11.165,
+    "file": "voiceover/s2.mp3",
+    "words": [
+      {
+        "word": "There",
+        "start": 0.243,
+        "end": 0.626
+      },
+      {
+        "word": "are",
+        "start": 0.626,
+        "end": 0.765
+      },
+      {
+        "word": "four",
+        "start": 0.765,
+        "end": 1.026
+      },
+      {
+        "word": "plugin",
+        "start": 1.026,
+        "end": 1.339
+      },
+      {
+        "word": "kinds.",
+        "start": 1.339,
+        "end": 1.67
+      },
+      {
+        "word": "TTS,",
+        "start": 2.052,
+        "end": 2.504
+      },
+      {
+        "word": "which",
+        "start": 2.609,
+        "end": 2.8
+      },
+      {
+        "word": "turns",
+        "start": 2.8,
+        "end": 3.043
+      },
+      {
+        "word": "text",
+        "start": 3.043,
+        "end": 3.322
+      },
+      {
+        "word": "into",
+        "start": 3.322,
+        "end": 3.513
+      },
+      {
+        "word": "audio.",
+        "start": 3.513,
+        "end": 3.878
+      },
+      {
+        "word": "STT,",
+        "start": 4.383,
+        "end": 4.835
+      },
+      {
+        "word": "which",
+        "start": 4.974,
+        "end": 5.078
+      },
+      {
+        "word": "turns",
+        "start": 5.078,
+        "end": 5.322
+      },
+      {
+        "word": "audio",
+        "start": 5.322,
+        "end": 5.704
+      },
+      {
+        "word": "into",
+        "start": 5.704,
+        "end": 5.913
+      },
+      {
+        "word": "word",
+        "start": 5.913,
+        "end": 6.243
+      },
+      {
+        "word": "timings.",
+        "start": 6.243,
+        "end": 6.696
+      },
+      {
+        "word": "Style,",
+        "start": 7.113,
+        "end": 7.374
+      },
+      {
+        "word": "which",
+        "start": 7.548,
+        "end": 7.635
+      },
+      {
+        "word": "defines",
+        "start": 7.635,
+        "end": 7.983
+      },
+      {
+        "word": "a",
+        "start": 7.983,
+        "end": 8.139
+      },
+      {
+        "word": "look.",
+        "start": 8.139,
+        "end": 8.4
+      },
+      {
+        "word": "And",
+        "start": 8.817,
+        "end": 8.922
+      },
+      {
+        "word": "Publish,",
+        "start": 8.922,
+        "end": 9.339
+      },
+      {
+        "word": "which",
+        "start": 9.409,
+        "end": 9.6
+      },
+      {
+        "word": "sends",
+        "start": 9.6,
+        "end": 9.861
+      },
+      {
+        "word": "a",
+        "start": 9.861,
+        "end": 10.035
+      },
+      {
+        "word": "finished",
+        "start": 10.035,
+        "end": 10.278
+      },
+      {
+        "word": "video",
+        "start": 10.278,
+        "end": 10.574
+      },
+      {
+        "word": "somewhere.",
+        "start": 10.574,
+        "end": 10.922
+      }
+    ]
+  },
+  {
+    "idx": 3,
+    "dur": 6.991,
+    "file": "voiceover/s3.mp3",
+    "words": [
+      {
+        "word": "A",
+        "start": 0.243,
+        "end": 0.678
+      },
+      {
+        "word": "plugin",
+        "start": 0.678,
+        "end": 0.904
+      },
+      {
+        "word": "is",
+        "start": 0.904,
+        "end": 1.061
+      },
+      {
+        "word": "a",
+        "start": 1.061,
+        "end": 1.165
+      },
+      {
+        "word": "folder",
+        "start": 1.165,
+        "end": 1.391
+      },
+      {
+        "word": "with",
+        "start": 1.391,
+        "end": 1.6
+      },
+      {
+        "word": "a",
+        "start": 1.6,
+        "end": 1.687
+      },
+      {
+        "word": "plugin.js",
+        "start": 1.687,
+        "end": 2.47
+      },
+      {
+        "word": "file",
+        "start": 2.47,
+        "end": 2.765
+      },
+      {
+        "word": "that",
+        "start": 2.765,
+        "end": 2.974
+      },
+      {
+        "word": "exports",
+        "start": 2.974,
+        "end": 3.391
+      },
+      {
+        "word": "a",
+        "start": 3.391,
+        "end": 3.565
+      },
+      {
+        "word": "name,",
+        "start": 3.565,
+        "end": 3.826
+      },
+      {
+        "word": "a",
+        "start": 3.983,
+        "end": 4.07
+      },
+      {
+        "word": "kind,",
+        "start": 4.07,
+        "end": 4.348
+      },
+      {
+        "word": "and",
+        "start": 4.383,
+        "end": 4.591
+      },
+      {
+        "word": "a",
+        "start": 4.591,
+        "end": 4.713
+      },
+      {
+        "word": "couple",
+        "start": 4.713,
+        "end": 4.922
+      },
+      {
+        "word": "of",
+        "start": 4.922,
+        "end": 5.043
+      },
+      {
+        "word": "functions.",
+        "start": 5.043,
+        "end": 5.374
+      },
+      {
+        "word": "That",
+        "start": 5.548,
+        "end": 5.896
+      },
+      {
+        "word": "is",
+        "start": 5.896,
+        "end": 6
+      },
+      {
+        "word": "the",
+        "start": 6,
+        "end": 6.104
+      },
+      {
+        "word": "whole",
+        "start": 6.104,
+        "end": 6.313
+      },
+      {
+        "word": "contract.",
+        "start": 6.313,
+        "end": 6.696
+      }
+    ]
+  },
+  {
+    "idx": 4,
+    "dur": 6.626,
+    "file": "voiceover/s4.mp3",
+    "words": [
+      {
+        "word": "Register",
+        "start": 0.296,
+        "end": 0.783
+      },
+      {
+        "word": "it",
+        "start": 0.783,
+        "end": 1.009
+      },
+      {
+        "word": "in",
+        "start": 1.009,
+        "end": 1.148
+      },
+      {
+        "word": "reelsmith.config.json",
+        "start": 1.148,
+        "end": 2.765
+      },
+      {
+        "word": "or",
+        "start": 2.765,
+        "end": 2.974
+      },
+      {
+        "word": "drop",
+        "start": 2.974,
+        "end": 3.217
+      },
+      {
+        "word": "it",
+        "start": 3.217,
+        "end": 3.339
+      },
+      {
+        "word": "in",
+        "start": 3.339,
+        "end": 3.426
+      },
+      {
+        "word": "the",
+        "start": 3.426,
+        "end": 3.513
+      },
+      {
+        "word": "plugins",
+        "start": 3.513,
+        "end": 3.757
+      },
+      {
+        "word": "folder.",
+        "start": 3.757,
+        "end": 4.087
+      },
+      {
+        "word": "Run",
+        "start": 4.539,
+        "end": 4.748
+      },
+      {
+        "word": "reelsmith",
+        "start": 4.748,
+        "end": 5.165
+      },
+      {
+        "word": "plugins",
+        "start": 5.165,
+        "end": 5.461
+      },
+      {
+        "word": "to",
+        "start": 5.461,
+        "end": 5.704
+      },
+      {
+        "word": "see",
+        "start": 5.704,
+        "end": 5.861
+      },
+      {
+        "word": "what",
+        "start": 5.861,
+        "end": 6.035
+      },
+      {
+        "word": "is",
+        "start": 6.035,
+        "end": 6.157
+      },
+      {
+        "word": "loaded.",
+        "start": 6.157,
+        "end": 6.383
+      }
+    ]
+  },
+  {
+    "idx": 5,
+    "dur": 7.513,
+    "file": "voiceover/s5.mp3",
+    "words": [
+      {
+        "word": "Built",
+        "start": 0.243,
+        "end": 0.452
+      },
+      {
+        "word": "in,",
+        "start": 0.452,
+        "end": 0.661
+      },
+      {
+        "word": "you",
+        "start": 0.8,
+        "end": 1.009
+      },
+      {
+        "word": "get",
+        "start": 1.009,
+        "end": 1.2
+      },
+      {
+        "word": "OpenRouter",
+        "start": 1.2,
+        "end": 1.791
+      },
+      {
+        "word": "TTS,",
+        "start": 1.791,
+        "end": 2.383
+      },
+      {
+        "word": "local",
+        "start": 2.748,
+        "end": 2.991
+      },
+      {
+        "word": "whisper,",
+        "start": 2.991,
+        "end": 3.217
+      },
+      {
+        "word": "three",
+        "start": 3.67,
+        "end": 3.843
+      },
+      {
+        "word": "styles,",
+        "start": 3.843,
+        "end": 4.226
+      },
+      {
+        "word": "and",
+        "start": 4.417,
+        "end": 4.643
+      },
+      {
+        "word": "publish",
+        "start": 4.643,
+        "end": 5.009
+      },
+      {
+        "word": "targets",
+        "start": 5.009,
+        "end": 5.27
+      },
+      {
+        "word": "for",
+        "start": 5.27,
+        "end": 5.496
+      },
+      {
+        "word": "YouTube,",
+        "start": 5.496,
+        "end": 5.791
+      },
+      {
+        "word": "Instagram,",
+        "start": 6.139,
+        "end": 6.504
+      },
+      {
+        "word": "and",
+        "start": 6.713,
+        "end": 6.887
+      },
+      {
+        "word": "Discord.",
+        "start": 6.887,
+        "end": 7.183
+      }
+    ]
+  },
+  {
+    "idx": 6,
+    "dur": 6.157,
+    "file": "voiceover/s6.mp3",
+    "words": [
+      {
+        "word": "Want",
+        "start": 0.33,
+        "end": 0.557
+      },
+      {
+        "word": "11",
+        "start": 0.557,
+        "end": 0.835
+      },
+      {
+        "word": "labs?",
+        "start": 0.835,
+        "end": 1.13
+      },
+      {
+        "word": "Write",
+        "start": 1.391,
+        "end": 1.809
+      },
+      {
+        "word": "synthesize,",
+        "start": 1.809,
+        "end": 2.383
+      },
+      {
+        "word": "return",
+        "start": 2.539,
+        "end": 2.783
+      },
+      {
+        "word": "a",
+        "start": 2.783,
+        "end": 2.939
+      },
+      {
+        "word": "buffer,",
+        "start": 2.939,
+        "end": 3.148
+      },
+      {
+        "word": "done.",
+        "start": 3.374,
+        "end": 3.53
+      },
+      {
+        "word": "The",
+        "start": 3.774,
+        "end": 4.104
+      },
+      {
+        "word": "rest",
+        "start": 4.104,
+        "end": 4.261
+      },
+      {
+        "word": "of",
+        "start": 4.261,
+        "end": 4.383
+      },
+      {
+        "word": "the",
+        "start": 4.383,
+        "end": 4.47
+      },
+      {
+        "word": "pipeline",
+        "start": 4.47,
+        "end": 4.817
+      },
+      {
+        "word": "never",
+        "start": 4.817,
+        "end": 5.27
+      },
+      {
+        "word": "knows",
+        "start": 5.27,
+        "end": 5.513
+      },
+      {
+        "word": "the",
+        "start": 5.513,
+        "end": 5.617
+      },
+      {
+        "word": "difference.",
+        "start": 5.617,
+        "end": 5.843
+      }
+    ]
+  }
+]

@@ -1,0 +1,725 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>script.md, the one file that matters</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@600;700;800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+  <script type="text/babel" src="../../runtime/animations.jsx"></script>
+  <script type="text/babel" src="../../styles/motion/kit.jsx"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { width: 100%; height: 100%; background: #0B0F19; overflow: hidden; }
+    #root { width: 100%; height: 100vh; position: relative; }
+  </style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+// tut-04-script-format · "script.md, the one file that matters"
+// Motion style. Every reveal is bound to a Whisper cue from scenes.json.
+
+// ── Local helpers (same curves the kit uses) ────────────────────────────────
+const e3 = (p) => Easing.easeOutCubic(clamp(p, 0, 1));
+const eio = (p) => Easing.easeInOutCubic(clamp(p, 0, 1));
+const sp = (dt, k = SNAPPY.k, d = SNAPPY.d) => (!(dt > 0) ? 0 : dt > 8 ? 1 : spring(dt, k, d));
+const GRAD_TEXT = { backgroundImage: GRAD, WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent' };
+
+// Render tokenize() output ([{ s, c, b, i }]) as coloured spans.
+function Segs({ segs }) {
+  return segs.map((g, i) => (
+    <span key={i} style={{ color: g.c, fontWeight: g.b ? 600 : 400, fontStyle: g.i ? 'italic' : 'normal' }}>{g.s}</span>
+  ));
+}
+
+// The lang tag CodeCard puts in its title bar ("MD").
+function LangTag({ children }) {
+  return (
+    <span style={{ fontFamily: MONO, fontSize: 16, fontWeight: 600, letterSpacing: '0.06em', color: CYAN,
+      padding: '4px 9px', borderRadius: 7, background: alpha(CYAN, 0.12), border: `1px solid ${alpha(CYAN, 0.3)}`,
+      textTransform: 'uppercase' }}>{children}</span>
+  );
+}
+
+// ── Spoke: a canvas-space S-curve that draws from → to, then carries dots ───
+function Spoke({ from, to, at, dur = 0.5, flowAt }) {
+  const { localTime: lt } = useSprite();
+  const gid = 'sk' + React.useId().replace(/[^a-zA-Z0-9]/g, '');
+  const p = lt >= at ? eio((lt - at) / dur) : 0;
+  if (p <= 0) return null;
+  const [x1, y1] = from;
+  const [x2, y2] = to;
+  const ym = (y1 + y2) / 2;
+  const B = (u) => {
+    const a = 1 - u;
+    return [a * a * a * x1 + 3 * a * a * u * x1 + 3 * a * u * u * x2 + u * u * u * x2,
+      a * a * a * y1 + 3 * a * a * u * ym + 3 * a * u * u * ym + u * u * u * y2];
+  };
+  const d = `M${x1} ${y1} C${x1} ${ym} ${x2} ${ym} ${x2} ${y2}`;
+  const head = B(p);
+  const flowing = flowAt != null && lt >= flowAt;
+  const f = flowing ? e3((lt - flowAt) / 0.3) : 0;
+  return (
+    <svg data-bleed="" width={720} height={1280} style={{ position: 'absolute', left: 0, top: 0, pointerEvents: 'none', overflow: 'visible' }}>
+      <defs>
+        <linearGradient id={gid} gradientUnits="userSpaceOnUse" x1={x1} y1={y1} x2={x2} y2={y2}>
+          <stop offset="0%" stopColor={VIOLET} />
+          <stop offset="100%" stopColor={CYAN} />
+        </linearGradient>
+      </defs>
+      <path d={d} fill="none" stroke="rgba(255,255,255,0.12)" strokeWidth={3} strokeDasharray="2 8" strokeLinecap="round" />
+      <path d={d} fill="none" stroke={`url(#${gid})`} strokeWidth={4} strokeLinecap="round" pathLength={1}
+        strokeDasharray="1 1" strokeDashoffset={1 - p} style={{ filter: `drop-shadow(0 0 ${4 + 6 * f}px ${alpha(CYAN, 0.35 + 0.3 * f)})` }} />
+      {p < 1 && <circle cx={head[0]} cy={head[1]} r={11} fill={alpha(CYAN, 0.25)} />}
+      {p < 1 && <circle cx={head[0]} cy={head[1]} r={5.5} fill={CYAN} />}
+      {flowing && [0, 0.34, 0.67].map((o) => {
+        const q = ((lt - flowAt) * 0.85 + o) % 1;
+        const [px, py] = B(q);
+        return <circle key={o} cx={px} cy={py} r={4.5} fill={TEXT} opacity={f * 0.95 * Math.sin(Math.PI * q)} />;
+      })}
+    </svg>
+  );
+}
+
+// ── Scene 1 pieces: the script.md document and its four outputs ────────────
+function MdPage({ x, y, at, linesAt, typeAt, glowAt, checkAt }) {
+  const { localTime: lt } = useSprite();
+  const gid = 'pg' + React.useId().replace(/[^a-zA-Z0-9]/g, '');
+  const W = 300;
+  const H = 304;
+  const F = 42;
+  const g = lt >= glowAt ? e3((lt - glowAt) / 0.4) : 0;
+  const md = ['---', 'style: motion', '---', '## Script', '### Scene 1'];
+  const chk = sp(lt - checkAt, PUNCH.k, PUNCH.d);
+  const ring = lt >= checkAt ? e3((lt - checkAt) / 0.6) : 0;
+  const outline = `M20 0 H${W - F} L${W} ${F} V${H - 20} Q${W} ${H} ${W - 20} ${H} H20 Q0 ${H} 0 ${H - 20} V20 Q0 0 20 0 Z`;
+  const fold = `M${W - F} 0 V${F - 14} Q${W - F} ${F} ${W - F + 14} ${F} H${W} Z`;
+  return (
+    <div style={{ position: 'absolute', left: x, top: y, width: W, height: H, ...enter.pop(lt - at, 0.5) }}>
+      <svg width={W} height={H} style={{ position: 'absolute', left: 0, top: 0, overflow: 'visible',
+        filter: `drop-shadow(0 24px 48px rgba(0,0,0,0.55))${g > 0 ? ` drop-shadow(0 0 ${28 * g}px ${alpha(VIOLET, 0.6 * g)})` : ''}` }}>
+        <defs>
+          <linearGradient id={gid} x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stopColor={VIOLET} />
+            <stop offset="100%" stopColor={CYAN} />
+          </linearGradient>
+        </defs>
+        <path d={outline} fill={CODE_BG} stroke={g > 0.02 ? `url(#${gid})` : 'rgba(255,255,255,0.18)'} strokeWidth={1.5 + 1.5 * g} />
+        <path d={fold} fill="rgba(255,255,255,0.10)" stroke="rgba(255,255,255,0.18)" strokeWidth={1.5} />
+      </svg>
+      <div style={{ position: 'absolute', left: 22, top: 17, display: 'flex', alignItems: 'center', gap: 10 }}>
+        <Icon name="file" size={24} color={CYAN} />
+        <span style={{ fontFamily: MONO, fontWeight: 600, fontSize: 26, ...(g > 0.5 ? GRAD_TEXT : { color: TEXT }) }}>script.md</span>
+      </div>
+      <Badge x={204} y={20} variant="cyan" mono size={18} upper={false} at={linesAt}>md</Badge>
+      <div style={{ position: 'absolute', left: 18, right: 18, top: 64, height: 1, background: 'rgba(255,255,255,0.08)' }} />
+      <div style={{ position: 'absolute', left: 24, top: 76, fontFamily: MONO, fontSize: 24, lineHeight: '34px' }}>
+        {md.map((l, i) => (
+          <div key={i} style={{ whiteSpace: 'pre', ...enter.push(lt - (linesAt + i * 0.08), 'left', 26) }}>
+            <Segs segs={tokenize(l, 'md')} />
+          </div>
+        ))}
+        <div style={{ color: CODE.text, whiteSpace: 'pre', minHeight: 34 }}>
+          {lt >= typeAt && <Typed text="One file." at={typeAt} speed={16} />}
+        </div>
+      </div>
+      {lt >= checkAt && (
+        <div style={{ position: 'absolute', left: W / 2 - 32, bottom: -34, width: 64, height: 64 }}>
+          {ring < 1 && <div style={{ position: 'absolute', inset: 0, borderRadius: '50%', border: `3px solid ${OK}`,
+            transform: `scale(${1 + ring * 0.9})`, opacity: 0.75 * (1 - ring) }} />}
+          <div style={{ position: 'absolute', inset: 0, borderRadius: '50%', background: OK, display: 'flex',
+            alignItems: 'center', justifyContent: 'center', transform: `scale(${chk})`,
+            boxShadow: `0 0 0 6px ${INK}, 0 0 30px ${alpha(OK, 0.6)}` }}>
+            <Icon name="check" size={34} color={INK} stroke={3.4} />
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function HubNode({ x, y, w = 248, role, file, icon, color = VIOLET, at, litAt, checkAt }) {
+  const { localTime: lt } = useSprite();
+  const c = tone(color);
+  const lit = lt >= litAt ? e3((lt - litAt) / 0.3) : 0;
+  const punch = lt >= litAt ? 0.94 + 0.06 * sp(lt - litAt, PUNCH.k, PUNCH.d) : 1;
+  const chk = sp(lt - checkAt, PUNCH.k, PUNCH.d);
+  return (
+    <div style={{ position: 'absolute', left: x, top: y, width: w, ...enter.pop(lt - at, 0.6) }}>
+      <div style={{ position: 'relative', borderRadius: 20, padding: '16px 18px', transform: `scale(${punch})`,
+        background: lit > 0 ? `linear-gradient(135deg, ${alpha(c, 0.24 * lit)}, ${alpha(CODE_BG, 0.96)})` : alpha(CODE_BG, 0.92),
+        border: `1.5px solid ${lit > 0 ? alpha(c, 0.3 + 0.55 * lit) : 'rgba(255,255,255,0.13)'}`,
+        boxShadow: `${SHADOW}${lit > 0 ? `, 0 0 ${38 * lit}px ${alpha(c, 0.42 * lit)}` : ''}` }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <div style={{ width: 40, height: 40, borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center',
+            background: lit > 0 ? alpha(c, 0.2 + 0.1 * lit) : 'rgba(255,255,255,0.06)' }}>
+            <Icon name={icon} size={24} color={lit > 0.5 ? c : MUTED} />
+          </div>
+          <span style={{ fontFamily: SANS, fontWeight: 600, fontSize: 22, letterSpacing: '0.14em', textTransform: 'uppercase',
+            color: lit > 0.5 ? mix(c, '#FFFFFF', 0.3) : MUTED }}>{role}</span>
+        </div>
+        <div style={{ fontFamily: MONO, fontSize: 24, marginTop: 10, whiteSpace: 'nowrap', color: lit > 0.5 ? TEXT : MUTED }}>{file}</div>
+        {lt >= checkAt && (
+          <div style={{ position: 'absolute', right: -12, top: -12, width: 36, height: 36, borderRadius: '50%', background: OK,
+            display: 'flex', alignItems: 'center', justifyContent: 'center', transform: `scale(${chk})`,
+            boxShadow: `0 0 0 4px ${INK}, 0 0 18px ${alpha(OK, 0.6)}` }}>
+            <Icon name="check" size={22} color={INK} stroke={3.2} />
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ── ScrollCode: CodeCard's look, plus a scrolling viewport ──────────────────
+// The kit's CodeCard has no viewport/scroll prop, so this builds the same rows
+// on the kit's Window + tokenize + Badge and slides them up by `scroll` lines.
+function ScrollCode({ title = 'script.md', lines = [], at = 0, y, width = 600, fontSize = 24, view = 8, scroll = 0,
+  highlight = [], enter: en = 'none' }) {
+  const { localTime: lt } = useSprite();
+  const lh = Math.round(fontSize * 1.55);
+  const rows = lines.map((L, i) => {
+    const la = L.at != null ? L.at : at;
+    const dt = lt - la;
+    const vis = dt >= 0;
+    let hl = 0;
+    let hc = VIOLET;
+    for (const h of highlight) {
+      if (h.line !== i) continue;
+      const on = lt >= h.at ? e3((lt - h.at) / 0.25) : 0;
+      const off = h.until != null && lt >= h.until ? e3((lt - h.until) / 0.25) : 0;
+      const v = on * (1 - off);
+      if (v > hl) { hl = v; hc = tone(h.color || VIOLET); }
+    }
+    const segs = L.segs || tokenize(L.text, 'md');
+    return (
+      <div key={i} style={{ position: 'relative', display: 'flex', alignItems: 'flex-start', minHeight: lh, padding: '0 24px',
+        background: hl > 0 ? alpha(hc, 0.16 * hl) : 'transparent', boxShadow: hl > 0 ? `inset ${4 * hl}px 0 0 ${hc}` : 'none',
+        opacity: vis ? (L.dim ? 0.45 : 1) * e3(dt / 0.3) : 0, transform: `translateX(${vis ? (1 - e3(dt / 0.3)) * -12 : -12}px)` }}>
+        <span style={{ width: 40, flexShrink: 0, textAlign: 'right', marginRight: 18, fontSize: Math.round(fontSize * 0.8),
+          lineHeight: `${lh}px`, color: hl > 0.5 ? alpha(hc, 0.9) : 'rgba(245,247,255,0.28)' }}>{i + 1}</span>
+        <span style={{ flex: 1, minWidth: 0, whiteSpace: 'pre-wrap', lineHeight: `${lh}px`,
+          textShadow: hl > 0.5 ? `0 0 18px ${alpha(hc, 0.35)}` : 'none' }}><Segs segs={segs} /></span>
+        {L.label && (
+          <span style={{ flexShrink: 0, marginLeft: 12, alignSelf: 'center' }}>
+            <Badge variant={L.labelTone || 'cyan'} size={18} mono upper={false} at={L.labelAt}>{L.label}</Badge>
+          </span>
+        )}
+      </div>
+    );
+  });
+  const mask = 'linear-gradient(180deg, transparent 0, #000 14px, #000 calc(100% - 14px), transparent 100%)';
+  return (
+    <Window title={title} icon="file" right={<LangTag>md</LangTag>} width={width} at={at} enter={en} y={y} padding={0}
+      bodyStyle={{ height: view * lh + 36, overflow: 'hidden', WebkitMaskImage: mask, maskImage: mask }}>
+      <div style={{ paddingTop: 16, fontFamily: MONO, fontSize, transform: `translateY(${-scroll * lh}px)` }}>{rows}</div>
+    </Window>
+  );
+}
+
+// ── Scene 2 piece: the phone screen each frontmatter key fills in ───────────
+// 360 × 640 virtual screen (PhoneFrame scales it). Unstyled grey until `style`.
+function FrontmatterReel({ cueTitle, cueTopic, cueStyle, cueVoice, cueSpeed }) {
+  const { localTime: lt } = useSprite();
+  const st = lt >= cueStyle ? e3((lt - cueStyle) / 0.5) : 0;
+  const ti = lt >= cueTitle ? e3((lt - cueTitle) / 0.4) : 0;
+  const words = ['Caching', 'cuts', 'the', 'bill.'];
+  const wi = lt >= cueVoice ? Math.floor((lt - cueVoice) * 2.6) % (words.length + 2) : -1;
+  return (
+    <div style={{ position: 'absolute', inset: 0, background: '#161B29', overflow: 'hidden' }}>
+      <div style={{ position: 'absolute', inset: 0, background: INK, opacity: st }} />
+      <div style={{ position: 'absolute', inset: 0, opacity: st,
+        background: `radial-gradient(ellipse 80% 50% at 15% 10%, ${alpha(VIOLET, 0.42)}, transparent 70%), radial-gradient(ellipse 70% 45% at 90% 95%, ${alpha(CYAN, 0.24)}, transparent 70%)` }} />
+      <div style={{ position: 'absolute', left: 30, top: 58, display: 'flex', alignItems: 'center', gap: 8, padding: '6px 14px 6px 10px',
+        borderRadius: 99, background: alpha(VIOLET, 0.22), border: `2px solid ${alpha(VIOLET, 0.6)}`, ...enter.pop(lt - cueVoice) }}>
+        <Icon name="mic" size={24} color={TEXT} />
+        <span style={{ fontFamily: SANS, fontWeight: 600, fontSize: 24, color: TEXT }}>Leda</span>
+      </div>
+      <div style={{ position: 'absolute', right: 26, top: 58, padding: '6px 14px', borderRadius: 99, background: alpha(CYAN, 0.2),
+        border: `2px solid ${alpha(CYAN, 0.7)}`, fontFamily: DISPLAY, fontWeight: 700, fontSize: 26, color: TEXT, ...enter.pop(lt - cueSpeed) }}>1.2×</div>
+      <div style={{ position: 'absolute', left: 34, top: 134, fontFamily: SANS, fontWeight: 600, fontSize: 22, letterSpacing: '0.2em',
+        color: CYAN, ...enter.wipe(lt - cueTopic, 0.4) }}>DEVTOOLS</div>
+      {[0.78, 0.5].map((w, i) => (
+        <div key={i} style={{ position: 'absolute', left: 34, top: 178 + i * 58, width: `${w * 81}%`, height: 34, borderRadius: 10,
+          background: 'rgba(255,255,255,0.10)', opacity: 1 - ti }} />
+      ))}
+      <div style={{ position: 'absolute', left: 34, right: 30, top: 172, opacity: ti * (1 - st), fontFamily: SANS, fontWeight: 600,
+        fontSize: 46, lineHeight: 1.12, color: TEXT }}>Prompt caching</div>
+      <div style={{ position: 'absolute', left: 34, right: 30, top: 170, opacity: st, transform: `translateY(${(1 - st) * 16}px)`,
+        fontFamily: DISPLAY, fontWeight: 800, fontSize: 54, lineHeight: 1.04, letterSpacing: '-0.02em', color: TEXT }}>
+        Prompt <span style={GRAD_TEXT}>caching</span>
+      </div>
+      <div style={{ position: 'absolute', left: 34, top: 344, width: 292, height: 118, borderRadius: 18,
+        background: alpha(VIOLET, 0.16), border: `2px solid ${alpha(CYAN, 0.5)}`, ...enter.pop(lt - (cueStyle + 0.15)) }}>
+        {[0.8, 0.55, 0.7].map((w, i) => (
+          <div key={i} style={{ position: 'absolute', left: 20, top: 24 + i * 28, height: 12, borderRadius: 6,
+            width: `${w * 100 * e3((lt - (cueStyle + 0.3 + i * 0.1)) / 0.4)}%`, maxWidth: 250,
+            background: i === 0 ? CYAN : 'rgba(255,255,255,0.35)' }} />
+        ))}
+      </div>
+      {wi >= 0 && (
+        <div style={{ position: 'absolute', left: 20, right: 20, bottom: 92, display: 'flex', justifyContent: 'center', columnGap: 10,
+          fontFamily: SANS, fontWeight: 600, fontSize: 30 }}>
+          {words.map((w, i) => (
+            <span key={i} style={{ color: i === wi ? CYAN : i < wi ? 'rgba(255,255,255,0.5)' : 'rgba(255,255,255,0.88)' }}>{w}</span>
+          ))}
+        </div>
+      )}
+      <div style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: 6, background: 'rgba(255,255,255,0.14)' }}>
+        <div style={{ width: `${100 * clamp((lt - cueVoice) / 6, 0, 1)}%`, height: '100%', background: CYAN }} />
+      </div>
+    </div>
+  );
+}
+
+// ── Scene 4 piece: the ">" key ──────────────────────────────────────────────
+function KeyCap({ x, y, at, size = 108 }) {
+  const { localTime: lt } = useSprite();
+  const dt = lt - at;
+  const press = dt > 0.3 && dt < 0.62 ? Math.sin(Math.PI * (dt - 0.3) / 0.32) : 0;
+  return (
+    <div style={{ position: 'absolute', left: x, top: y, width: size, height: size, ...enter.pop(dt, 0.4) }}>
+      <div style={{ position: 'absolute', left: 0, right: 0, top: 9, bottom: 0, borderRadius: 26, background: '#070A12',
+        boxShadow: '0 18px 40px rgba(0,0,0,0.5)' }} />
+      <div style={{ position: 'absolute', left: 0, right: 0, top: 7 * press, height: size - 9, borderRadius: 26,
+        border: '2px solid transparent', background: `linear-gradient(${CODE_BG}, ${CODE_BG}) padding-box, ${GRAD_DIAG} border-box`,
+        display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: `0 0 ${30 + 20 * press}px ${alpha(VIOLET, 0.35)}` }}>
+        <span style={{ fontFamily: MONO, fontWeight: 600, fontSize: 66, lineHeight: 1, marginTop: -4, ...GRAD_TEXT }}>&gt;</span>
+      </div>
+    </div>
+  );
+}
+
+// ── Scene 5 piece: one row of the hint anatomy ──────────────────────────────
+function AnatomyRow({ label, value, color, at, first }) {
+  const { localTime: lt } = useSprite();
+  const f = lt >= at ? e3((lt - at) / 0.35) : 0;
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 16, padding: '12px 0',
+      borderTop: first ? 'none' : '1px solid rgba(255,255,255,0.06)' }}>
+      <div style={{ width: 12, height: 12, borderRadius: '50%', flexShrink: 0, background: f > 0 ? color : 'rgba(255,255,255,0.18)',
+        boxShadow: f > 0 ? `0 0 ${14 * f}px ${alpha(color, 0.9)}` : 'none',
+        transform: `scale(${f > 0 ? 0.6 + 0.6 * sp(lt - at, PUNCH.k, PUNCH.d) - 0.2 * f : 1})` }} />
+      <span style={{ width: 172, flexShrink: 0, fontFamily: SANS, fontWeight: 600, fontSize: 22, letterSpacing: '0.12em',
+        textTransform: 'uppercase', color: f > 0.5 ? color : FAINT }}>{label}</span>
+      <div style={{ position: 'relative', flex: 1, height: 34 }}>
+        <div style={{ position: 'absolute', left: 0, top: 12, width: 190, height: 10, borderRadius: 5,
+          background: 'rgba(255,255,255,0.07)', opacity: 1 - f }} />
+        <span style={{ position: 'absolute', left: 0, top: 0, fontFamily: MONO, fontSize: 24, lineHeight: '34px', color: TEXT,
+          whiteSpace: 'nowrap', ...enter.wipe(lt - at, 0.45) }}>{value}</span>
+      </div>
+    </div>
+  );
+}
+
+// ── Scene 6 piece: digits → spoken words ────────────────────────────────────
+function HeardRow({ from, to, at, first }) {
+  const { localTime: lt } = useSprite();
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 16, padding: '12px 0',
+      borderTop: first ? 'none' : '1px solid rgba(255,255,255,0.06)', ...enter.push(lt - at, 'left', 60) }}>
+      <span style={{ width: 146, flexShrink: 0, fontFamily: MONO, fontSize: 24, color: CODE.num }}>
+        <Strike at={at + 0.2} thickness={4} rotate={-4}>{from}</Strike>
+      </span>
+      <Icon name="arrow" size={26} color={CYAN} />
+      <span style={{ fontFamily: SANS, fontWeight: 600, fontSize: 26, color: TEXT, whiteSpace: 'nowrap',
+        ...enter.wipe(lt - (at + 0.3), 0.45) }}>{to}</span>
+    </div>
+  );
+}
+
+// ── Scene 1 · hook: one file, the whole video branches out of it ────────────
+function Scene1() {
+  const win = useSceneWindow(1);
+  const cueOne = useWordCue(1, "one markdown");
+  const cueMarkdown = useWordCue(1, "markdown");
+  const cueFile = useWordCue(1, "file");
+  const cueControls = useWordCue(1, "controls");
+  const cueWhole = useWordCue(1, "whole video");
+  const cueScriptMd = useWordCue(1, "script.md");
+  const cueRight = useWordCue(1, "right");
+  const cueDownstream = useWordCue(1, "downstream");
+  const cueEasier = useWordCue(1, "easier");
+  const nodes = [
+    { role: 'voice', file: 'voiceover.mp3', icon: 'mic', color: VIOLET, x: 60, y: 176, from: [262, 388], to: [184, 290] },
+    { role: 'timings', file: 'scenes.json', icon: 'words', color: CYAN, x: 412, y: 176, from: [458, 388], to: [536, 290] },
+    { role: 'animation', file: 'index.html', icon: 'code', color: VIOLET, x: 60, y: 790, from: [262, 692], to: [184, 790] },
+    { role: 'video', file: 'output.mp4', icon: 'film', color: OK, x: 412, y: 790, from: [458, 692], to: [536, 790] },
+  ];
+  return (
+    <Sprite {...win}>
+      <SceneRoot idx={1}>
+        <Glow x={360} y={540} r={340} color={VIOLET} opacity={0.26} breathe={0.04} />
+        <Kicker y={104} at={0}>Reelsmith · Episode 04</Kicker>
+        {nodes.map((n, i) => (
+          <Spoke key={`s${i}`} from={n.from} to={n.to} at={cueControls + i * 0.08} flowAt={cueDownstream + i * 0.18} />
+        ))}
+        {nodes.map((n, i) => (
+          <HubNode key={`n${i}`} x={n.x} y={n.y} role={n.role} file={n.file} icon={n.icon} color={n.color}
+            at={cueWhole + i * 0.1} litAt={cueDownstream + i * 0.18} checkAt={cueEasier + i * 0.1} />
+        ))}
+        <MdPage x={210} y={388} at={cueOne} linesAt={cueMarkdown} typeAt={cueFile} glowAt={cueScriptMd} checkAt={cueRight} />
+        <SubtitleRail sceneIdx={1} bottom={150} fontSize={28} variant="clean" accentColor={CYAN} fontFamily="Inter" />
+      </SceneRoot>
+    </Sprite>
+  );
+}
+
+// ── Scene 2 · frontmatter: keys light up, then script.md beats the config ───
+function Scene2() {
+  const win = useSceneWindow(2);
+  const cueAtTop = useWordCue(2, "at the top");
+  const cueTop = useWordCue(2, "top");
+  const cueFrontmatter = useWordCue(2, "frontmatter");
+  const cueTitle = useWordCue(2, "title");
+  const cueTopic = useWordCue(2, "topic");
+  const cueStyle = useWordCue(2, "style");
+  const cueVoice = useWordCue(2, "voice");
+  const cueSpeed = useWordCue(2, "speed");
+  const cueAnything = useWordCue(2, "anything");
+  const cueBeats = useWordCue(2, "beats");
+  const cueProject = useWordCue(2, "project");
+  const cueDefaults = useWordCue(2, "defaults");
+  return (
+    <Sprite {...win}>
+      {({ localTime }) => (
+        <SceneRoot idx={2} enter="wipe">
+          <Glow x={360} y={330} r={330} color={VIOLET} opacity={0.18} />
+          <Kicker y={104} at={0.3}>01 · Frontmatter</Kicker>
+          <CodeCard y={160} title="script.md" at={cueAtTop} speed={48} lines={[
+            { text: '---', at: cueTop, label: 'frontmatter', labelTone: 'violet', labelAt: cueFrontmatter },
+            { text: 'title: Prompt caching', at: cueTitle, type: true },
+            { text: 'topic: devtools', at: cueTopic, type: true },
+            { text: 'style: motion', at: cueStyle, type: true },
+            { text: 'tts_voice: Leda', at: cueVoice, type: true },
+            { text: 'tts_speed: 1.2', at: cueSpeed, type: true },
+            { text: '---', at: cueTop + 0.15 },
+          ]} highlight={[
+            { line: 1, at: cueTitle, until: cueTopic },
+            { line: 2, at: cueTopic, until: cueStyle },
+            { line: 3, at: cueStyle, until: cueVoice },
+            { line: 4, at: cueVoice, until: cueSpeed },
+            { line: 5, at: cueSpeed, until: cueAnything },
+            { line: 3, at: cueBeats, color: OK },
+          ]} />
+          <PhoneFrame x={258 + (72 - 258) * sp(localTime - cueAnything)} y={546} width={204} at={cueAtTop + 0.25}>
+            <FrontmatterReel cueTitle={cueTitle} cueTopic={cueTopic} cueStyle={cueStyle} cueVoice={cueVoice} cueSpeed={cueSpeed} />
+          </PhoneFrame>
+          <Card x={300} y={566} width={340} at={cueAnything} enter="fromRight" padding="20px 22px 18px" title="which wins" icon="bolt">
+            <div style={{ ...enter.push(localTime - (cueAnything + 0.1), 'left', 40) }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <span style={{ fontFamily: MONO, fontWeight: 600, fontSize: 22, color: TEXT }}>script.md</span>
+                <div style={{ marginLeft: 'auto' }}>
+                  <Badge variant="ok" icon="check" size={20} at={cueDefaults}>wins</Badge>
+                </div>
+              </div>
+              <div style={{ fontFamily: MONO, fontSize: 22, marginTop: 6 }}>
+                <Segs segs={tokenize('style: motion', 'md')} />
+              </div>
+            </div>
+            <div style={{ position: 'relative', height: 58, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <div style={{ position: 'absolute', left: 0, right: 0, top: 29, height: 1, background: 'rgba(255,255,255,0.10)',
+                transformOrigin: 'left center', transform: `scaleX(${e3((localTime - cueAnything) / 0.5)})` }} />
+              <Badge variant="violet" size={20} at={cueBeats} style={{ position: 'relative', background: CODE_BG }}>beats</Badge>
+            </div>
+            <div style={{ ...enter.push(localTime - (cueBeats + 0.12), 'left', 40) }}>
+              <div style={{ fontFamily: MONO, fontSize: 22, color: MUTED }}>reelsmith.config.json</div>
+              <div style={{ fontFamily: MONO, fontSize: 22, marginTop: 6 }}>
+                <Strike at={cueProject} thickness={4} dim={0.45}><Segs segs={tokenize('"style": "reflective"', 'json')} /></Strike>
+              </div>
+            </div>
+          </Card>
+          <SubtitleRail sceneIdx={2} bottom={150} fontSize={28} variant="clean" accentColor={CYAN} fontFamily="Inter" />
+        </SceneRoot>
+      )}
+    </Sprite>
+  );
+}
+
+// ── Scene 3 · scenes and lines: scroll to ## Script, ids, one line = one unit ─
+function Scene3() {
+  const win = useSceneWindow(3);
+  const cueUnder = useWordCue(3, "under");
+  const cueScriptHeading = useWordCue(3, "script heading");
+  const cueEachScene = useWordCue(3, "each scene");
+  const cueScene1 = useWordCue(3, "scene 1");
+  const cueScene2 = useWordCue(3, "scene 2");
+  const cueSoOn = useWordCue(3, "so on");
+  const cueInside = useWordCue(3, "inside");
+  const cueOneSentence = useWordCue(3, "one sentence");
+  const cueThatLine = useWordCue(3, "that line");
+  const cueUnit = useWordCue(3, "unit");
+  const cueEverything = useWordCue(3, "everything else");
+  const cueWorks = useWordCue(3, "works with");
+  const fm = ['---', 'title: Prompt caching', 'topic: devtools', 'style: motion', 'tts_voice: Leda', 'tts_speed: 1.2', '---'];
+  const lines = [
+    ...fm.map((text) => ({ text, at: 0, dim: true })),
+    { text: '## Script', at: cueUnder },
+    { text: '### Scene 1', at: cueScene1 },
+    { text: 'Caching cuts the bill.', at: cueInside, label: 's1.1', labelAt: cueOneSentence },
+    { text: 'Here is how it works.', at: cueInside + 0.12, label: 's1.2', labelAt: cueOneSentence + 0.15 },
+    { text: '### Scene 2', at: cueScene2 },
+    { text: 'The prompt is stored once.', at: cueInside + 0.24, label: 's2.1', labelAt: cueOneSentence + 0.3 },
+    { text: 'Later calls reuse it.', at: cueInside + 0.36, label: 's2.2', labelAt: cueOneSentence + 0.45 },
+    { text: '### Scene 3', at: cueSoOn, dim: true },
+  ];
+  const uses = [
+    { label: 'TTS clip', icon: 'wave', color: VIOLET, at: cueUnit + 0.25 },
+    { label: 're-record', icon: 'mic', color: CYAN, at: cueEverything + 0.3 },
+    { label: 'timings', icon: 'words', color: VIOLET, at: cueWorks },
+  ];
+  const tileX = [182, 360, 538];
+  return (
+    <Sprite {...win}>
+      {({ localTime }) => {
+        const scroll = 7 * eio((localTime - (cueUnder + 0.15)) / 0.8);
+        // "### Scene N" counts along with the narrator: N → 1 → 2 → 3
+        const steps = [[cueEachScene, 'N'], [cueScene1, '1'], [cueScene2, '2'], [cueSoOn, '3']];
+        let [digitAt, sceneDigit] = steps[0];
+        for (const [a, d] of steps) if (localTime >= a) { digitAt = a; sceneDigit = d; }
+        const digitPop = sp(localTime - digitAt, PUNCH.k, PUNCH.d);
+        return (
+          <SceneRoot idx={3} enter="up">
+            <Glow x={360} y={380} r={320} color={CYAN} opacity={0.12} />
+            <Kicker y={104} at={0.3}>02 · Scenes + lines</Kicker>
+            <ScrollCode y={160} at={0} lines={lines} view={8} scroll={scroll} highlight={[
+              { line: 7, at: cueScriptHeading, until: cueScene1 },
+              { line: 8, at: cueScene1, until: cueScene2 },
+              { line: 11, at: cueScene2, until: cueSoOn },
+              { line: 14, at: cueSoOn, until: cueInside },
+              { line: 9, at: cueInside, until: cueThatLine, color: CYAN },
+              { line: 10, at: cueInside + 0.12, until: cueThatLine, color: CYAN },
+              { line: 12, at: cueInside + 0.24, until: cueThatLine, color: CYAN },
+              { line: 13, at: cueInside + 0.36, until: cueThatLine, color: CYAN },
+              { line: 9, at: cueThatLine },
+            ]} />
+            <Card y={580} width={560} at={cueEachScene} enter="rise" padding="18px 26px 10px" title="the two rules" icon="check"
+              color={CYAN} glowAt={cueThatLine}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 16, padding: '10px 0' }}>
+                <span style={{ width: 210, flexShrink: 0, fontFamily: MONO, fontWeight: 600, fontSize: 26, color: CODE.head, whiteSpace: 'nowrap' }}>
+                  ### Scene <span style={{ display: 'inline-block', color: CYAN, transform: `scale(${0.55 + 0.45 * digitPop})` }}>{sceneDigit}</span>
+                </span>
+                <span style={{ fontFamily: SANS, fontWeight: 500, fontSize: 24, color: MUTED }}>starts a scene</span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 16, padding: '10px 0', borderTop: '1px solid rgba(255,255,255,0.06)',
+                ...enter.push(localTime - cueOneSentence, 'left', 50) }}>
+                <span style={{ width: 210, flexShrink: 0 }}>
+                  <Badge variant="cyan" mono size={22} upper={false} at={cueOneSentence}>s1.1</Badge>
+                </span>
+                <span style={{ fontFamily: SANS, fontWeight: 500, fontSize: 24, color: TEXT }}>one sentence per line</span>
+              </div>
+            </Card>
+            {tileX.map((tx, i) => (
+              <Spoke key={i} from={[360, 770]} to={[tx, 818]} at={cueUnit + i * 0.1} dur={0.4} flowAt={cueUnit + 0.5 + i * 0.1} />
+            ))}
+            <div style={{ position: 'absolute', top: 818, left: 0, right: 0, display: 'flex', justifyContent: 'center', gap: 14 }}>
+              {uses.map((u) => (
+                <Tile key={u.label} icon={u.icon} color={u.color} at={u.at} activeAt={u.at + 0.3} width={164}
+                  style={{ padding: '18px 12px 18px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                  <div style={{ fontFamily: SANS, fontWeight: 600, fontSize: 24, color: TEXT, whiteSpace: 'nowrap', marginTop: -2 }}>{u.label}</div>
+                </Tile>
+              ))}
+            </div>
+            <SubtitleRail sceneIdx={3} bottom={150} fontSize={28} variant="clean" accentColor={CYAN} fontFamily="Inter" />
+          </SceneRoot>
+        );
+      }}
+    </Sprite>
+  );
+}
+
+// ── Scene 4 · cue lines: ">" notes are never spoken, never aligned ──────────
+function Scene4() {
+  const win = useSceneWindow(4);
+  const cueLines = useWordCue(4, "lines starting");
+  const cueAngle = useWordCue(4, "angle bracket");
+  const cueNotes = useWordCue(4, "notes");
+  const cueNot = useWordCue(4, "not narration");
+  const cueNarration = useWordCue(4, "narration");
+  const cuePronunciation = useWordCue(4, "pronunciation");
+  const cue100 = useWordCue(4, "100");
+  const cuePause = useWordCue(4, "pause");
+  const cueNeverSpoken = useWordCue(4, "never spoken");
+  const cueAligned = useWordCue(4, "aligned");
+  const note = (rest) => [{ s: '>', c: CYAN, b: true }, { s: ` ${rest}`, c: CODE.cm, i: true }];
+  return (
+    <Sprite {...win}>
+      {({ localTime, duration }) => (
+        <SceneRoot idx={4} enter="push">
+          <Glow x={360} y={420} r={320} color={VIOLET} opacity={0.16} />
+          <Kicker y={104} at={0.3}>03 · Cue lines</Kicker>
+          <KeyCap x={100} y={148} at={cueAngle} />
+          <Title x={236} y={154} width={384} align="left" size={42} ats={[cueNotes, cueNot, cueNarration]}
+            text="Notes,|*not* *narration*." />
+          <CodeCard y={286} title="script.md" at={cueLines} lines={[
+            { text: '### Scene 2', at: cueLines },
+            { text: '> say: "one hundred"', segs: note('say: "one hundred"'), at: cueAngle, label: 'note', labelTone: 'warn', labelAt: cueNotes },
+            { text: '> [pause]', segs: note('[pause]'), at: cueAngle + 0.15, label: 'note', labelTone: 'warn', labelAt: cueNotes + 0.15 },
+            { text: 'The prompt is 100 tokens.', at: cueLines + 0.15, label: 's2.1', labelAt: cueNarration,
+              segs: [{ s: 'The prompt is ', c: CODE.text }, { s: '100', c: CODE.num, b: true }, { s: ' tokens.', c: CODE.text }] },
+            { text: 'Cached reads cost less.', at: cueLines + 0.3, label: 's2.2', labelAt: cueNarration + 0.15 },
+          ]} highlight={[
+            { line: 1, at: cuePronunciation, until: cuePause, color: WARN },
+            { line: 3, at: cue100, until: cuePause, color: CYAN },
+            { line: 2, at: cuePause, color: WARN },
+          ]} />
+          {/* data-bleed: the kit Stamp punches in from 2.3x, wider than the 520 px line for ~0.15 s; at rest it sits at x 262-600 */}
+          <div data-bleed="">
+            <Stamp x={262} y={386} at={cueNeverSpoken} rotate={-8} size={40}>not spoken</Stamp>
+          </div>
+          <Card y={598} width={560} at={cueLines + 0.3} enter="rise" padding="22px 26px 24px" title="voiceover.mp3" titleMono
+            icon="wave" color={CYAN} glowAt={cueNarration}>
+            <div style={{ position: 'absolute', right: 24, top: 18 }}>
+              <Badge variant="warn" icon="x" size={20} at={cueAligned}>notes skipped</Badge>
+            </div>
+            <Waveform width={508} height={78} bars={40} seed={9} at={cueLines + 0.3} sweep={[cueLines + 0.3, duration]} />
+            <div style={{ height: 16 }} />
+            <Timeline width={508} height={54} at={cueLines + 0.3} ruler={false} playhead={{ at: cueLines + 0.3, until: duration }} clips={[
+              { label: 's2.1', dur: 2.6, color: 'violet' },
+              { label: 's2.2', dur: 2.1, color: 'cyan' },
+            ]} />
+          </Card>
+          <SubtitleRail sceneIdx={4} bottom={150} fontSize={28} variant="clean" accentColor={CYAN} fontFamily="Inter" />
+        </SceneRoot>
+      )}
+    </Sprite>
+  );
+}
+
+// ── Scene 5 · scene hints: one line per scene, read by the agent ────────────
+function Scene5() {
+  const win = useSceneWindow(5);
+  const cueBelow = useWordCue(5, "below the script");
+  const cueAddHints = useWordCue(5, "add scene hints");
+  const cueHints = useWordCue(5, "hints");
+  const cueOneLine = useWordCue(5, "one line");
+  const cuePerScene = useWordCue(5, "per scene");
+  const cueOnScreen = useWordCue(5, "on screen");
+  const cuePrimitive = useWordCue(5, "primitive");
+  const cueAgent = useWordCue(5, "agent");
+  const cueReads = useWordCue(5, "reads");
+  const cueBuilds = useWordCue(5, "builds");
+  const cueAnimation = useWordCue(5, "animation");
+  return (
+    <Sprite {...win}>
+      {({ localTime }) => {
+        const on = (cue) => localTime >= cue;
+        const hint1 = [
+          { s: '- ', c: CODE.punct },
+          { s: 'Scene 1 (hook):', c: on(cuePerScene) ? CODE.kw : CODE.text, b: on(cuePerScene) },
+          { s: ' ', c: CODE.text },
+          { s: '"150" counts up.', c: on(cueOnScreen) ? CODE.fn : CODE.text, b: on(cueOnScreen) },
+          { s: ' Primitive: ', c: CODE.cm },
+          { s: 'Counter', c: on(cuePrimitive) ? CODE.str : CODE.text, b: on(cuePrimitive) },
+        ];
+        return (
+          <SceneRoot idx={5} enter="up">
+            <Glow x={360} y={600} r={340} color={VIOLET} opacity={0.16} />
+            <Kicker y={104} at={0.3}>04 · Scene hints</Kicker>
+            <CodeCard y={160} title="script.md" at={cueBelow} start={30} enter="rise" lines={[
+              { text: 'Cached reads cost less.', dim: true, at: cueBelow + 0.2 },
+              { text: '## Scene Hints', at: cueAddHints, type: true },
+              { text: '- Scene 1 (hook): "150" counts up. Primitive: Counter', segs: hint1, at: cueOneLine },
+              { text: '- Scene 2 (name): logo builds. Primitive: Wordmark', at: cuePerScene },
+            ]} highlight={[
+              { line: 1, at: cueHints, until: cueOneLine },
+              { line: 2, at: cueOneLine, until: cueAgent },
+              { line: 2, at: cueReads, until: cueReads + 0.35, color: CYAN },
+              { line: 3, at: cueReads + 0.35, until: cueBuilds, color: CYAN },
+            ]} />
+            <Card y={500} width={560} at={cueAddHints} enter="fromBottom" padding="20px 26px 12px" title="one hint, three parts"
+              icon="words" glowAt={cueReads}>
+              <AnatomyRow first label="scene" value="Scene 1 (hook)" color={CODE.kw} at={cuePerScene} />
+              <AnatomyRow label="on screen" value={'"150" counts up'} color={CODE.fn} at={cueOnScreen} />
+              <AnatomyRow label="primitive" value="Counter" color={CODE.str} at={cuePrimitive} />
+            </Card>
+            <div style={{ position: 'absolute', top: 792, left: 0, right: 0, display: 'flex', justifyContent: 'center',
+              alignItems: 'center', gap: 14 }}>
+              <Chip at={cueAgent} icon="eye" color="cyan">Claude Code</Chip>
+              <div style={{ display: 'flex', alignItems: 'center', ...enter.wipe(localTime - cueBuilds, 0.4) }}>
+                <div style={{ width: 40, height: 3, borderRadius: 2, background: GRAD }} />
+                <Icon name="arrow" size={28} color={CYAN} style={{ marginLeft: -10 }} />
+              </div>
+              <Chip at={cueAnimation} icon="code" mono color="ok" variant="outline">index.html</Chip>
+            </div>
+            <SubtitleRail sceneIdx={5} bottom={150} fontSize={28} variant="clean" accentColor={CYAN} fontFamily="Inter" />
+          </SceneRoot>
+        );
+      }}
+    </Sprite>
+  );
+}
+
+// ── Scene 6 · length: 150 words ≈ 60 s, write numbers as they are heard ─────
+function Scene6() {
+  const win = useSceneWindow(6);
+  const cueKeep = useWordCue(6, "keep");
+  const cueIt = useWordCue(6, "it short");
+  const cueShort = useWordCue(6, "short");
+  const cueAbout = useWordCue(6, "about");
+  const cueSpoken = useWordCue(6, "spoken words");
+  const cueWords = useWordCue(6, "words");
+  const cue60 = useWordCue(6, "60-second");
+  const cueShortAt = useWordCue(6, "short at");
+  const cueNormal = useWordCue(6, "normal pace");
+  const cuePace = useWordCue(6, "pace");
+  const cueSay = useWordCue(6, "say the numbers");
+  const cueNumbers = useWordCue(6, "numbers");
+  const cueWay = useWordCue(6, "way");
+  const cueHeard = useWordCue(6, "heard");
+  return (
+    <Sprite {...win}>
+      {({ localTime }) => (
+        <SceneRoot idx={6} enter="iris">
+          <Glow x={360} y={380} r={300} color={VIOLET} opacity={0.22} breathe={0.04} />
+          <Glow x={540} y={760} r={260} color={CYAN} opacity={0.1} />
+          <Kicker y={104} at={0.3}>05 · Length</Kicker>
+          <Title y={146} size={58} ats={[cueKeep, cueIt, cueShort]} text="Keep it *short*." />
+          <div style={{ position: 'absolute', top: 234, left: 0, right: 0, display: 'flex', justifyContent: 'center',
+            ...enter.pop(localTime - cueShort, 0.7) }}>
+            <Ring size={276} stroke={18} at={cueAbout} until={cueWords} enter="none">
+              <Counter value={150} at={cueAbout} dur={cueWords - cueAbout} size={100} enter="none" />
+              <div style={{ fontFamily: SANS, fontWeight: 600, fontSize: 24, color: MUTED, marginTop: 4,
+                ...enter.slideUp(localTime - cueSpoken, 0.4, 12) }}>spoken words</div>
+            </Ring>
+          </div>
+          <div style={{ position: 'absolute', top: 536, left: 0, right: 0, display: 'flex', justifyContent: 'center',
+            alignItems: 'center', gap: 20 }}>
+            <Counter value={60} prefix="≈ " suffix=" s" at={cue60} dur={0.8} size={64} gradient />
+            <Chip at={cueNormal} icon="clock" color="cyan">normal pace</Chip>
+          </div>
+          <ProgressBar y={624} width={520} height={10} at={cueShortAt} until={cuePace} pct={false} />
+          <Card y={664} width={520} at={cueSay} enter="rise" padding="20px 26px 12px" title="write it as heard" icon="wave"
+            color={OK} glowAt={cueHeard}>
+            <HeardRow first from="150" to="one hundred fifty" at={cueSay + 0.1} />
+            <HeardRow from="3.11" to="three eleven" at={cueNumbers} />
+            <HeardRow from="script.md" to="script dot md" at={cueWay} />
+          </Card>
+          <SubtitleRail sceneIdx={6} bottom={150} fontSize={28} variant="clean" accentColor={CYAN} fontFamily="Inter" />
+        </SceneRoot>
+      )}
+    </Sprite>
+  );
+}
+
+function App() {
+  return (
+    <Stage width={720} height={1280} scenesSrc="scenes.json" background={INK} loop={false} autoplay={true} persistKey="tut-04-script-format">
+      <Scene1 />
+      <Scene2 />
+      <Scene3 />
+      <Scene4 />
+      <Scene5 />
+      <Scene6 />
+    </Stage>
+  );
+}
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>

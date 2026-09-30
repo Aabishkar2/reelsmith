@@ -1,0 +1,799 @@
+[
+  {
+    "idx": 1,
+    "dur": 5.8,
+    "file": "voiceover/s1.mp3",
+    "words": [
+      {
+        "word": "The",
+        "start": 0,
+        "end": 0.122
+      },
+      {
+        "word": "fastest",
+        "start": 0.122,
+        "end": 0.435
+      },
+      {
+        "word": "way",
+        "start": 0.435,
+        "end": 0.678
+      },
+      {
+        "word": "to",
+        "start": 0.678,
+        "end": 0.8
+      },
+      {
+        "word": "ship",
+        "start": 0.8,
+        "end": 1.009
+      },
+      {
+        "word": "a",
+        "start": 1.009,
+        "end": 1.13
+      },
+      {
+        "word": "bad",
+        "start": 1.13,
+        "end": 1.374
+      },
+      {
+        "word": "video",
+        "start": 1.374,
+        "end": 1.67
+      },
+      {
+        "word": "is",
+        "start": 1.67,
+        "end": 2
+      },
+      {
+        "word": "to",
+        "start": 2,
+        "end": 2.157
+      },
+      {
+        "word": "render",
+        "start": 2.157,
+        "end": 2.383
+      },
+      {
+        "word": "it",
+        "start": 2.383,
+        "end": 2.539
+      },
+      {
+        "word": "too",
+        "start": 2.539,
+        "end": 2.696
+      },
+      {
+        "word": "early.",
+        "start": 2.696,
+        "end": 3.043
+      },
+      {
+        "word": "Reelsmith",
+        "start": 3.548,
+        "end": 3.878
+      },
+      {
+        "word": "puts",
+        "start": 3.878,
+        "end": 4.157
+      },
+      {
+        "word": "four",
+        "start": 4.157,
+        "end": 4.452
+      },
+      {
+        "word": "gates",
+        "start": 4.452,
+        "end": 4.73
+      },
+      {
+        "word": "in",
+        "start": 4.73,
+        "end": 4.904
+      },
+      {
+        "word": "front",
+        "start": 4.904,
+        "end": 5.026
+      },
+      {
+        "word": "of",
+        "start": 5.026,
+        "end": 5.113
+      },
+      {
+        "word": "the",
+        "start": 5.113,
+        "end": 5.183
+      },
+      {
+        "word": "render",
+        "start": 5.183,
+        "end": 5.357
+      },
+      {
+        "word": "button.",
+        "start": 5.357,
+        "end": 5.652
+      }
+    ]
+  },
+  {
+    "idx": 2,
+    "dur": 5.061,
+    "file": "voiceover/s2.mp3",
+    "words": [
+      {
+        "word": "Gate",
+        "start": 0.148,
+        "end": 0.617
+      },
+      {
+        "word": "1.",
+        "start": 0.617,
+        "end": 0.826
+      },
+      {
+        "word": "The",
+        "start": 1,
+        "end": 1.243
+      },
+      {
+        "word": "linters.",
+        "start": 1.243,
+        "end": 1.574
+      },
+      {
+        "word": "Check",
+        "start": 1.87,
+        "end": 2.339
+      },
+      {
+        "word": "sync",
+        "start": 2.339,
+        "end": 2.583
+      },
+      {
+        "word": "and",
+        "start": 2.583,
+        "end": 2.861
+      },
+      {
+        "word": "validate",
+        "start": 2.861,
+        "end": 3.191
+      },
+      {
+        "word": "sync",
+        "start": 3.191,
+        "end": 3.504
+      },
+      {
+        "word": "fail",
+        "start": 3.504,
+        "end": 3.765
+      },
+      {
+        "word": "on",
+        "start": 3.765,
+        "end": 3.939
+      },
+      {
+        "word": "anything",
+        "start": 3.939,
+        "end": 4.304
+      },
+      {
+        "word": "that",
+        "start": 4.304,
+        "end": 4.53
+      },
+      {
+        "word": "could",
+        "start": 4.53,
+        "end": 4.67
+      },
+      {
+        "word": "drift.",
+        "start": 4.67,
+        "end": 4.896
+      }
+    ]
+  },
+  {
+    "idx": 3,
+    "dur": 12.687,
+    "file": "voiceover/s3.mp3",
+    "words": [
+      {
+        "word": "Gate",
+        "start": 0.165,
+        "end": 0.617
+      },
+      {
+        "word": "2.",
+        "start": 0.617,
+        "end": 0.878
+      },
+      {
+        "word": "The",
+        "start": 1.122,
+        "end": 1.278
+      },
+      {
+        "word": "contact",
+        "start": 1.278,
+        "end": 1.557
+      },
+      {
+        "word": "sheet.",
+        "start": 1.557,
+        "end": 1.817
+      },
+      {
+        "word": "Reelsmith",
+        "start": 2.322,
+        "end": 2.843
+      },
+      {
+        "word": "sheet",
+        "start": 2.843,
+        "end": 2.983
+      },
+      {
+        "word": "grabs",
+        "start": 2.983,
+        "end": 3.278
+      },
+      {
+        "word": "hook",
+        "start": 3.278,
+        "end": 3.522
+      },
+      {
+        "word": "frames",
+        "start": 3.522,
+        "end": 3.852
+      },
+      {
+        "word": "and",
+        "start": 3.852,
+        "end": 4.061
+      },
+      {
+        "word": "three",
+        "start": 4.061,
+        "end": 4.27
+      },
+      {
+        "word": "frames",
+        "start": 4.27,
+        "end": 4.548
+      },
+      {
+        "word": "per",
+        "start": 4.548,
+        "end": 4.739
+      },
+      {
+        "word": "scene,",
+        "start": 4.739,
+        "end": 5.017
+      },
+      {
+        "word": "labelled",
+        "start": 5.174,
+        "end": 5.539
+      },
+      {
+        "word": "with",
+        "start": 5.539,
+        "end": 5.73
+      },
+      {
+        "word": "the",
+        "start": 5.73,
+        "end": 5.817
+      },
+      {
+        "word": "words",
+        "start": 5.817,
+        "end": 6.026
+      },
+      {
+        "word": "being",
+        "start": 6.026,
+        "end": 6.183
+      },
+      {
+        "word": "spoken.",
+        "start": 6.183,
+        "end": 6.496
+      },
+      {
+        "word": "Your",
+        "start": 6.826,
+        "end": 7.191
+      },
+      {
+        "word": "agent",
+        "start": 7.191,
+        "end": 7.452
+      },
+      {
+        "word": "scores",
+        "start": 7.452,
+        "end": 7.817
+      },
+      {
+        "word": "each",
+        "start": 7.817,
+        "end": 8.078
+      },
+      {
+        "word": "frame",
+        "start": 8.078,
+        "end": 8.357
+      },
+      {
+        "word": "on",
+        "start": 8.357,
+        "end": 8.548
+      },
+      {
+        "word": "hook,",
+        "start": 8.548,
+        "end": 8.843
+      },
+      {
+        "word": "readability,",
+        "start": 8.983,
+        "end": 9.417
+      },
+      {
+        "word": "motion,",
+        "start": 9.696,
+        "end": 9.957
+      },
+      {
+        "word": "variety,",
+        "start": 10.148,
+        "end": 10.496
+      },
+      {
+        "word": "and",
+        "start": 10.513,
+        "end": 10.791
+      },
+      {
+        "word": "sync,",
+        "start": 10.791,
+        "end": 11.104
+      },
+      {
+        "word": "then",
+        "start": 11.226,
+        "end": 11.591
+      },
+      {
+        "word": "fixes",
+        "start": 11.591,
+        "end": 11.887
+      },
+      {
+        "word": "the",
+        "start": 11.887,
+        "end": 12.078
+      },
+      {
+        "word": "three",
+        "start": 12.078,
+        "end": 12.2
+      },
+      {
+        "word": "worst.",
+        "start": 12.2,
+        "end": 12.478
+      }
+    ]
+  },
+  {
+    "idx": 4,
+    "dur": 8.487,
+    "file": "voiceover/s4.mp3",
+    "words": [
+      {
+        "word": "Gate",
+        "start": 0.209,
+        "end": 0.591
+      },
+      {
+        "word": "3.",
+        "start": 0.591,
+        "end": 0.835
+      },
+      {
+        "word": "The",
+        "start": 1.13,
+        "end": 1.322
+      },
+      {
+        "word": "draft.",
+        "start": 1.322,
+        "end": 1.617
+      },
+      {
+        "word": "Reelsmith",
+        "start": 2.209,
+        "end": 2.574
+      },
+      {
+        "word": "Draft",
+        "start": 2.574,
+        "end": 2.922
+      },
+      {
+        "word": "renders",
+        "start": 2.922,
+        "end": 3.252
+      },
+      {
+        "word": "a",
+        "start": 3.252,
+        "end": 3.357
+      },
+      {
+        "word": "low",
+        "start": 3.357,
+        "end": 3.539
+      },
+      {
+        "word": "res",
+        "start": 3.539,
+        "end": 3.722
+      },
+      {
+        "word": "preview",
+        "start": 3.722,
+        "end": 4.035
+      },
+      {
+        "word": "with",
+        "start": 4.035,
+        "end": 4.209
+      },
+      {
+        "word": "the",
+        "start": 4.209,
+        "end": 4.296
+      },
+      {
+        "word": "voice",
+        "start": 4.296,
+        "end": 4.522
+      },
+      {
+        "word": "in",
+        "start": 4.522,
+        "end": 4.678
+      },
+      {
+        "word": "about",
+        "start": 4.678,
+        "end": 4.835
+      },
+      {
+        "word": "30",
+        "start": 4.835,
+        "end": 5.148
+      },
+      {
+        "word": "seconds.",
+        "start": 5.148,
+        "end": 5.513
+      },
+      {
+        "word": "You",
+        "start": 5.739,
+        "end": 6.139
+      },
+      {
+        "word": "watch",
+        "start": 6.139,
+        "end": 6.365
+      },
+      {
+        "word": "it",
+        "start": 6.365,
+        "end": 6.47
+      },
+      {
+        "word": "on",
+        "start": 6.47,
+        "end": 6.557
+      },
+      {
+        "word": "your",
+        "start": 6.557,
+        "end": 6.678
+      },
+      {
+        "word": "phone",
+        "start": 6.678,
+        "end": 7.009
+      },
+      {
+        "word": "before",
+        "start": 7.009,
+        "end": 7.27
+      },
+      {
+        "word": "committing",
+        "start": 7.27,
+        "end": 7.565
+      },
+      {
+        "word": "a",
+        "start": 7.565,
+        "end": 7.722
+      },
+      {
+        "word": "full",
+        "start": 7.722,
+        "end": 7.878
+      },
+      {
+        "word": "render.",
+        "start": 7.878,
+        "end": 8.157
+      }
+    ]
+  },
+  {
+    "idx": 5,
+    "dur": 9.13,
+    "file": "voiceover/s5.mp3",
+    "words": [
+      {
+        "word": "Gate",
+        "start": 0.33,
+        "end": 0.522
+      },
+      {
+        "word": "4.",
+        "start": 0.522,
+        "end": 0.748
+      },
+      {
+        "word": "Approval.",
+        "start": 1.026,
+        "end": 1.548
+      },
+      {
+        "word": "Reelsmith",
+        "start": 2.261,
+        "end": 2.783
+      },
+      {
+        "word": "Approve",
+        "start": 2.783,
+        "end": 3.2
+      },
+      {
+        "word": "records",
+        "start": 3.2,
+        "end": 3.565
+      },
+      {
+        "word": "a",
+        "start": 3.565,
+        "end": 3.722
+      },
+      {
+        "word": "fingerprint",
+        "start": 3.722,
+        "end": 4.035
+      },
+      {
+        "word": "of",
+        "start": 4.035,
+        "end": 4.296
+      },
+      {
+        "word": "the",
+        "start": 4.296,
+        "end": 4.383
+      },
+      {
+        "word": "animation,",
+        "start": 4.383,
+        "end": 4.783
+      },
+      {
+        "word": "the",
+        "start": 5.026,
+        "end": 5.235
+      },
+      {
+        "word": "timings,",
+        "start": 5.235,
+        "end": 5.704
+      },
+      {
+        "word": "and",
+        "start": 5.704,
+        "end": 5.948
+      },
+      {
+        "word": "the",
+        "start": 5.948,
+        "end": 6.017
+      },
+      {
+        "word": "images.",
+        "start": 6.017,
+        "end": 6.278
+      },
+      {
+        "word": "Change",
+        "start": 6.643,
+        "end": 7.096
+      },
+      {
+        "word": "any",
+        "start": 7.096,
+        "end": 7.339
+      },
+      {
+        "word": "of",
+        "start": 7.339,
+        "end": 7.496
+      },
+      {
+        "word": "them,",
+        "start": 7.496,
+        "end": 7.67
+      },
+      {
+        "word": "and",
+        "start": 7.704,
+        "end": 8
+      },
+      {
+        "word": "the",
+        "start": 8,
+        "end": 8.174
+      },
+      {
+        "word": "approval",
+        "start": 8.174,
+        "end": 8.47
+      },
+      {
+        "word": "expires.",
+        "start": 8.47,
+        "end": 8.957
+      }
+    ]
+  },
+  {
+    "idx": 6,
+    "dur": 8.887,
+    "file": "voiceover/s6.mp3",
+    "words": [
+      {
+        "word": "Only",
+        "start": 0.174,
+        "end": 0.696
+      },
+      {
+        "word": "then",
+        "start": 0.696,
+        "end": 1.026
+      },
+      {
+        "word": "does",
+        "start": 1.026,
+        "end": 1.339
+      },
+      {
+        "word": "reelsmith",
+        "start": 1.339,
+        "end": 1.843
+      },
+      {
+        "word": "Render",
+        "start": 1.843,
+        "end": 2.087
+      },
+      {
+        "word": "run.",
+        "start": 2.087,
+        "end": 2.383
+      },
+      {
+        "word": "Four",
+        "start": 2.661,
+        "end": 3.183
+      },
+      {
+        "word": "browser",
+        "start": 3.183,
+        "end": 3.478
+      },
+      {
+        "word": "shards,",
+        "start": 3.478,
+        "end": 3.861
+      },
+      {
+        "word": "frames",
+        "start": 4.07,
+        "end": 4.487
+      },
+      {
+        "word": "piped",
+        "start": 4.487,
+        "end": 4.783
+      },
+      {
+        "word": "straight",
+        "start": 4.783,
+        "end": 5.026
+      },
+      {
+        "word": "into",
+        "start": 5.026,
+        "end": 5.304
+      },
+      {
+        "word": "FFmpeg,",
+        "start": 5.304,
+        "end": 6.017
+      },
+      {
+        "word": "a",
+        "start": 6.157,
+        "end": 6.47
+      },
+      {
+        "word": "90-second",
+        "start": 6.47,
+        "end": 6.991
+      },
+      {
+        "word": "short",
+        "start": 6.991,
+        "end": 7.235
+      },
+      {
+        "word": "in",
+        "start": 7.235,
+        "end": 7.53
+      },
+      {
+        "word": "about",
+        "start": 7.53,
+        "end": 7.739
+      },
+      {
+        "word": "90",
+        "start": 7.739,
+        "end": 8.052
+      },
+      {
+        "word": "seconds.",
+        "start": 8.052,
+        "end": 8.4
+      }
+    ]
+  }
+]

@@ -1,195 +1,215 @@
-# Tech Shorts v2 — Claude Code Context
+# Reelsmith: agent context
 
-Successor to `../video-gen` (v1). Same channel. The voice is either the creator's own recording (the path described here) or a TTS voice (the TTS branch below, the default from devotion-tts on). A local teleprompter web app (`app/`, Node + browser, no Electron) records one long take, Whisper transcribes it, the pipeline aligns the transcript to `script.md`, flags anything that would make the video look bad, lets the creator re-record flagged sentences, then cuts fillers/silence and emits the same `scenes.json` + `voiceover.mp3` contract v1's renderer already consumes. HTML animation, subtitles, and rendering are v1's code, reused unchanged. See `BIDS.MD` for pillar definitions and topic strategy, `docs/spec.md` for the full system contract.
+Reelsmith turns a markdown script into a finished vertical short: a voice, word-synced subtitles, motion graphics, an MP4. You (the coding agent) do the creative work through the skills in `skills/`. The `reelsmith` CLI does the mechanical work: TTS or take analysis, word timings, linting, contact sheets, drafts, the final render and publishing.
 
-**Foundation for new videos (creator's choice, 2026-09-29):** the `reflective` look (`config/styles/reflective.md`: warm near-black and gold, Fraunces + Manrope, graded Ken Burns photos, clean 26 px subtitles) and a TTS voice at 1.15× under a 6 dB music bed (`config/audio.md`). The reference video is **`videos/devotion-tts/`**. The red Barlow tech-news look (`config/styles/tech-news.md`) and the recorded-take path are still there, but only when asked.
+**This repo is itself a Reelsmith project.** `videos/` holds the end-to-end fixture (`fixture-e2e`) and the ten tutorial videos (`tut-01` to `tut-10`). `config/` is this repo's own project config. `reelsmith.config.json` at the root is its project config. Everything below applies here and in any project made with `reelsmith init`.
+
+**Start with `skills/reelsmith-pipeline/SKILL.md`** whenever someone asks for a video. It has the order of commands and every gate.
 
 ## Skills
 
+`.claude/skills` is a symlink to `skills/`, so Claude Code loads them automatically.
+
 | Trigger | Skill |
 |---|---|
-| "pick a topic", "what should I make next" | Read `BIDS.MD` and follow its workflow exactly (no skill file — static doc + live research) |
-| "score this script", "what gets views", "is this topic worth it" | `.claude/skills/market-research/SKILL.md` — optional, only when asked |
-| "research this", "make a video about X", any topic/URL before scripting | `.claude/skills/research/SKILL.md` — produces `research.md` with `Status: DRAFT` and a `## Angle options` handoff (2–3 angles, one villain each; no pre-written hook, no compound thesis). Runs before script-writing; no script without an approved `research.md` (only the user approves — they say "approved", then the agent flips the line to `Status: APPROVED`) |
-| "write me a script", "script this" | `.claude/skills/script-writing/SKILL.md` — simple linear explainer (Hook → What it is → How it works → Why it matters → What to do → Close) in plain, human words for a general viewer. Writes `script.md` (incl. a short `## Scene Hints`). Uses `research.md` if present |
-| "prep this for the teleprompter", "get this ready to record" | `.claude/skills/teleprompter-prep/SKILL.md` — final delivery pass on an approved `script.md`: cues, breath marks, line splits, pace; writes `## Delivery notes` into `script.md` |
-| "review my take", "how did the take go", "what should I re-record" | `.claude/skills/take-review/SKILL.md` — reads `take.json`, explains flags, runs the re-record loop, then finalize |
-| Writing/editing `videos/<name>/index.html` | `.claude/skills/html-animation/SKILL.md` — step 0 loads `config/styles/<style>.md` (default `reflective`, `tech-news` only when asked or `style: tech-news` in script.md), then word-cue binding, `SubtitleRail`, sync linters, deterministic motion, contact-sheet self-critique loop (every score 8+ before render) |
-| "write the publish notes", "get this ready to post" | `.claude/skills/publish/SKILL.md` — writes `publish.md`. YouTube upload: `scripts/upload-youtube.js` (only when asked; setup + limits in `docs/youtube.md`) |
+| "make me a video", "make a video about X", "what's next", "render it" | `skills/reelsmith-pipeline/SKILL.md`: the end-to-end map, commands and gates |
+| "pick a topic", "what should I make next" | Read `config/strategy.md` and follow its workflow (pillars, bids, 3 to 5 suggestions) |
+| "research this", any topic or URL before scripting | `skills/research/SKILL.md`: writes `research.md` with `Status: DRAFT` and `## Angle options`. No script without an approved research.md |
+| "write me a script", "script this" | `skills/script-writing/SKILL.md`: simple linear explainer, 130 to 170 spoken words, writes `script.md` with `## Scene Hints` |
+| "prep this for the teleprompter", "get this ready to record" | `skills/teleprompter-prep/SKILL.md`: cues, breath marks, line splits, `## Delivery notes` |
+| "review my take", "what should I re-record" | `skills/take-review/SKILL.md`: reads `take.json`, runs the re-record loop, then `reelsmith cut` |
+| writing or editing `videos/<name>/index.html` | `skills/html-animation/SKILL.md`: Rule 0 loads the style pack, then word cues, `SubtitleRail`, determinism, lint, contact-sheet loop, preview gate |
+| "write the publish notes", "post it", "upload this" | `skills/publish/SKILL.md`: `publish.md`, then `reelsmith publish` (dry run first, only when asked) |
+| "score this script", "what gets views" | `skills/market-research/SKILL.md`: optional, only when asked; needs `config/market.md` |
 
 ## Pipeline
 
 ```
-topic (BIDS.MD)
-   │
-   ▼
-research skill ──────────────► research.md [approve]
-                                    │
-                                    ▼
-script-writing skill ───────► script.md [approve]
-                                    │
-                                    ▼
-teleprompter-prep skill ────► script.md (delivery pass) [approve]
-                                    │
-                                    ├─── OR TTS (no recording): ASK the creator which voice, then
-                                    │    pipeline/cli.js tts --voice=<name> ───► scenes.json + voiceover.mp3
-                                    │    → mix-music.js ───► voiceover-mix.mp3 ──► jump to html-animation
-                                    ▼
-RECORD in app (human) ───────► takes/take-NN.webm/.wav/.hq.wav
-   http://localhost:4310            │
-   (npm run app)                    ▼
-                              pipeline analyze ───► take.json
-                                    │
-                                    ▼
-                        take-review skill (loop)
-                   re-record flagged sentences in app
-                   (Review view, press R) ⟲ until clear
-                                    │
-                                    ▼
-                              finalize (cut) ───► scenes.json + voiceover.mp3
-                                    │
-                                    ▼
-                        html-animation skill ───► index.html
-              (useSceneWindow, useWordCue, SubtitleRail;
-               check-sync.js + validate-sync.js must exit 0)
-                                    │
-                                    ▼
-                              contact-sheet.js ⟲ score 1–10, fix 3 worst,
-                              (agent looks at   repeat until all 8+
-                               its own frames)
-                                    │
-                                    ▼
-                    contact-sheet.js --stills ───► contact sheet + full-size stills
-                    render.js --draft ───► draft.mp4 (~30 s, low-res, with voice)
-                   SHOW BOTH TO THE USER [approve] ⟲ apply feedback, re-shoot
-                   (one scene changed? render.js --from=S --to=S → clip-Ss-Ss.mp4)
-                   (optional: preview.js [--lan] — live playback with voice; phone via /qr)
-                                    │
-                                    ▼
-                    approve-preview.js ───► preview-approved.json
-                                    │
-                                    ▼
-                              renderer/render.js ───► output.mp4 (~1–2 min)
-                              (refuses without a current approval)
-                                    │
-                                    ▼
-                              publish skill ───► publish.md
+reelsmith new <name> ───────────► videos/<name>/script.md (template)
+      │
+research skill ─────────────────► research.md                 [approve]
+      │
+script-writing skill ───────────► script.md                   [approve]
+      │
+teleprompter-prep skill ────────► script.md (delivery pass)   [approve; optional for TTS]
+      │
+      ├── TTS: ASK the creator which voice, then
+      │   reelsmith tts <name> --voice=<v> [--mode=performance]
+      │
+      └── Own voice: reelsmith record  (human records at http://localhost:4310)
+          take-review skill ⟲ re-record flagged lines in the app
+          reelsmith cut <name>
+                        │
+                        ▼
+          voiceover/sN.mp3 + voiceover.mp3 + scenes.json
+                        │
+reelsmith mix <name> --track=music/<file>.mp3 ─► voiceover-mix.mp3 (optional)
+      │
+html-animation skill ───────────► index.html
+reelsmith lint <name>             must exit 0
+reelsmith sheet <name>            ⟲ score 1 to 10, fix the 3 worst, until every score is 8+
+      │
+reelsmith sheet <name> --stills + reelsmith draft <name> ─► stills + draft.mp4
+SHOW BOTH TO THE USER                                           [approve] ⟲ feedback
+(one scene changed? reelsmith clip <name> --from=S --to=S)
+      │
+reelsmith approve <name> --by="<who>" ─► preview-approved.json
+reelsmith render <name> ────────► output.mp4 (refuses without a current approval)
+      │
+publish skill: reelsmith publish <name> --notes ─► publish.md  [approve]
+reelsmith publish <name> --to=<target> --dry-run, then without the flag  [explicit go]
 ```
 
-**TTS branch** (instead of RECORD → analyze → take-review → cut): `node pipeline/cli.js tts videos/<name> --voice=<name>` turns the approved `script.md` into `voiceover/sN.mp3`, `voiceover.mp3` and `scenes.json` (same contract as `cut`). It makes one OpenRouter `/api/v1/audio/speech` call per sentence, caches clips by hash(model + voice + text) in `voiceover/tts/`, trims silence, joins the sentences with gaps and scene tails, sets the tempo to **1.15×** (ffmpeg atempo on cached clips, so a speed change never re-calls the API) and takes word timings from Whisper on the final voice (it falls back to an estimate if Whisper is missing and says so). Then run `node scripts/mix-music.js videos/<name> --track=music/clean-soul.mp3` and render with `--audio=videos/<name>/voiceover-mix.mp3`. There's no default voice. **Ask the creator which voice before generating**, and don't pick one yourself. Model, speed and gaps are in `config/tts.json`. The voice used is recorded in `voiceover/tts/meta.json`, so re-runs reuse it. A 401/403 means the `OPENROUTER_API_KEY` in `.env` is bad.
+## Gates
 
-**Preview gate (before every final render):** never start a full `renderer/render.js` on your own judgment. First run `node scripts/contact-sheet.js videos/<name> --stills` and `node renderer/render.js videos/<name>/index.html --draft --audio=videos/<name>/voiceover-mix.mp3` (or `voiceover.mp3` when there is no mix), then send the user the contact sheet, a handful of full-size stills (`frames/stills/*.jpg` — hook frames plus at least one per scene, with subtitles visible) and `draft.mp4` (send the file so they can watch it), and ask for permission to render. Apply any feedback — re-render only the changed seconds with `--from=S --to=S` to check a fix — re-shoot, and ask again. Only after an explicit "approved" run `node scripts/approve-preview.js videos/<name> --by="<who>"`, then the final render. Draft and range renders skip the gate; the final render checks a fingerprint of index.html, scenes.json, the runtime and the images (video root + `images/**`), so any edit after approval needs a fresh preview and approval. The renderer is parallel (one headless browser per shard, auto-sized to the machine's cores and RAM) and pipes JPEG frames straight into ffmpeg, so a 98 s video takes about 1.5 min final and 30 s draft; design and numbers in `docs/fast-render.md`.
+Each `[approve]` is a human gate. Do not skip one, and do not move on until the user has signed off on the previous artifact.
 
-Each `[approve]` is a human gate. Do not skip it — proceed to the next skill only after the user has signed off on the previous artifact. For `research.md` the gate is literal: the research skill writes `Status: DRAFT`, and the agent flips it to `Status: APPROVED` only after the user says "approved" — never on its own judgment.
+- **Research:** the research skill writes `Status: DRAFT`. Flip it to `Status: APPROVED` only after the user says "approved", never on your own judgment.
+- **Script:** the user approves `script.md` before anything is voiced.
+- **Voice:** there is no default TTS voice. Ask the creator which voice, then write `tts_voice:` or pass `--voice=`. Never pick one yourself.
+- **Linters:** `reelsmith lint` exits 0 before any preview.
+- **Contact sheet:** every criterion scored 8 or higher (html-animation Rule 5).
+- **Preview:** never start `reelsmith render` on your own judgment. Send the user `draft.mp4`, the contact sheet and stills, and ask. Only after an explicit "approved", run `reelsmith approve`, then `reelsmith render`. Any edit after approval invalidates it (the fingerprint covers index.html, scenes.json, the runtime, the style kit and the images). Draft and clip renders skip the gate.
+- **Publish:** the user approves `publish.md`; posting happens only when the user explicitly says so, always after a `--dry-run`. YouTube privacy defaults to private.
 
 ## Setup
 
 ```bash
-# 1. Runtime: Node 22+, ffmpeg, Python 3.11 (Whisper)
-brew install node ffmpeg python@3.11     # macOS; on Ubuntu: apt install ffmpeg python3.11
+# 1. System tools: Node 22+ (18 minimum), ffmpeg, Python 3.11 with Whisper
+brew install node ffmpeg python@3.11          # macOS; Ubuntu: apt install ffmpeg python3.11
 python3.11 -m pip install openai-whisper
 
-# 2. Node deps + headless browser (renderer, contact sheet)
+# 2. Node deps and the headless browser
 npm install
-npx playwright install chromium          # Linux: sudo npx playwright install-deps chromium
+npx playwright install chromium               # Linux: sudo npx playwright install-deps chromium
+npm link                                      # optional: puts `reelsmith` on your PATH (clone mode)
 
-# 3. Keys — OPENROUTER_API_KEY: required for TTS (pipeline/cli.js tts), optional for Jev AI filler classification
-cp .env.example .env
+# 3. Keys
+cp .env.example .env                          # OPENROUTER_API_KEY for TTS; publish tokens later
+
+# 4. Check
+reelsmith doctor
 ```
 
-**Effort** (Claude Code `/model`): `xhigh` when writing a new `index.html` or script, `medium` for small fixes and re-renders, `max` for a flagship video where the first 3 seconds have to carry it.
+Without `npm link`, run the CLI as `node bin/reelsmith.js <command>`. In a project made by `reelsmith init`, run it as `npx reelsmith <command>`.
+
+**Effort** (Claude Code `/model`): high or max when writing a new `index.html` or script, medium for small fixes and re-renders.
 
 ## Commands
 
-```bash
-npm run app                                                     # start the teleprompter/recording app → http://localhost:4310
-node pipeline/cli.js analyze  videos/<name> [--take=takes/take-01] [--no-jev]
-node pipeline/cli.js rerecord videos/<name> --sentence=s2.1 --clip=takes/rr-s2.1-1
-node pipeline/cli.js cut      videos/<name>                     # = finalize: writes scenes.json + voiceover.mp3
-node pipeline/cli.js status   videos/<name>                     # prints take.json summary table
-node pipeline/cli.js tts      videos/<name> --voice=<name> [--model=…] [--speed=1.15] [--force]   # TTS instead of a take → scenes.json + voiceover.mp3 (ask the creator for the voice first)
-node scripts/preview.js videos/<name> [--lan]                   # live browser playback WITH voice (voiceover-mix.mp3, else voiceover.mp3), no render; --lan = open on the phone over Wi-Fi via the printed /qr link
-node scripts/check-sync.js videos/<name>/index.html             # must exit 0
-node scripts/validate-sync.js videos/<name>/index.html          # must exit 0
-node scripts/contact-sheet.js videos/<name>                     # frame grid → videos/<name>/frames/contact-sheet.png; LOOK at it before render
-node scripts/contact-sheet.js videos/<name> --stills            # + full-size frames/stills/*.jpg to show the user at the preview gate
-node scripts/approve-preview.js videos/<name> --by="<who>"      # ONLY after the user approves the stills; render.js requires it
-node renderer/render.js videos/<name>/index.html --draft --audio=videos/<name>/voiceover-mix.mp3            # ~30 s low-res preview → videos/<name>/draft.mp4 (no gate); send it to the user
-node renderer/render.js videos/<name>/index.html --from=12 --to=24 --audio=videos/<name>/voiceover-mix.mp3   # only that range → clip-12s-24s.mp4 (no gate); check one fixed scene
-node renderer/render.js videos/<name>/index.html videos/<name>/output.mp4 --fps=30 --audio=videos/<name>/voiceover-mix.mp3   # final (~1.5 min for 98 s); [--shards=N] [--encoder=auto|videotoolbox|x264] [--gpu] [--keep-segments]
-node scripts/mix-music.js videos/<name> --track=music/<file>.mp3  # music bed 6 dB under voice → voiceover-mix.mp3 (render with --audio=that); pick the track by mood (config/music.md): calm = clean-soul, energetic tech = voxel-revolution; --under=4 only when the creator asks
-```
+`<video>` accepts `videos/<name>`, `<name>` or an absolute path. Commands work from any folder inside the project. Every command takes `--help`; structured ones take `--json`. Exit codes: 0 ok, 1 error, 2 usage, 3 gate refused.
 
-**Audio defaults:** `config/audio.md` has them all in one place (TTS 1.15×, voice −16 LUFS, bed 6 dB under). **Music:** any video with background music uses `config/music.md`. The bed sits **6 dB under the voice** (the creator's pick, LUFS-relative, gentle ducking) via `scripts/mix-music.js`. Don't ask the creator for a level, and never use a fixed dB offset.
+| Command | Does |
+|---|---|
+| `reelsmith init [dir] [--link] [--style=reflective] [--no-install]` | scaffold a new project |
+| `reelsmith doctor [--json]` | check node, ffmpeg, python + whisper, Playwright Chromium, keys, every plugin |
+| `reelsmith new <name> [--style=…] [--voice=…]` | create `videos/<name>/script.md` from the template |
+| `reelsmith tts <video> --voice=<v> [--mode=sentence\|performance] [--model=…] [--speed=…] [--force]` | script → voice + word timings → `scenes.json` |
+| `reelsmith record [--port=…]` | start the teleprompter app (default port 4310) |
+| `reelsmith analyze <video> [--take=takes/take-01] [--no-jev]` | recorded take → `take.json` |
+| `reelsmith rerecord <video> --sentence=s2.1 --clip=takes/rr-s2.1-1` | splice a re-recorded line into the take |
+| `reelsmith cut <video>` | finalize the take → `scenes.json` + `voiceover.mp3` |
+| `reelsmith status <video>` | print the `take.json` summary |
+| `reelsmith mix <video> [--track=music/<file>.mp3] [--under=6]` | music bed → `voiceover-mix.mp3` |
+| `reelsmith lint <video>` | check-sync + validate-sync; non-zero exit on failure |
+| `reelsmith sheet <video> [--stills]` | contact sheet → `frames/contact-sheet.png` (+ `frames/stills/*.jpg`) |
+| `reelsmith preview <video> [--lan]` | live browser playback with the voice; `--lan` prints a `/qr` link for a phone |
+| `reelsmith draft <video> [--audio=…]` | fast low-res render → `draft.mp4` (no gate) |
+| `reelsmith clip <video> --from=S --to=S` | render one range → `clip-<S>s-<S>s.mp4` (no gate) |
+| `reelsmith approve <video> --by=<who>` | record the preview approval fingerprint |
+| `reelsmith render <video> [--fps=30] [--shards=N] [--encoder=auto\|videotoolbox\|x264] [--audio=…]` | final render → `output.mp4` (gate enforced, exit 3) |
+| `reelsmith publish <video> --to=<target>[,<target>] [--dry-run] [--notes]` | run publish plugins; `--notes` only writes the `publish.md` skeleton |
+| `reelsmith plugins [--json]` | list loaded plugins with kind, version, source, status |
+| `reelsmith styles` | list style packs |
+| `reelsmith run <video> [--voice=…] [--until=…]` | tts → mix → lint → sheet → draft; never approves or renders |
 
-If a bare `node ...` fails to run in a non-interactive shell, use the full path: `~/.nvm/versions/node/v22.17.0/bin/node`.
+Escape hatch: each command wraps a script (`pipeline/cli.js`, `tools/*.js`, `renderer/render.js`, `app/server.js`). `docs/cli.md` has the mapping and every flag.
 
-## `script.md` format (docs/spec.md §3)
+**Audio defaults** are in `config/audio.md` (TTS 1.15x, voice −16 LUFS, bed 6 dB under). **Music:** `config/music.md`. The bed sits 6 dB under the voice, measured per track. Do not ask the creator for a level and never use a fixed dB offset. `--under=4` only when the creator asks. Pick the track by mood.
+
+## `script.md` format
+
+Full reference: `docs/script-format.md`.
 
 ```markdown
 ---
-title: Claude prompt caching: the timestamp trap
-topic: ai-ml        # aws | ai-ml | swe | devtools
-date: 2026-09-27
-wpm: 170            # optional, teleprompter auto-scroll speed
-style: reflective   # optional: reflective (default) | tech-news
-tts_voice: <name>   # TTS videos only: the voice the creator picked (no default)
+title: Reelsmith in 60 seconds
+topic: devtools          # pillar slug from config/strategy.md
+date: 2026-09-30
+wpm: 170                 # optional: teleprompter scroll speed
+style: motion            # optional: style pack; else reelsmith.config.json "style"
+tts_voice: Leda          # TTS only: the voice the creator picked (no default)
+tts_mode: performance    # optional: sentence (default) | performance
+series: my-series        # optional free metadata
+episode: 1               # optional free metadata
 ---
 
 ## Script
 
 ### Scene 1
-Prompt caching may make your Claude bill go up, not down.
-It takes one line at the top of your prompt.
+You write one hundred and fifty words.
+You get a finished vertical video.
 
 ### Scene 2
-Your agent resends that exact prompt on every turn.
 > say: "one hundred", not "a hundred"
 At 100 input tokens per output token, that prompt is most of your bill.
+
+## Voice direction
+Who is talking to whom, the tone, which lines to land (performance mode only).
+
+## Scene Hints
+- Scene 1 (hook): big numeral counts up. Primitive: Counter
 ```
 
-`### Scene N` blocks, one sentence per line (the re-record unit, id `s<scene>.<line>`). Blank lines ignored. Lines starting with `>` are teleprompter-only cues (pronunciation, `[pause]`, `[breath]`) — never spoken, never aligned. The parser attaches each `>` cue to the sentence BELOW it, so put a cue on the line above the sentence it describes. A `>` line right after the frontmatter (outside any scene) is a file-level note the parser ignores (e.g. `> NOTE: dogfood run, research not yet approved`). Sections after `## Script` — `## Scene Hints` (required, written by script-writing), `## Score`, `## Delivery notes` — are ignored by the parser. Never put a `### Scene N` heading in them: the parser treats any `Scene N` heading as spoken. Word counts anywhere mean spoken words (digits/acronyms as read aloud).
-
-Frontmatter keys: `title`, `topic`, `date`, optional `wpm`, and:
-- `style:` picks the look. Omit it for `reflective` (the default, `config/styles/reflective.md`). Set `style: tech-news` for the red Barlow news look (`config/styles/tech-news.md`), only when the creator asks for it.
-- `tts_voice:` is the TTS voice for `pipeline/cli.js tts`. There's no default: ask the creator, then write it here or pass `--voice=`. Optional `tts_model:` / `tts_speed:` override `config/tts.json` for this video only.
+- `### Scene N` blocks, numbered from 1 with no gaps, one sentence per line. A line is the re-record unit, id `s<scene>.<line>`. Blank lines are ignored.
+- Lines starting with `>` are notes for a human reader (pronunciation, `[pause]`, `[breath]`). Never spoken, never aligned, never sent to TTS. A cue attaches to the sentence **below** it. A `>` line outside any scene is a file-level note.
+- Any heading other than `Scene N` ends the scene. Sections after `## Script` (`## Voice direction`, `## Scene Hints`, `## Score`, `## Delivery notes`, `## Blueprint`) are ignored by the parser. Never put a `Scene N` heading in them: the parser treats any `Scene N` heading as spoken.
+- Frontmatter: `title`, `topic`, `date`, optional `wpm`, `style`, `tts_voice`, `tts_mode`, `tts_model`, `tts_speed`, `tts_performance` (path to a PERFORMANCE file). `series` and `episode` are free metadata. Flat `key: value` lines only; a trailing `# comment` is stripped.
+- Precedence per setting: CLI flag > script.md frontmatter > the voice the video last used (`voiceover/tts/meta.json`) > env (`TTS_VOICE`, …) > `reelsmith.config.json` > built-in defaults.
+- Word counts mean spoken words (digits and acronyms as read aloud). For TTS, write numbers and symbols the way they should be heard.
 
 ## HTML rules
 
-- React + Babel in-browser, no build step
-- Runtime: `../../runtime/animations.jsx`
-- Image paths: relative to the video folder. Photo-led (reflective) videos keep photos in `images/` with `images/CREDITS.md` (see `videos/devotion-tts/images/`). Older videos use bare filenames in the folder root. Renderer, contact sheet and preview serve both, and the approval fingerprint hashes both
-- `<Stage scenesSrc="scenes.json">` — no `duration` prop, no `TOTAL`. Use `useSceneWindow(N)` per scene.
-- Ending: **reflective essays end on the narrated closing card, with no `cta-end`** (the creator's choice on devotion-tts; the music tail holds the last frame). **Tech-news** videos end with a `cta-end` scene: a silent on-screen card, never narrated (the script's last spoken beat is the takeaway, not a "follow/subscribe" line)
-- `persistKey` must be unique per video
-- **Every narrated scene MUST include `<SubtitleRail sceneIdx={N} />` as the last child of its root div.** Reflective: `<SubtitleRail sceneIdx={N} bottom={170} fontSize={26} variant="clean" accentColor={GOLD2} />`. CTA scene is exempt. This is non-negotiable — it gives every video karaoke-style word-synced subtitles automatically.
-- Use `<WordReveal sceneIdx={N} />` for additional word-synced narration text (optional, supplementary to SubtitleRail)
-- SubtitleRail spacing (row-gap, line-height, letter-spacing) is managed by the runtime — no manual overrides needed
-- **Every frame is a pure function of time.** No `Math.random` (use `seededRandom`), timers, rAF, wall clock, or CSS transitions/animations — compute from `localTime` (`spring`, `track`, `interpolate`). `check-sync.js` enforces it
-- **Safe area:** text never runs edge to edge. Keep every line ≥48 px from both sides and ≤520 px wide. `contact-sheet.js` flags violations, and the list must be empty before the preview gate (`config/styles/reflective.md` → "Safe area")
-- **No banned defaults** (`config/design.md`): no everything-fades-in, no empty middle band, something new every 2–4s. Checked by eye on the contact sheet, not by a linter
+- React 18 + Babel in the browser, no build step. The runtime is `../../runtime/animations.jsx`; the style's kit loads right after it (`../../styles/motion/kit.jsx`, `../../styles/reflective/kit.jsx`). Use the kit's components and helpers; do not rewrite them. Motion scenes use the kit's `SceneRoot` as their root.
+- `<Stage width={720} height={1280} scenesSrc="scenes.json" persistKey="…">`. No `duration` prop, no `TOTAL`. `persistKey` is unique per video.
+- One `<Sprite {...useSceneWindow(N)}>` per scene. Timing comes from `scenes.json`.
+- **Every narrated scene has `<SubtitleRail sceneIdx={N} … />` as the last child of its root element**, with the style's props, written out literally (the linter searches for it). Only a silent tech-news `cta-end` card is exempt.
+- **Every overlay that shows a spoken thing binds to `useWordCue(N, "phrase")`.** No hand-picked delays over 0.6 s.
+- **Every frame is a pure function of time.** No `Math.random` (use `seededRandom`), timers, rAF, wall clock, CSS transitions or animations. Compute from `localTime` with `spring`, `track`, `interpolate`. `reelsmith lint` enforces it.
+- **Safe area:** every text line keeps 48 px or more from both sides and stays 520 px wide or less. The contact sheet lists violations; the list must be empty before the preview gate.
+- **No banned defaults** (`styles/design.md`): no everything-fades-in, no empty middle band, something new every 2 to 4 s.
+- Images: relative to the video folder. Photo-led (reflective) videos keep photos in `images/` with `images/CREDITS.md`. The approval fingerprint hashes the video root and `images/**`.
+- Endings: reflective and motion end on a narrated closing scene. Tech-news ends with a silent `cta-end` card (never narrated).
 
 ## Technical reference
 
 | | |
 |---|---|
-| Canvas | 720×1280, 9:16 |
-| Style | `reflective` (default, `config/styles/reflective.md`, reference `videos/devotion-tts/`) · `tech-news` only when asked |
-| Fonts | Reflective: **Fraunces** 500/700 + italic (display), **Manrope** 600–800 (labels, subtitles). Tech-news: Barlow Condensed 800 + Barlow 400. Google Fonts |
-| Accent | Reflective: `GOLD` `#e0a458` / `GOLD2` `#f2c46d` on `#0b0906`, text `#f5efe6`. Tech-news: `#c8102e` |
-| Duration | derived from `voiceover.mp3` — never hardcode. Target 45–65s (config/market.md) |
-| Voice | The creator's own recording (`app/` → `cut`) **or** TTS (`pipeline/cli.js tts`, OpenRouter `google/gemini-3.8-flash-tts`, voice picked by the creator per video, 1.15×). See `config/audio.md` |
-| Transcription | Whisper turbo via `python3.11` (never bare `python3`) |
-| Cheap decisions | Jev AI (OpenRouter, `typesafe/jev-1.13`) — filler classification + borderline sentence review (docs/spec.md §8). Optional; falls back to deterministic rules if unavailable |
-| Renderer | Playwright frame capture → FFmpeg H.264 |
+| Canvas | 720×1280, 9:16, 30 fps |
+| Styles | `reflective` (default), `tech-news`, `motion`. Packs in `styles/<name>/` (`STYLE.md`, optional `kit.jsx`, `reference/`); shared base rules in `styles/design.md` |
+| Style choice | `script.md` `style:`, else `reelsmith.config.json` `style` |
+| Duration | from `scenes.json` (Σ `dur`); never hardcode. Target 45 to 65 s |
+| Voice | TTS via a `tts` plugin (built in: OpenRouter, `google/gemini-3.8-flash-tts`, 1.15x) or the creator's own take (`reelsmith record` → `cut`) |
+| Word timings | Whisper (`stt` plugin, built in: local `openai-whisper`, model `turbo`) |
+| Cheap decisions | Jev AI via OpenRouter (`typesafe/jev-1.13`) for filler classification in take analysis; optional, falls back to rules |
+| Renderer | Playwright headless Chromium, sharded, JPEG frames piped into ffmpeg (H.264); `docs/fast-render.md` |
+| Plugins | kinds `tts`, `stt`, `style`, `publish`; `reelsmith plugins`; contract in `docs/plugins.md` |
+| Config | `reelsmith.config.json` (project), `.env` (keys), `config/*.md` (agent-facing defaults), `~/.config/reelsmith/` (publish credentials; `REELSMITH_CONFIG_DIR` overrides) |
+
+## Working on the framework itself
+
+- Tests: `node pipeline/test/run-tests.js` (or `npm test`). About 60 s; needs Whisper, Chromium, ffmpeg and network.
+- The contracts every part must keep are in `docs/framework-spec.md`. Take analysis, alignment and the cut are in `docs/spec.md`. The renderer design is `docs/fast-render.md`. Bugs fixed and lessons learned: `docs/learnings.md`.
+- Built-in plugins live in `plugins/`, style packs in `styles/`, the scaffold for new projects in `templates/project/`.
+- The docs site is built from `docs/*.md` by `node tools/build-site.js` into `site/docs/`.
 
 ## Critical gotchas
 
-See `docs/learnings.md` for full details.
+Details in `docs/learnings.md`.
 
-1. **Node binary path** — bare `node`/`npm` can be broken in non-interactive shells (nvm profile issue). Use `process.execPath` when spawning a child Node process from a script; use `~/.nvm/versions/node/v22.17.0/bin/node` from the shell.
-2. **`python3.11`** — python3/pip3 point to a broken build on this machine. Always invoke `python3.11` explicitly.
-3. **HTTP server from project root** — `../../runtime/animations.jsx` must resolve; serve from repo root, not the video dir.
-4. **`waitUntil: 'load'`** — not `networkidle` (CDN/font loading keeps the network busy forever).
-5. **Two rAF cycles** after `setTime(t)` before screenshotting a frame — one processes the React state update, the second lets the browser paint.
-6. **Render mode kills CSS transitions/animations** (`?render=1`, used by the renderer and contact sheet). They run on the wall clock, so a frame would depend on screenshot speed. Anything that only moves via CSS will be static in the MP4.
+1. **If a bare `node` fails** in a non-interactive shell (an nvm profile that doesn't load), call node by its full path (for example `~/.nvm/versions/node/<version>/bin/node`). Scripts that spawn node use `process.execPath`, never `node` from PATH.
+2. **Python:** use the Python that has `openai-whisper` installed. `reelsmith doctor` shows which one it found; set `REELSMITH_PYTHON` to force one. Never assume bare `python3` is the right one.
+3. **Serve from the project root.** `index.html` loads `../../runtime/animations.jsx`, so every tool serves the project root over HTTP, not the video folder. `file://` blocks the script loads.
+4. **`waitUntil: 'load'`**, not `networkidle`. Fonts and CDN scripts keep the network busy forever.
+5. **Two rAF cycles** after `setTime(t)` before a `page.screenshot`: the first processes the React update, the second paints. The contact sheet does this. The renderer's CDP `Page.captureScreenshot` path needs only one (measured pixel-identical, `docs/fast-render.md`).
+6. **Render mode kills CSS transitions and animations** (`?render=1`, used by the renderer and the contact sheet). They run on the wall clock, so anything that only moves via CSS is static in the MP4.

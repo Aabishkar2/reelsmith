@@ -64,7 +64,7 @@ const DEFAULTS = {
   },
   // background-noise removal for the cut (pipeline/denoise.js, docs/spec.md §7c)
   denoise: {
-    enabled: true, engine: 'deepfilternet', python: 'python3.11', attenLimitDb: 35, timeoutSec: 600,
+    enabled: true, engine: 'deepfilternet', get python() { return require('../core/env').python() || 'python3'; }, attenLimitDb: 35, timeoutSec: 600,
     fallback: { highpassHz: 80, lowpassHz: 12000, nr: 12, nf: -50, trackNoise: true },
     gate: { enabled: true, aboveRoomDb: 18, padSec: 0.12, frameSec: 0.01 },
   },

@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Install Reelsmith in 3 minutes</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@600;700;800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+  <script type="text/babel" src="../../runtime/animations.jsx"></script>
+  <script type="text/babel" src="../../styles/motion/kit.jsx"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { width: 100%; height: 100%; background: #0B0F19; overflow: hidden; }
+    #root { width: 100%; height: 100vh; position: relative; }
+  </style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+// tut-02-install · Episode 2 of the Reelsmith tutorials: the whole install.
+// Series motif: a four-step tracker (tools → init → key → doctor). Scene 1 shows
+// it as the roadmap, scenes 2–5 wear it as the header ("you are here"), and on
+// "green across the board" in scene 6 every step turns green.
+
+// ── Local helpers ────────────────────────────────────────────────────────────
+// spring that is 0 before its start and exactly 1 once settled (no NaN far out)
+const sp = (dt, k = SNAPPY.k, d = SNAPPY.d) => (!(dt > 0) ? 0 : dt > 8 ? 1 : spring(dt, k, d));
+const e3 = (p) => Easing.easeOutCubic(clamp(p, 0, 1));
+
+const STEPS = ['tools', 'init', 'key', 'doctor'];
+
+// StepTrack: the four install steps as pills joined by short connectors.
+//   current  index lit as "you are here" from litAt (earlier steps render done)
+//   ats      per-pill entry times (else at + i * 0.07, a scene-open flourish)
+//   doneAts  per-pill times at which a step flips to done (green check)
+function StepTrack({ y, current = -1, litAt = 0, at = 0, ats, doneAts = [], big = false }) {
+  const { localTime: lt } = useSprite();
+  const fs = big ? 24 : 22;
+  const dot = big ? 34 : 30;
+  const numFs = big ? 19 : 18;
+  const conW = big ? 16 : 12;
+  const pad = big ? '7px 17px 7px 7px' : '6px 14px 6px 6px';
+  const state = (i) => {
+    const doneAt = doneAts[i] != null ? doneAts[i] : i < current ? -1e9 : Infinity;
+    if (lt >= doneAt) return { s: 'done', since: doneAt };
+    if (i === current && lt >= litAt) return { s: 'active', since: litAt };
+    return { s: 'todo', since: null };
+  };
+  const nodes = [];
+  STEPS.forEach((label, i) => {
+    const showAt = ats ? ats[i] : at + i * 0.07;
+    const dt = lt - showAt;
+    const st = state(i);
+    const flip = st.since != null && lt - st.since < 3 ? sp(lt - st.since, PUNCH.k, PUNCH.d) : 1;
+    const inS = sp(dt, PUNCH.k, PUNCH.d);
+    const scale = (0.6 + 0.4 * inS) * (0.84 + 0.16 * flip);
+    const look = st.s === 'done'
+      ? { bg: alpha(OK, 0.13), bd: alpha(OK, 0.65), dot: OK, txt: TEXT, glow: `0 0 20px ${alpha(OK, 0.32)}` }
+      : st.s === 'active'
+        ? { bg: alpha(VIOLET, 0.24), bd: alpha(CYAN, 0.85), dot: GRAD_DIAG, txt: TEXT, glow: `0 0 28px ${alpha(VIOLET, 0.55)}` }
+        : { bg: 'rgba(255,255,255,0.045)', bd: 'rgba(255,255,255,0.16)', dot: 'rgba(255,255,255,0.09)', txt: MUTED, glow: 'none' };
+    if (i > 0) {
+      const prev = state(i - 1);
+      const fillAt = prev.s === 'done' ? prev.since : Infinity;
+      const f = lt >= fillAt ? e3((lt - fillAt) / 0.3) : 0;
+      nodes.push(
+        <div key={`c${i}`} style={{ position: 'relative', width: conW, height: 3, margin: '0 3px', borderRadius: 2,
+          background: 'rgba(255,255,255,0.14)', opacity: clamp(dt / 0.2, 0, 1), overflow: 'hidden' }}>
+          <div style={{ position: 'absolute', inset: 0, background: OK, transform: `scaleX(${f})`, transformOrigin: 'left center' }} />
+        </div>
+      );
+    }
+    nodes.push(
+      <div key={label} style={{ display: 'flex', alignItems: 'center', gap: big ? 10 : 8, padding: pad, borderRadius: 999,
+        background: look.bg, border: `1.5px solid ${look.bd}`, boxShadow: look.glow,
+        opacity: clamp(dt / 0.12, 0, 1), transform: `scale(${scale})` }}>
+        <div style={{ width: dot, height: dot, borderRadius: '50%', flexShrink: 0, display: 'flex', alignItems: 'center',
+          justifyContent: 'center', background: look.dot }}>
+          {st.s === 'done'
+            ? <Icon name="check" size={Math.round(dot * 0.58)} color={INK} stroke={3.2} />
+            : <span style={{ fontFamily: DISPLAY, fontWeight: 700, fontSize: numFs, color: st.s === 'active' ? '#FFFFFF' : FAINT }}>{i + 1}</span>}
+        </div>
+        <span style={{ fontFamily: SANS, fontWeight: 600, fontSize: fs, color: look.txt, whiteSpace: 'nowrap' }}>{label}</span>
+      </div>
+    );
+  });
+  return (
+    <div style={{ position: 'absolute', top: y, left: 0, right: 0, display: 'flex', justifyContent: 'center' }}>
+      <div style={{ display: 'flex', alignItems: 'center' }}>{nodes}</div>
+    </div>
+  );
+}
+
+// ReqRow: one prerequisite in the scene-2 checklist (icon, name, why, version badge).
+function ReqRow({ icon, name, sub, badge, color, at, subAt, badgeAt, first = false }) {
+  const { localTime: lt } = useSprite();
+  const dt = lt - at;
+  const lit = dt >= 0 ? e3(dt / 0.35) : 0;
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 18, padding: '15px 0',
+      borderTop: first ? 'none' : '1px solid rgba(255,255,255,0.07)', ...enter.push(dt, 'left') }}>
+      <div style={{ width: 60, height: 60, borderRadius: 16, flexShrink: 0, display: 'flex', alignItems: 'center',
+        justifyContent: 'center', background: alpha(color, 0.08 + 0.12 * lit), border: `1.5px solid ${alpha(color, 0.25 + 0.4 * lit)}`,
+        boxShadow: `0 0 ${26 * lit}px ${alpha(color, 0.35 * lit)}` }}>
+        <Icon name={icon} size={32} color={color} />
+      </div>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ fontFamily: MONO, fontWeight: 600, fontSize: 30, color: TEXT, lineHeight: 1.15 }}>{name}</div>
+        <div style={{ fontFamily: SANS, fontWeight: 500, fontSize: 24, color: MUTED, marginTop: 4, whiteSpace: 'nowrap',
+          ...enter.wipe(lt - subAt, 0.5) }}>{sub}</div>
+      </div>
+      <Badge variant={color} mono upper={false} size={24} at={badgeAt}>{badge}</Badge>
+    </div>
+  );
+}
+
+// Anatomy: a command split into labelled parts (chip + caption), each on its cue.
+function Anatomy({ y, parts }) {
+  const { localTime: lt } = useSprite();
+  return (
+    <div style={{ position: 'absolute', top: y, left: 0, right: 0, display: 'flex', justifyContent: 'center', gap: 14 }}>
+      {parts.map((p) => (
+        <div key={p.code} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
+          <Chip mono size={22} color={p.color} variant="soft" at={p.at}>{p.code}</Chip>
+          <div style={{ fontFamily: SANS, fontWeight: 500, fontSize: 24, color: MUTED, whiteSpace: 'nowrap',
+            ...enter.slideUp(lt - p.at - 0.1) }}>{p.note}</div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ── Scene 1 · hook: three tools, one command, ready ─────────────────────────
+function Scene1() {
+  const win = useSceneWindow(1);
+  const cueThree = useWordCue(1, "three tools");
+  const cueOne = useWordCue(1, "one command");
+  const cueReelsmith = useWordCue(1, "reelsmith is ready");
+  const cueReady = useWordCue(1, "ready");
+  const cueShow = useWordCue(1, "let me show");
+  const cueWhole = useWordCue(1, "whole install");
+  const tools = [
+    { icon: 'code', title: 'node', sub: 'runtime', color: VIOLET },
+    { icon: 'film', title: 'ffmpeg', sub: 'media', color: CYAN },
+    { icon: 'mic', title: 'python', sub: 'whisper', color: VIOLET },
+  ];
+  return (
+    <Sprite {...win}>
+      {({ localTime }) => (
+        <SceneRoot idx={1}>
+          <Watermark text="3" y={330} size={640} opacity={0.09} at={cueThree} />
+          <Glow x={360} y={280} r={340} color={VIOLET} opacity={0.26} breathe={0.04} />
+          <Kicker y={112} at={0}>Episode 02 · Install</Kicker>
+          <div style={{ position: 'absolute', top: 176, left: 0, right: 0, display: 'flex', justifyContent: 'center', gap: 14 }}>
+            {tools.map((tl, i) => (
+              <div key={tl.title} style={{ position: 'relative' }}>
+                <Tile icon={tl.icon} title={tl.title} sub={tl.sub} color={tl.color} width={164} enter="drop"
+                  at={cueThree + i * 0.1} activeAt={cueReady + i * 0.1} style={{ padding: '20px 18px 18px' }} />
+                <div style={{ position: 'absolute', top: 16, right: 16, width: 34, height: 34, borderRadius: '50%',
+                  background: OK, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  boxShadow: `0 0 18px ${alpha(OK, 0.55)}`, ...enter.pop(localTime - (cueReady + i * 0.1)) }}>
+                  <Icon name="check" size={20} color={INK} stroke={3.2} />
+                </div>
+              </div>
+            ))}
+          </div>
+          <Terminal y={420} title="~" showAt={0.25} command="npx reelsmith init my-channel" at={cueOne} rows={[
+            { text: 'created my-channel/', status: 'ok', at: cueReelsmith + 0.15 },
+            { text: 'ready', status: 'ok', bold: true, right: 'next: doctor', at: cueReady },
+          ]} />
+          <div style={{ position: 'absolute', top: 668, left: 0, right: 0, textAlign: 'center', fontFamily: SANS,
+            fontWeight: 500, fontSize: 24, color: MUTED, ...enter.slideUp(localTime - cueShow) }}>The whole install, in four steps</div>
+          <StepTrack y={712} big current={0} litAt={cueWhole} ats={STEPS.map((_, i) => cueShow + 0.12 + i * 0.12)} />
+          <SubtitleRail sceneIdx={1} bottom={150} fontSize={28} variant="clean" accentColor={CYAN} fontFamily="Inter" />
+        </SceneRoot>
+      )}
+    </Sprite>
+  );
+}
+
+// ── Scene 2 · step 1: the three tools, one brew install ─────────────────────
+function Scene2() {
+  const win = useSceneWindow(2);
+  const cueNeed = useWordCue(2, "you need");
+  const cueNode = useWordCue(2, "node 22");
+  const cueNewer = useWordCue(2, "22 or newer");
+  const cueFfmpeg = useWordCue(2, "ffmpeg");
+  const cueAudio = useWordCue(2, "audio and video");
+  const cueVideo = useWordCue(2, "video");
+  const cuePython = useWordCue(2, "python 311");
+  const cueEleven = useWordCue(2, "311");
+  const cueWhisper = useWordCue(2, "whisper");
+  const cueMac = useWordCue(2, "on a mac");
+  const cueThatIs = useWordCue(2, "that is one");
+  const cueBrew = useWordCue(2, "brew install");
+  return (
+    <Sprite {...win}>
+      {({ localTime }) => (
+        <SceneRoot idx={2} enter="wipe">
+          <Glow x={360} y={360} r={330} color={CYAN} opacity={0.14} breathe={0.03} />
+          <StepTrack y={92} current={0} litAt={0.3} />
+          <Card y={track(localTime, [[0, 318], [cueMac, 170]], SNAPPY.k, SNAPPY.d)} width={560} at={cueNeed} title="You need" icon="cog" color={CYAN} glowAt={cueWhisper}
+            padding="22px 26px 10px" enter="rise">
+            <ReqRow first icon="code" name="node" sub="runs everything" badge="≥ 22" color={VIOLET}
+              at={cueNode} subAt={cueNode + 0.2} badgeAt={cueNewer} />
+            <ReqRow icon="film" name="ffmpeg" sub="audio + video" badge="+ ffprobe" color={CYAN}
+              at={cueFfmpeg} subAt={cueAudio} badgeAt={cueVideo} />
+            <ReqRow icon="mic" name="python" sub="for Whisper" badge="3.11" color={VIOLET}
+              at={cuePython} subAt={cueWhisper} badgeAt={cueEleven} />
+          </Card>
+          <Terminal y={606} title="macOS" width={600} fontSize={22} showAt={cueMac} at={cueThatIs} speed={36}
+            command="brew install node ffmpeg python@3.11" finalPrompt rows={[
+              { text: 'installed node, ffmpeg, python@3.11', status: 'ok', at: cueBrew + 0.4 },
+            ]} />
+          <SubtitleRail sceneIdx={2} bottom={150} fontSize={28} variant="clean" accentColor={CYAN} fontFamily="Inter" />
+        </SceneRoot>
+      )}
+    </Sprite>
+  );
+}
+
+// ── Scene 3 · step 2: npx reelsmith init → the project tree ─────────────────
+function Scene3() {
+  const win = useSceneWindow(3);
+  const cueRun = useWordCue(3, "then run");
+  const cueNpx = useWordCue(3, "npx reelsmith init");
+  const cueInit = useWordCue(3, "init");
+  const cueFolderName = useWordCue(3, "folder name");
+  const cueProject = useWordCue(3, "creates the project");
+  const cueVideos = useWordCue(3, "videos folder");
+  const cueConfig = useWordCue(3, "config folder");
+  const cueSkills = useWordCue(3, "agent skills");
+  const cueClaude = useWordCue(3, "claude code");
+  return (
+    <Sprite {...win}>
+      {({ localTime }) => (
+        <SceneRoot idx={3} enter="zoom" pattern="grid">
+          <Glow x={360} y={600} r={340} color={VIOLET} opacity={0.2} breathe={0.03} />
+          <StepTrack y={92} current={1} litAt={0.3} />
+          <Terminal y={168} title="~" width={600} showAt={cueRun} command="npx reelsmith init my-channel" at={cueNpx}
+            speed={16} finalPrompt rows={[
+              { text: 'created my-channel/', status: 'ok', at: cueProject },
+            ]} />
+          <Anatomy y={398} parts={[
+            { code: 'npx', note: 'runs it', color: 'ghost', at: cueNpx + 0.2 },
+            { code: 'reelsmith init', note: 'new project', color: 'violet', at: cueInit },
+            { code: 'my-channel', note: 'folder name', color: 'cyan', at: cueFolderName },
+          ]} />
+          <FileTree y={500} width={560} at={cueFolderName + 0.15} rows={[
+            { name: 'my-channel/', depth: 0, at: cueFolderName + 0.3, hotAt: cueProject, note: 'project root' },
+            { name: 'reelsmith.config.json', depth: 1, at: cueProject + 0.2, note: 'settings' },
+            { name: '.env.example', depth: 1, at: cueProject + 0.35, note: 'keys' },
+            { name: 'videos/', depth: 1, at: cueVideos, note: 'your videos' },
+            { name: 'config/', depth: 1, at: cueConfig, note: 'audio, music' },
+            { name: '.claude/skills/', depth: 1, at: cueSkills, badge: 'claude code', badgeVariant: 'violet', badgeAt: cueClaude },
+            { name: 'CLAUDE.md', depth: 1, at: cueClaude + 0.15, note: 'agent guide' },
+          ]} />
+          <SubtitleRail sceneIdx={3} bottom={150} fontSize={28} variant="clean" accentColor={CYAN} fontFamily="Inter" />
+        </SceneRoot>
+      )}
+    </Sprite>
+  );
+}
+
+// ── Scene 4 · step 3: the .env key (optional if you record) ─────────────────
+function Scene4() {
+  const win = useSceneWindow(4);
+  const cueOpen = useWordCue(4, "open the");
+  const cueFile = useWordCue(4, "file");
+  const cuePaste = useWordCue(4, "paste your");
+  const cueKey = useWordCue(4, "openrouter key");
+  const cueThatKey = useWordCue(4, "that key");
+  const cueText = useWordCue(4, "text to speech");
+  const cueSpeech = useWordCue(4, "speech");
+  const cueRecord = useWordCue(4, "if you record");
+  const cueSkip = useWordCue(4, "skip it");
+  return (
+    <Sprite {...win}>
+      {({ localTime }) => {
+        const pasted = localTime >= cuePaste;
+        const caretOn = Math.floor(localTime * 2) % 2 === 0;
+        const keyLine = pasted
+          ? 'OPENROUTER_API_KEY=sk-or-v1-••••••'
+          : { text: 'OPENROUTER_API_KEY=', segs: [
+              { s: 'OPENROUTER_API_KEY', c: CODE.prop }, { s: '=', c: CODE.punct }, { s: caretOn ? '▌' : ' ', c: CYAN },
+            ] };
+        return (
+          <SceneRoot idx={4} enter="push">
+            <Glow x={360} y={420} r={330} color={VIOLET} opacity={0.2} breathe={0.03} />
+            <StepTrack y={92} current={2} litAt={0.3} />
+            <Chip y={168} at={cueOpen} mono icon="terminal" color="cyan" variant="outline">cp .env.example .env</Chip>
+            <CodeCard y={246} title="my-channel/.env" width={600} fontSize={22} at={cueOpen + 0.2}
+              badge={<Badge variant="violet" icon="lock" size={18} at={cueKey}>private</Badge>}
+              highlight={[{ line: 1, at: cuePaste, color: CYAN }]} lines={[
+                '# keys for Reelsmith',
+                keyLine,
+                '# publish tokens: later',
+              ]} />
+            {/* kit workaround: FlowDiagram paints its dashed connectors before `at`; gate them */}
+            <div style={{ opacity: e3((localTime - cueKey) / 0.3) }}>
+              <FlowDiagram y={486} direction="horizontal" width={560} at={cueKey} nodes={[
+                { label: 'key', sub: 'OpenRouter', icon: 'key', at: cueThatKey },
+                { label: 'tts', sub: 'text → speech', icon: 'wave', at: cueText, color: 'cyan' },
+                { label: 'voice', sub: 'voiceover.mp3', icon: 'mic', at: cueSpeech + 0.25, color: 'ok' },
+              ]} />
+            </div>
+            <Callout y={676} icon="mic" color="cyan" at={cueRecord} title="Recording your own voice?">
+              Skip the key. It only powers TTS.
+            </Callout>
+            <Stamp x={352} y={352} at={cueSkip} rotate={-9} size={34} color="cyan">optional</Stamp>
+            <SubtitleRail sceneIdx={4} bottom={150} fontSize={28} variant="clean" accentColor={CYAN} fontFamily="Inter" />
+          </SceneRoot>
+        );
+      }}
+    </Sprite>
+  );
+}
+
+// ── Scene 5 · step 4: reelsmith doctor ──────────────────────────────────────
+function Scene5() {
+  const win = useSceneWindow(5);
+  const cueRun = useWordCue(5, "run reelsmith doctor");
+  const cueDoctor = useWordCue(5, "doctor");
+  const cueTool = useWordCue(5, "every tool");
+  const cueKey = useWordCue(5, "every key");
+  const cuePlugin = useWordCue(5, "every plugin");
+  const cueTells = useWordCue(5, "tells you");
+  const cueExactly = useWordCue(5, "exactly");
+  return (
+    <Sprite {...win}>
+      {({ localTime }) => (
+        <SceneRoot idx={5} enter="up" pattern="grid">
+          <Glow x={360} y={400} r={340} color={CYAN} opacity={0.14} breathe={0.03} />
+          <StepTrack y={92} current={3} litAt={0.3} />
+          <Terminal y={168} title="~/my-channel" width={600} fontSize={24} height={408} at={cueRun} steps={[
+            { cmd: 'npx reelsmith doctor', at: cueRun },
+            { text: 'checking tools, keys, plugins…', dim: true, at: cueDoctor + 0.3 },
+            { text: 'node', status: 'ok', right: '22.17.0', at: cueTool },
+            { text: 'ffmpeg', status: 'ok', right: '8.1', at: cueTool + 0.15 },
+            { text: 'python3.11', status: 'ok', right: '3.11.15', at: cueTool + 0.3 },
+            { text: 'openai-whisper', status: 'warn', right: 'missing', at: cueTool + 0.45 },
+            { text: 'playwright chromium', status: 'ok', right: 'ok', at: cueTool + 0.6 },
+            { text: 'OPENROUTER_API_KEY', status: 'ok', right: 'set', at: cueKey },
+            { text: 'plugins', status: 'ok', right: '5 loaded', at: cuePlugin },
+            { text: '6 ok · 1 warning', color: 'warn', bold: true, at: cueTells },
+          ]} />
+          <Callout y={660} icon="warn" color="warn" at={cueTells + 0.15} enter="rise" title="Whisper not found. Fix:">
+            <span style={{ fontFamily: MONO, fontSize: 22, color: CODE.text }}>
+              <Typed text={'python3.11 -m pip install\nopenai-whisper'} at={cueExactly + 0.1} speed={50} cursorColor={WARN} />
+            </span>
+          </Callout>
+          <SubtitleRail sceneIdx={5} bottom={150} fontSize={28} variant="clean" accentColor={CYAN} fontFamily="Inter" />
+        </SceneRoot>
+      )}
+    </Sprite>
+  );
+}
+
+// ── Scene 6 · close: all green, open Claude Code, "make me a video" ─────────
+function Scene6() {
+  const win = useSceneWindow(6);
+  const cueGreen = useWordCue(6, "green across");
+  const cueBoard = useWordCue(6, "board");
+  const cueOpen = useWordCue(6, "open the folder");
+  const cueFolder = useWordCue(6, "folder");
+  const cueClaude = useWordCue(6, "claude code");
+  const cueSay = useWordCue(6, "say");
+  const cueMake = useWordCue(6, "make me a video");
+  const cueAgent = useWordCue(6, "the agent");
+  const cueAlready = useWordCue(6, "already knows");
+  const cueKnows = useWordCue(6, "knows");
+  return (
+    <Sprite {...win}>
+      {({ localTime }) => {
+        // the board is the hero at centre, then glides up on "open the folder"
+        const boardY = track(localTime, [[0, 440], [cueOpen, 96]], SNAPPY.k, SNAPPY.d);
+        return (
+        <SceneRoot idx={6} enter="iris">
+          <Glow x={360} y={520} r={350} color={VIOLET} opacity={0.24} breathe={0.04} />
+          <Glow x={360} y={boardY + 40} r={280} color={OK} opacity={0.16} at={cueGreen} />
+          <StepTrack y={boardY} big
+            doneAts={STEPS.map((_, i) => cueGreen + i * 0.14)} />
+          <Badge y={boardY + 76} variant="ok" icon="check"
+            size={24} at={cueBoard}>all green · ready</Badge>
+          <div style={{ position: 'absolute', top: 258, left: 0, right: 0, display: 'flex', justifyContent: 'center',
+            alignItems: 'center', gap: 12 }}>
+            <Chip mono size={22} icon="folder" color="violet" variant="ghost" at={cueFolder}>my-channel/</Chip>
+            <div style={{ display: 'flex', alignItems: 'center', ...enter.wipe(localTime - (cueClaude - 0.1), 0.35) }}>
+              <div style={{ width: 34, height: 3, borderRadius: 2, background: GRAD }} />
+              <Icon name="arrow" size={26} color={CYAN} stroke={2.6} />
+            </div>
+            <Chip size={22} icon="sparkle" color="violet" variant="soft" at={cueClaude}>Claude Code</Chip>
+          </div>
+          <PromptBox y={336} width={580} label="Claude Code · ~/my-channel" showAt={cueClaude + 0.15}
+            text="make me a video about prompt caching" at={cueMake} speed={34} sendAt={cueAgent + 0.3} />
+          <Card y={572} width={560} at={cueAgent + 0.4} enter="fromBottom" title="Claude Code" icon="sparkle" color={VIOLET}
+            padding="22px 26px 24px">
+            <Chip mono size={22} at={cueAlready} color="ok" icon="check">skill: reelsmith-pipeline</Chip>
+            <div style={{ marginTop: 16, fontFamily: MONO, fontSize: 22, color: MUTED, minHeight: 34 }}>
+              <Typed text="research → script → voice → render" at={cueKnows} speed={52} cursor={false} />
+            </div>
+          </Card>
+          <Wordmark y={826} size={40} mark underline={false} stagger={0.035} at={cueAlready + 0.1} />
+          <Cursor path={[[cueClaude + 0.2, 616, 820], [cueSay - 0.1, 250, 410], [cueMake + 0.3, 540, 560],
+            [cueAgent, 606, 462]]} clicks={[cueSay, cueAgent + 0.3]} />
+          <SubtitleRail sceneIdx={6} bottom={150} fontSize={28} variant="clean" accentColor={CYAN} fontFamily="Inter" />
+        </SceneRoot>
+        );
+      }}
+    </Sprite>
+  );
+}
+
+function App() {
+  return (
+    <Stage width={720} height={1280} scenesSrc="scenes.json" background={INK} loop={false} autoplay={true} persistKey="tut-02-install">
+      <Scene1 />
+      <Scene2 />
+      <Scene3 />
+      <Scene4 />
+      <Scene5 />
+      <Scene6 />
+    </Stage>
+  );
+}
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>

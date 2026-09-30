@@ -1,0 +1,731 @@
+[
+  {
+    "idx": 1,
+    "dur": 5.313,
+    "file": "voiceover/s1.mp3",
+    "words": [
+      {
+        "word": "From",
+        "start": 0,
+        "end": 0.383
+      },
+      {
+        "word": "a",
+        "start": 0.383,
+        "end": 0.522
+      },
+      {
+        "word": "blank",
+        "start": 0.522,
+        "end": 0.835
+      },
+      {
+        "word": "folder",
+        "start": 0.835,
+        "end": 1.2
+      },
+      {
+        "word": "to",
+        "start": 1.2,
+        "end": 1.391
+      },
+      {
+        "word": "a",
+        "start": 1.391,
+        "end": 1.548
+      },
+      {
+        "word": "rendered",
+        "start": 1.548,
+        "end": 1.774
+      },
+      {
+        "word": "short,",
+        "start": 1.774,
+        "end": 2.104
+      },
+      {
+        "word": "in",
+        "start": 2.243,
+        "end": 2.417
+      },
+      {
+        "word": "six",
+        "start": 2.417,
+        "end": 2.713
+      },
+      {
+        "word": "commands.",
+        "start": 2.713,
+        "end": 3.061
+      },
+      {
+        "word": "Here",
+        "start": 3.287,
+        "end": 3.809
+      },
+      {
+        "word": "is",
+        "start": 3.809,
+        "end": 3.965
+      },
+      {
+        "word": "your",
+        "start": 3.965,
+        "end": 4.104
+      },
+      {
+        "word": "first",
+        "start": 4.104,
+        "end": 4.417
+      },
+      {
+        "word": "Reelsmith",
+        "start": 4.417,
+        "end": 4.835
+      },
+      {
+        "word": "video.",
+        "start": 4.835,
+        "end": 5.078
+      }
+    ]
+  },
+  {
+    "idx": 2,
+    "dur": 5.67,
+    "file": "voiceover/s2.mp3",
+    "words": [
+      {
+        "word": "Start",
+        "start": 0.235,
+        "end": 0.757
+      },
+      {
+        "word": "with",
+        "start": 0.757,
+        "end": 1.035
+      },
+      {
+        "word": "reelsmith",
+        "start": 1.035,
+        "end": 1.504
+      },
+      {
+        "word": "new",
+        "start": 1.504,
+        "end": 1.73
+      },
+      {
+        "word": "and",
+        "start": 1.73,
+        "end": 1.991
+      },
+      {
+        "word": "a",
+        "start": 1.991,
+        "end": 2.078
+      },
+      {
+        "word": "name.",
+        "start": 2.078,
+        "end": 2.235
+      },
+      {
+        "word": "You",
+        "start": 2.53,
+        "end": 2.826
+      },
+      {
+        "word": "get",
+        "start": 2.826,
+        "end": 2.983
+      },
+      {
+        "word": "a",
+        "start": 2.983,
+        "end": 3.122
+      },
+      {
+        "word": "videos",
+        "start": 3.122,
+        "end": 3.383
+      },
+      {
+        "word": "folder",
+        "start": 3.383,
+        "end": 3.696
+      },
+      {
+        "word": "with",
+        "start": 3.696,
+        "end": 3.991
+      },
+      {
+        "word": "a",
+        "start": 3.991,
+        "end": 4.096
+      },
+      {
+        "word": "script.md",
+        "start": 4.096,
+        "end": 4.826
+      },
+      {
+        "word": "template",
+        "start": 4.826,
+        "end": 5.122
+      },
+      {
+        "word": "inside.",
+        "start": 5.122,
+        "end": 5.47
+      }
+    ]
+  },
+  {
+    "idx": 3,
+    "dur": 6.357,
+    "file": "voiceover/s3.mp3",
+    "words": [
+      {
+        "word": "Write",
+        "start": 0.2,
+        "end": 0.617
+      },
+      {
+        "word": "your",
+        "start": 0.617,
+        "end": 0.739
+      },
+      {
+        "word": "script",
+        "start": 0.739,
+        "end": 1.035
+      },
+      {
+        "word": "one",
+        "start": 1.035,
+        "end": 1.417
+      },
+      {
+        "word": "sentence",
+        "start": 1.417,
+        "end": 1.73
+      },
+      {
+        "word": "per",
+        "start": 1.73,
+        "end": 1.887
+      },
+      {
+        "word": "line",
+        "start": 1.887,
+        "end": 2.183
+      },
+      {
+        "word": "grouped",
+        "start": 2.183,
+        "end": 2.496
+      },
+      {
+        "word": "into",
+        "start": 2.496,
+        "end": 2.704
+      },
+      {
+        "word": "scenes,",
+        "start": 2.704,
+        "end": 2.93
+      },
+      {
+        "word": "or",
+        "start": 3.087,
+        "end": 3.574
+      },
+      {
+        "word": "ask",
+        "start": 3.574,
+        "end": 3.852
+      },
+      {
+        "word": "your",
+        "start": 3.852,
+        "end": 3.974
+      },
+      {
+        "word": "agent",
+        "start": 3.974,
+        "end": 4.27
+      },
+      {
+        "word": "to",
+        "start": 4.27,
+        "end": 4.443
+      },
+      {
+        "word": "write",
+        "start": 4.443,
+        "end": 4.6
+      },
+      {
+        "word": "it",
+        "start": 4.6,
+        "end": 4.791
+      },
+      {
+        "word": "using",
+        "start": 4.791,
+        "end": 5.209
+      },
+      {
+        "word": "the",
+        "start": 5.209,
+        "end": 5.365
+      },
+      {
+        "word": "script",
+        "start": 5.365,
+        "end": 5.574
+      },
+      {
+        "word": "writing",
+        "start": 5.574,
+        "end": 5.8
+      },
+      {
+        "word": "skill.",
+        "start": 5.8,
+        "end": 6.043
+      }
+    ]
+  },
+  {
+    "idx": 4,
+    "dur": 7.043,
+    "file": "voiceover/s4.mp3",
+    "words": [
+      {
+        "word": "Run",
+        "start": 0.313,
+        "end": 0.678
+      },
+      {
+        "word": "reelsmith",
+        "start": 0.678,
+        "end": 1.217
+      },
+      {
+        "word": "TTS",
+        "start": 1.217,
+        "end": 1.757
+      },
+      {
+        "word": "with",
+        "start": 1.757,
+        "end": 2.017
+      },
+      {
+        "word": "a",
+        "start": 2.017,
+        "end": 2.104
+      },
+      {
+        "word": "voice",
+        "start": 2.104,
+        "end": 2.296
+      },
+      {
+        "word": "name.",
+        "start": 2.296,
+        "end": 2.487
+      },
+      {
+        "word": "It",
+        "start": 2.73,
+        "end": 3.096
+      },
+      {
+        "word": "synthesizes",
+        "start": 3.096,
+        "end": 3.617
+      },
+      {
+        "word": "the",
+        "start": 3.617,
+        "end": 3.739
+      },
+      {
+        "word": "voice,",
+        "start": 3.739,
+        "end": 3.965
+      },
+      {
+        "word": "runs",
+        "start": 4.174,
+        "end": 4.365
+      },
+      {
+        "word": "whisper",
+        "start": 4.365,
+        "end": 4.678
+      },
+      {
+        "word": "for",
+        "start": 4.678,
+        "end": 4.87
+      },
+      {
+        "word": "word",
+        "start": 4.87,
+        "end": 5.061
+      },
+      {
+        "word": "timings,",
+        "start": 5.061,
+        "end": 5.461
+      },
+      {
+        "word": "and",
+        "start": 5.548,
+        "end": 5.861
+      },
+      {
+        "word": "writes",
+        "start": 5.861,
+        "end": 6.122
+      },
+      {
+        "word": "scenes.json.",
+        "start": 6.122,
+        "end": 7.043
+      }
+    ]
+  },
+  {
+    "idx": 5,
+    "dur": 7.843,
+    "file": "voiceover/s5.mp3",
+    "words": [
+      {
+        "word": "Now",
+        "start": 0,
+        "end": 0.835
+      },
+      {
+        "word": "the",
+        "start": 0.835,
+        "end": 0.974
+      },
+      {
+        "word": "agent",
+        "start": 0.974,
+        "end": 1.235
+      },
+      {
+        "word": "writes",
+        "start": 1.235,
+        "end": 1.548
+      },
+      {
+        "word": "index.html,",
+        "start": 1.548,
+        "end": 2.713
+      },
+      {
+        "word": "the",
+        "start": 2.8,
+        "end": 3.043
+      },
+      {
+        "word": "animation.",
+        "start": 3.043,
+        "end": 3.374
+      },
+      {
+        "word": "Every",
+        "start": 3.93,
+        "end": 4.313
+      },
+      {
+        "word": "overlay",
+        "start": 4.313,
+        "end": 4.713
+      },
+      {
+        "word": "is",
+        "start": 4.713,
+        "end": 4.904
+      },
+      {
+        "word": "bound",
+        "start": 4.904,
+        "end": 5.113
+      },
+      {
+        "word": "to",
+        "start": 5.113,
+        "end": 5.252
+      },
+      {
+        "word": "a",
+        "start": 5.252,
+        "end": 5.339
+      },
+      {
+        "word": "spoken",
+        "start": 5.339,
+        "end": 5.617
+      },
+      {
+        "word": "word,",
+        "start": 5.617,
+        "end": 5.913
+      },
+      {
+        "word": "so",
+        "start": 6.035,
+        "end": 6.209
+      },
+      {
+        "word": "nothing",
+        "start": 6.209,
+        "end": 6.504
+      },
+      {
+        "word": "appears",
+        "start": 6.504,
+        "end": 6.817
+      },
+      {
+        "word": "before",
+        "start": 6.817,
+        "end": 7.061
+      },
+      {
+        "word": "it",
+        "start": 7.061,
+        "end": 7.217
+      },
+      {
+        "word": "is",
+        "start": 7.217,
+        "end": 7.304
+      },
+      {
+        "word": "said.",
+        "start": 7.304,
+        "end": 7.478
+      }
+    ]
+  },
+  {
+    "idx": 6,
+    "dur": 8.504,
+    "file": "voiceover/s6.mp3",
+    "words": [
+      {
+        "word": "Run",
+        "start": 0.365,
+        "end": 0.574
+      },
+      {
+        "word": "reelsmith",
+        "start": 0.574,
+        "end": 1.096
+      },
+      {
+        "word": "sheet",
+        "start": 1.096,
+        "end": 1.391
+      },
+      {
+        "word": "to",
+        "start": 1.391,
+        "end": 1.757
+      },
+      {
+        "word": "see",
+        "start": 1.757,
+        "end": 1.896
+      },
+      {
+        "word": "a",
+        "start": 1.896,
+        "end": 2
+      },
+      {
+        "word": "contact",
+        "start": 2,
+        "end": 2.261
+      },
+      {
+        "word": "sheet",
+        "start": 2.261,
+        "end": 2.487
+      },
+      {
+        "word": "of",
+        "start": 2.487,
+        "end": 2.591
+      },
+      {
+        "word": "frames.",
+        "start": 2.591,
+        "end": 2.887
+      },
+      {
+        "word": "Then",
+        "start": 3.252,
+        "end": 3.687
+      },
+      {
+        "word": "reelsmith",
+        "start": 3.687,
+        "end": 4.209
+      },
+      {
+        "word": "draft",
+        "start": 4.209,
+        "end": 4.504
+      },
+      {
+        "word": "for",
+        "start": 4.504,
+        "end": 4.887
+      },
+      {
+        "word": "a",
+        "start": 4.887,
+        "end": 4.991
+      },
+      {
+        "word": "quick",
+        "start": 4.991,
+        "end": 5.235
+      },
+      {
+        "word": "low",
+        "start": 5.235,
+        "end": 5.443
+      },
+      {
+        "word": "res",
+        "start": 5.443,
+        "end": 5.652
+      },
+      {
+        "word": "preview.",
+        "start": 5.652,
+        "end": 5.983
+      },
+      {
+        "word": "Watch",
+        "start": 6.383,
+        "end": 6.73
+      },
+      {
+        "word": "it,",
+        "start": 6.73,
+        "end": 6.904
+      },
+      {
+        "word": "give",
+        "start": 7.043,
+        "end": 7.2
+      },
+      {
+        "word": "feedback,",
+        "start": 7.2,
+        "end": 7.548
+      },
+      {
+        "word": "and",
+        "start": 7.774,
+        "end": 7.93
+      },
+      {
+        "word": "iterate.",
+        "start": 7.93,
+        "end": 8.191
+      }
+    ]
+  },
+  {
+    "idx": 7,
+    "dur": 7.409,
+    "file": "voiceover/s7.mp3",
+    "words": [
+      {
+        "word": "Happy?",
+        "start": 0.313,
+        "end": 0.626
+      },
+      {
+        "word": "Run",
+        "start": 0.939,
+        "end": 1.426
+      },
+      {
+        "word": "reelsmith",
+        "start": 1.426,
+        "end": 1.826
+      },
+      {
+        "word": "approve,",
+        "start": 1.826,
+        "end": 2.087
+      },
+      {
+        "word": "then",
+        "start": 2.417,
+        "end": 2.661
+      },
+      {
+        "word": "reelsmith",
+        "start": 2.661,
+        "end": 3.13
+      },
+      {
+        "word": "render.",
+        "start": 3.13,
+        "end": 3.357
+      },
+      {
+        "word": "90",
+        "start": 4.035,
+        "end": 4.539
+      },
+      {
+        "word": "seconds",
+        "start": 4.539,
+        "end": 4.817
+      },
+      {
+        "word": "later,",
+        "start": 4.817,
+        "end": 5.096
+      },
+      {
+        "word": "output.mp4",
+        "start": 5.496,
+        "end": 6.504
+      },
+      {
+        "word": "is",
+        "start": 6.504,
+        "end": 6.661
+      },
+      {
+        "word": "on",
+        "start": 6.661,
+        "end": 6.765
+      },
+      {
+        "word": "disk.",
+        "start": 6.765,
+        "end": 6.991
+      }
+    ]
+  }
+]

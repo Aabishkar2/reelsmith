@@ -1,0 +1,830 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Voice, TTS or your own take</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@600;700;800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+  <script type="text/babel" src="../../runtime/animations.jsx"></script>
+  <script type="text/babel" src="../../styles/motion/kit.jsx"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { width: 100%; height: 100%; background: #0B0F19; overflow: hidden; }
+    #root { width: 100%; height: 100vh; position: relative; }
+  </style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+// tut-05-voice · "Voice, TTS or your own take" (Reelsmith tutorials, episode 5)
+// Style: motion (styles/motion/STYLE.md). Every reveal is bound to a word cue.
+
+const { useMemo } = React;
+
+// ── Local helpers (pure functions of time) ──────────────────────────────────
+const lerp = (a, b, p) => a + (b - a) * p;
+const e3 = (p) => Easing.easeOutCubic(clamp(p, 0, 1));
+const eio = (p) => Easing.easeInOutCubic(clamp(p, 0, 1));
+const sp = (dt, k = SNAPPY.k, d = SNAPPY.d) => (!(dt > 0) ? 0 : dt > 8 ? 1 : spring(dt, k, d));
+const useLT = () => useSprite().localTime;
+const fmtClock = (s) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
+const centered = (y) => ({ position: 'absolute', top: y, left: 0, right: 0, display: 'flex', justifyContent: 'center' });
+
+// ═════════════════════════════════════════════════════════════════════════════
+// Scene 1 pieces: two doors that open into the two voice paths
+// ═════════════════════════════════════════════════════════════════════════════
+function Door({ left, top, w = 297, h = 360, n, showAt, openAt, from = 'left', color, icon, title, sub, cmd, children }) {
+  const lt = useLT();
+  const c = tone(color);
+  const dt = lt - openAt;
+  const o = e3(dt / 0.5);
+  const opened = dt >= 0;
+  const breathe = 0.5 + 0.5 * Math.sin(lt * 2.2 + (from === 'left' ? 0 : 1.6));
+  return (
+    <div style={{ position: 'absolute', left, top, width: w, height: h, ...enter.push(lt - showAt, from, 150) }}>
+      {/* light spilling onto the floor under the closed door */}
+      <div data-bleed="" style={{ position: 'absolute', left: -10, right: -10, bottom: -34, height: 60, borderRadius: '50%',
+        background: `radial-gradient(ellipse at 50% 20%, ${alpha(c, 0.45)}, ${alpha(c, 0)} 70%)`, opacity: (1 - o) * (0.6 + 0.4 * breathe) }} />
+      <div style={{ position: 'absolute', inset: 0, borderRadius: 26, overflow: 'hidden',
+        background: opened ? `linear-gradient(165deg, ${alpha(c, 0.18 * o)} 0%, ${CARD} 62%)`
+          : `linear-gradient(165deg, ${alpha(c, 0.10)} 0%, ${CARD} 70%)`,
+        border: `1.5px ${o > 0.5 ? 'solid' : 'dashed'} ${o > 0 ? alpha(c, 0.28 + 0.42 * o) : alpha(c, 0.35 + 0.15 * breathe)}`,
+        boxShadow: `${SHADOW}, 0 0 ${opened ? 48 * o : 18 + 14 * breathe}px ${alpha(c, opened ? 0.26 * o : 0.14)}` }}>
+        <div style={{ position: 'absolute', left: 0, top: 0, height: 3, width: `${o * 100}%`, background: c }} />
+        {/* the door number: a big gradient numeral while closed, tucks into the corner when it opens */}
+        <div data-bleed="" style={{ position: 'absolute', left: lerp(w / 2, w - 64, o), top: lerp(h / 2, h * 0.52, o),
+          transform: `translate(-50%, -50%) scale(${lerp(1, 1.15, o)})`, fontFamily: DISPLAY, fontWeight: 800,
+          fontSize: 230, lineHeight: 1, letterSpacing: '-0.04em', backgroundImage: `linear-gradient(160deg, ${VIOLET}, ${CYAN})`,
+          WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent', opacity: lerp(0.62, 0.1, o) }}>{n}</div>
+        {/* light under the closed door */}
+        <div data-bleed="" style={{ position: 'absolute', left: 18, right: 18, bottom: 0, height: 5, borderRadius: 3, background: c,
+          opacity: (1 - o) * (0.55 + 0.45 * breathe), boxShadow: `0 0 18px 4px ${alpha(c, 0.7)}, 0 -10px 40px ${alpha(c, 0.45)}` }} />
+        {opened && (
+          <div style={{ position: 'absolute', left: 22, top: 22, right: 22 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <div style={{ width: 46, height: 46, borderRadius: 13, flexShrink: 0, display: 'flex', alignItems: 'center',
+                justifyContent: 'center', background: alpha(c, 0.2), ...enter.pop(dt) }}>
+                <Icon name={icon} size={26} color={c} />
+              </div>
+              <div style={{ fontFamily: DISPLAY, fontWeight: 700, fontSize: 34, color: TEXT, lineHeight: 1.1, whiteSpace: 'nowrap',
+                ...enter.push(dt - 0.08, 'left', 36) }}>{title}</div>
+            </div>
+            <div style={{ marginTop: 10, fontFamily: SANS, fontWeight: 500, fontSize: 22, color: MUTED, whiteSpace: 'nowrap',
+              ...enter.wipe(dt - 0.16, 0.45) }}>{sub}</div>
+          </div>
+        )}
+        {opened && <div style={{ position: 'absolute', left: 22, right: 22, top: 142 }}>{children}</div>}
+        {opened && (
+          <div style={{ position: 'absolute', left: 22, bottom: 20, ...enter.rise(dt - 0.4, 30) }}>
+            <Chip mono size={22} variant="ghost" enter="none" style={{ padding: '8px 14px' }}>{cmd}</Chip>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// Right door visual: a live REC readout + a horizontal input-level meter.
+function RecReadout({ at }) {
+  const lt = useLT();
+  const dt = lt - at;
+  const segs = 18;
+  const level = 0.5 + 0.32 * Math.abs(Math.sin(lt * 4.3)) * (0.6 + 0.4 * Math.sin(lt * 1.7 + 1));
+  const lit = Math.round(segs * level * e3(dt / 0.35));
+  return (
+    <div style={{ ...enter.slideUp(dt, 0.4, 16) }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+        <div style={{ width: 16, height: 16, borderRadius: '50%', background: DANGER,
+          opacity: 0.55 + 0.45 * Math.abs(Math.cos(lt * 3.1)), boxShadow: `0 0 14px ${alpha(DANGER, 0.8)}` }} />
+        <span style={{ fontFamily: SANS, fontWeight: 600, fontSize: 24, color: DANGER, letterSpacing: '0.08em' }}>REC</span>
+        <span style={{ marginLeft: 'auto', fontFamily: MONO, fontSize: 24, color: TEXT, fontVariantNumeric: 'tabular-nums' }}>
+          {fmtClock(Math.max(0, dt) + 12)}
+        </span>
+      </div>
+      <div style={{ display: 'flex', gap: 3, marginTop: 22 }}>
+        {Array.from({ length: segs }, (_, i) => {
+          const col = i < 11 ? OK : i < 15 ? WARN : DANGER;
+          return <div key={i} style={{ flex: 1, height: 44, borderRadius: 3, background: i < lit ? col : 'rgba(255,255,255,0.08)',
+            boxShadow: i < lit ? `0 0 8px ${alpha(col, 0.5)}` : 'none' }} />;
+        })}
+      </div>
+    </div>
+  );
+}
+
+// "or" medallion between the doors.
+function Medallion({ x, y, at, text = 'or' }) {
+  const lt = useLT();
+  return (
+    <div style={{ position: 'absolute', left: x - 31, top: y - 31, width: 62, height: 62, borderRadius: '50%', zIndex: 3,
+      display: 'flex', alignItems: 'center', justifyContent: 'center', border: '2px solid transparent',
+      background: `linear-gradient(${INK}, ${INK}) padding-box, ${GRAD_DIAG} border-box`,
+      fontFamily: DISPLAY, fontWeight: 700, fontSize: 22, color: TEXT, boxShadow: `0 0 24px ${alpha(VIOLET, 0.45)}`,
+      ...enter.pop(lt - at) }}>{text}</div>
+  );
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
+// Scenes 2–3 pieces: mode switch, model pill, request dots, clip blocks
+// ═════════════════════════════════════════════════════════════════════════════
+function ModeSwitch({ y, at, activeAt, swapAt = Infinity }) {
+  const lt = useLT();
+  const W = 540, H = 64, pad = 6;
+  const segW = (W - pad * 2) / 2;
+  const s = sp(lt - swapAt, 240, 24);
+  const on = e3((lt - activeAt) / 0.3);
+  const pillIn = sp(lt - activeAt, PUNCH.k, PUNCH.d);
+  const activeIdx = lt >= swapAt ? 1 : lt >= activeAt ? 0 : -1;
+  const segs = [{ label: 'sentence', icon: 'words' }, { label: 'performance', icon: 'wave' }];
+  return (
+    <div style={centered(y)}>
+      <div style={{ position: 'relative', width: W, height: H, borderRadius: H / 2, background: CODE_BG,
+        border: `1px solid ${CARD_BORDER}`, boxShadow: SHADOW, ...enter.pop(lt - at, 0.7) }}>
+        <div style={{ position: 'absolute', top: pad, left: pad + segW * s, width: segW, height: H - pad * 2,
+          borderRadius: (H - pad * 2) / 2, background: GRAD_DIAG, opacity: on,
+          transform: `scale(${0.85 + 0.15 * pillIn})`, boxShadow: `0 6px 22px ${alpha(VIOLET, 0.45)}` }} />
+        <div style={{ position: 'absolute', inset: 0, display: 'flex', padding: pad }}>
+          {segs.map((sg, i) => (
+            <div key={i} style={{ width: segW, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
+              fontFamily: MONO, fontWeight: 600, fontSize: 24, color: activeIdx === i ? '#FFFFFF' : MUTED }}>
+              <Icon name={sg.icon} size={24} color={activeIdx === i ? '#FFFFFF' : FAINT} />
+              <span>{sg.label}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ModelPill({ y, at, pulses = [] }) {
+  const lt = useLT();
+  let pulse = 0;
+  for (const p of pulses) if (lt >= p) pulse = Math.max(pulse, Math.exp(-(lt - p) * 5));
+  return (
+    <div style={centered(y)}>
+      <div style={{ ...enter.pop(lt - at, 0.6) }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, height: 62, padding: '0 28px', borderRadius: 999,
+          border: '2px solid transparent', background: `linear-gradient(${CODE_BG}, ${CODE_BG}) padding-box, ${GRAD_DIAG} border-box`,
+          boxShadow: `${SHADOW}, 0 0 ${22 + 44 * pulse}px ${alpha(VIOLET, 0.22 + 0.45 * pulse)}`, transform: `scale(${1 + 0.06 * pulse})` }}>
+          <Icon name="cloud" size={28} color={CYAN} />
+          <span style={{ fontFamily: MONO, fontWeight: 600, fontSize: 24, color: TEXT }}>tts model</span>
+          <span style={{ fontFamily: SANS, fontWeight: 500, fontSize: 22, color: MUTED }}>openrouter</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// A dot that races from the script card into the model on every request.
+function RequestDots({ times, x = 360, y0, y1, dur = 0.24 }) {
+  const lt = useLT();
+  return (
+    <>
+      {times.map((t0, i) => {
+        const q = (lt - t0) / dur;
+        if (!(q >= 0 && q <= 1)) return null;
+        const y = lerp(y0, y1, eio(q));
+        return (
+          <div key={i} data-bleed="" style={{ position: 'absolute', left: x - 8, top: y - 8, width: 16, height: 16, borderRadius: '50%',
+            background: CYAN, boxShadow: `0 0 18px ${CYAN}, 0 0 4px #FFFFFF` }} />
+        );
+      })}
+    </>
+  );
+}
+
+// Four clip blocks: each returns from the model, gets cached, then the four join
+// into one track with clean gaps. One goes stale when its line changes and is the
+// only one regenerated.
+function ClipBlocks({ top, from, arrive, cacheAt, joinAt, gapAt, staleAt, regenAt, labels }) {
+  const lt = useLT();
+  const H = 80;
+  const spreadW = 120;
+  const spreadL = [72, 224, 376, 528];
+  const joinW = [146, 128, 116, 140];
+  const joinL = [74, 234, 376, 506];
+  const shapes = useMemo(() => labels.map((_, i) => {
+    const r = seededRandom(40 + i * 7);
+    return Array.from({ length: 14 }, (_, j) => (0.3 + 0.7 * r()) * (0.5 + 0.5 * Math.sin(Math.PI * (j + 0.5) / 14)));
+  }), [labels.length]);
+  const cols = [VIOLET, CYAN, VIOLET, CYAN];
+  const trackIn = e3((lt - joinAt) / 0.45);
+  return (
+    <>
+      {/* the track the joined clips sit on */}
+      <div data-bleed="" style={{ position: 'absolute', left: 74, top: top + H + 14, height: 3, width: 572 * trackIn, borderRadius: 2,
+        background: `linear-gradient(90deg, ${alpha(VIOLET, 0.6)}, ${alpha(CYAN, 0.6)})` }} />
+      {labels.map((lab, i) => {
+        const a = arrive[i];
+        const dt = lt - a;
+        if (!(dt >= 0)) return null;
+        const s1 = sp(dt, 230, 22);
+        const s2 = sp(lt - joinAt - i * 0.05, 260, 26);
+        const left = lerp(from[0] - spreadW / 2, spreadL[i], s1) + (joinL[i] - spreadL[i]) * s2;
+        const y = lerp(from[1], top, s1);
+        const w = lerp(spreadW, joinW[i], s2);
+        const scale = lerp(0.35, 1, clamp(s1, 0, 1.2));
+        const stale = i === 1 && lt >= staleAt && lt < regenAt;
+        const fresh = i === 1 && lt >= regenAt;
+        const flash = fresh ? Math.exp(-(lt - regenAt) * 4) : 0;
+        const c = fresh ? OK : stale ? WARN : cols[i];
+        const cached = lt >= cacheAt + i * 0.14 && !fresh && !stale;
+        const cachePop = sp(lt - cacheAt - i * 0.14, PUNCH.k, PUNCH.d);
+        const reuse = !fresh && lt >= regenAt ? Math.exp(-(lt - regenAt) * 3) : 0;
+        const punch = fresh ? 1 + 0.12 * Math.sin(Math.PI * clamp((lt - regenAt) / 0.35, 0, 1)) : 1;
+        return (
+          <div key={i} style={{ position: 'absolute', left, top: y, width: w, height: H, opacity: clamp(dt / 0.12, 0, 1),
+            transform: `scale(${scale * punch})`, transformOrigin: '50% 0%' }}>
+            <div style={{ position: 'absolute', inset: 0, borderRadius: 14, overflow: 'hidden',
+              background: stale ? alpha(WARN, 0.08) : alpha(c, 0.2 + 0.4 * flash),
+              border: `1.5px ${stale ? 'dashed' : 'solid'} ${alpha(c, stale ? 0.9 : 0.7)}`,
+              boxShadow: `0 10px 26px rgba(0,0,0,0.35)${flash > 0 ? `, 0 0 ${40 * flash}px ${alpha(OK, 0.8 * flash)}` : ''}` }}>
+              <div style={{ position: 'absolute', left: 12, top: 7, fontFamily: MONO, fontWeight: 600, fontSize: 22,
+                color: stale ? WARN : TEXT }}>{lab}</div>
+              <div style={{ position: 'absolute', left: 12, right: 12, bottom: 10, height: 30, display: 'flex', alignItems: 'center', gap: 3,
+                opacity: stale ? 0.3 : 1 }}>
+                {shapes[i].map((b, j) => (
+                  <div key={j} style={{ flex: 1, height: Math.max(3, 30 * b), borderRadius: 2, background: alpha(c, 0.95) }} />
+                ))}
+              </div>
+            </div>
+            {cached && (
+              <div style={{ position: 'absolute', right: -9, top: -11, width: 28, height: 28, borderRadius: '50%', display: 'flex',
+                alignItems: 'center', justifyContent: 'center', background: INK, border: `2px solid ${OK}`,
+                transform: `scale(${(0.3 + 0.7 * cachePop) * (1 + 0.25 * reuse)})`, boxShadow: `0 0 ${10 + 20 * reuse}px ${alpha(OK, 0.6)}` }}>
+                <Icon name="check" size={16} color={OK} stroke={3.4} />
+              </div>
+            )}
+          </div>
+        );
+      })}
+      {/* clean gaps between the joined clips */}
+      {[0, 1, 2].map((i) => {
+        const g = e3((lt - gapAt - i * 0.12) / 0.35);
+        if (g <= 0) return null;
+        const gx = joinL[i + 1] - 7;
+        return (
+          <div key={`g${i}`} data-bleed="" style={{ position: 'absolute', left: gx - 2, top: top - 12 + (1 - g) * 50, width: 4,
+            height: (H + 24) * g, borderRadius: 2, background: CYAN, boxShadow: `0 0 14px ${CYAN}, 0 0 4px #FFFFFF` }} />
+        );
+      })}
+    </>
+  );
+}
+
+// "1 API call" pill for performance mode.
+function CallPill({ y, at }) {
+  const lt = useLT();
+  const dt = lt - at;
+  return (
+    <div style={centered(y)}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 14, height: 54, padding: '0 22px 0 8px', borderRadius: 999,
+        background: alpha(VIOLET, 0.16), border: `1.5px solid ${alpha(VIOLET, 0.6)}`,
+        boxShadow: `0 10px 30px rgba(0,0,0,0.35), 0 0 30px ${alpha(VIOLET, 0.3)}`, ...enter.pop(dt) }}>
+        <div style={{ width: 40, height: 40, borderRadius: '50%', background: GRAD_DIAG, display: 'flex', alignItems: 'center',
+          justifyContent: 'center', fontFamily: DISPLAY, fontWeight: 800, fontSize: 22, color: '#FFFFFF' }}>1</div>
+        <span style={{ fontFamily: SANS, fontWeight: 600, fontSize: 26, color: TEXT }}>API call</span>
+        <span style={{ width: 1.5, height: 26, background: 'rgba(255,255,255,0.18)' }} />
+        <Icon name="send" size={24} color={CYAN} />
+        <span style={{ fontFamily: MONO, fontSize: 22, color: CODE.fn }}>whole script</span>
+      </div>
+    </div>
+  );
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
+// Scene 4 pieces: the teleprompter app in a browser window
+// ═════════════════════════════════════════════════════════════════════════════
+const PROMPTER_ROWS = [
+  'Prefer your own voice?',
+  'Run reelsmith record.',
+  'A teleprompter opens',
+  'in your browser,',
+  'scrolls at your pace,',
+  'and records one long take.',
+  'Then reelsmith analyze',
+  'runs Whisper and aligns',
+  'your take to the script.',
+];
+
+function Teleprompter({ keys, recAt, paceAt, bodyH = 420 }) {
+  const lt = useLT();
+  const rowH = 56;
+  const barH = 66;
+  const bandY = 118;
+  const idx = track(lt, keys, 90, 18);
+  const rec = lt >= recAt;
+  const recIn = sp(lt - recAt, PUNCH.k, PUNCH.d);
+  const paceGlow = lt >= paceAt ? Math.max(0.35, Math.exp(-(lt - paceAt) * 2.2)) : 0;
+  const segs = 14;
+  const level = 0.45 + 0.35 * Math.abs(Math.sin(lt * 4.7)) * (0.6 + 0.4 * Math.sin(lt * 1.9 + 0.5));
+  const lit = Math.round(segs * level);
+  return (
+    <div style={{ position: 'absolute', inset: 0 }}>
+      {/* toolbar */}
+      <div style={{ position: 'absolute', left: 0, right: 0, top: 0, height: barH, display: 'flex', alignItems: 'center', gap: 16,
+        padding: '0 22px', background: 'rgba(255,255,255,0.025)', borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 9, height: 40, padding: '0 14px', borderRadius: 999,
+          background: rec ? alpha(DANGER, 0.16) : 'rgba(255,255,255,0.05)',
+          border: `1.5px solid ${rec ? alpha(DANGER, 0.7) : 'rgba(255,255,255,0.14)'}`,
+          transform: `scale(${rec ? 0.85 + 0.15 * recIn : 1})` }}>
+          <div style={{ width: 13, height: 13, borderRadius: '50%', background: rec ? DANGER : FAINT,
+            opacity: rec ? 0.55 + 0.45 * Math.abs(Math.cos(lt * 3.4)) : 1, boxShadow: rec ? `0 0 12px ${DANGER}` : 'none' }} />
+          <span style={{ fontFamily: SANS, fontWeight: 600, fontSize: 22, color: rec ? DANGER : MUTED, letterSpacing: '0.06em' }}>
+            {rec ? 'REC' : 'armed'}
+          </span>
+          {rec && <span style={{ fontFamily: MONO, fontSize: 22, color: TEXT, fontVariantNumeric: 'tabular-nums' }}>{fmtClock(lt - recAt)}</span>}
+        </div>
+        <div style={{ display: 'flex', gap: 3 }}>
+          {Array.from({ length: segs }, (_, i) => {
+            const col = i < 9 ? OK : i < 12 ? WARN : DANGER;
+            return <div key={i} style={{ width: 9, height: 22, borderRadius: 2, background: i < lit ? col : 'rgba(255,255,255,0.08)' }} />;
+          })}
+        </div>
+        <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 8, height: 40, padding: '0 14px', borderRadius: 10,
+          background: alpha(CYAN, 0.06 + 0.12 * paceGlow), border: `1.5px solid ${alpha(CYAN, 0.25 + 0.5 * paceGlow)}`,
+          boxShadow: paceGlow > 0 ? `0 0 ${24 * paceGlow}px ${alpha(CYAN, 0.5 * paceGlow)}` : 'none' }}>
+          <span style={{ fontFamily: MONO, fontWeight: 600, fontSize: 22, color: TEXT }}>150</span>
+          <span style={{ fontFamily: SANS, fontWeight: 500, fontSize: 20, color: MUTED }}>wpm</span>
+        </div>
+      </div>
+      {/* prompter viewport */}
+      <div style={{ position: 'absolute', left: 0, right: 0, top: barH, height: bodyH - barH, overflow: 'hidden' }}>
+        <div style={{ position: 'absolute', left: 0, right: 0, top: bandY - 8, height: rowH + 16,
+          background: `linear-gradient(90deg, ${alpha(VIOLET, 0.22)}, ${alpha(VIOLET, 0.06)})`,
+          borderTop: `1px solid ${alpha(VIOLET, 0.45)}`, borderBottom: `1px solid ${alpha(VIOLET, 0.45)}` }} />
+        <div style={{ position: 'absolute', left: 16, top: bandY + rowH / 2 - 9, width: 0, height: 0,
+          borderTop: '9px solid transparent', borderBottom: '9px solid transparent', borderLeft: `13px solid ${CYAN}` }} />
+        {PROMPTER_ROWS.map((txt, i) => {
+          const d = i - idx;
+          const near = clamp(1 - Math.abs(d), 0, 1);
+          const op = d < 0 ? lerp(0.3, 1, near) : lerp(clamp(0.7 - (d - 1) * 0.12, 0.34, 0.7), 1, near);
+          return (
+            <div key={i} style={{ position: 'absolute', left: 48, top: bandY + d * rowH, height: rowH, display: 'flex', alignItems: 'center',
+              fontFamily: SANS, fontWeight: 600, fontSize: 34, letterSpacing: '-0.01em', whiteSpace: 'nowrap',
+              color: mix(TEXT, INK, 0.36 * (1 - near)), opacity: op }}>{txt}</div>
+          );
+        })}
+        <div data-bleed="" style={{ position: 'absolute', left: 0, right: 0, top: 0, height: 70,
+          background: 'linear-gradient(180deg, #0C1120 10%, rgba(12,17,32,0))' }} />
+        <div data-bleed="" style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: 90,
+          background: 'linear-gradient(0deg, #0C1120 10%, rgba(12,17,32,0))' }} />
+      </div>
+    </div>
+  );
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
+// Scene 5 pieces: the take's waveform, scanned by Whisper, with flags marked
+// ═════════════════════════════════════════════════════════════════════════════
+function TakeStrip({ y, at, scan, marks }) {
+  const lt = useLT();
+  const W = 520, H = 66, N = 62, gap = 3;
+  const bw = (W - gap * (N - 1)) / N;
+  const bars = useMemo(() => {
+    const r = seededRandom(33);
+    return Array.from({ length: N }, (_, i) => (0.25 + 0.75 * r()) * (0.55 + 0.45 * Math.abs(Math.sin(i * 0.45))));
+  }, []);
+  const p = clamp((lt - scan[0]) / Math.max(0.01, scan[1] - scan[0]), 0, 1);
+  const scanning = lt >= scan[0] && p < 1;
+  return (
+    <div style={{ position: 'absolute', top: y, left: (720 - W) / 2, width: W, ...enter.wipe(lt - at, 0.6) }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+        <span style={{ display: 'flex', alignItems: 'center', gap: 8, fontFamily: MONO, fontSize: 22, color: CODE.text }}>
+          <Icon name="wave" size={22} color={OK} />takes/take-01.wav
+        </span>
+        <span style={{ fontFamily: MONO, fontSize: 22, color: FAINT }}>1:12</span>
+      </div>
+      <div style={{ position: 'relative', height: H }}>
+        <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', gap }}>
+          {bars.map((b, i) => {
+            const f = (i + 0.5) / N;
+            const empty = marks.some((m) => m.empty && f >= m.x0 && f <= m.x1);
+            const quiet = marks.some((m) => m.quiet && f >= m.x0 && f <= m.x1);
+            const h = empty ? 0 : quiet ? 3 : Math.max(3, H * b);
+            const passed = f <= p;
+            return <div key={i} style={{ width: bw, height: h, borderRadius: bw, flexShrink: 0,
+              background: passed ? mix(VIOLET, CYAN, f) : 'rgba(255,255,255,0.28)', opacity: passed ? 1 : 0.8 }} />;
+          })}
+        </div>
+        {marks.map((m, i) => {
+          const dt = lt - m.at;
+          if (!(dt >= 0)) return null;
+          const c = tone(m.color);
+          const g = sp(dt, PUNCH.k, PUNCH.d);
+          return (
+            <div key={i} style={{ position: 'absolute', left: m.x0 * W - 3, width: (m.x1 - m.x0) * W + 6, top: -8, bottom: -8,
+              borderRadius: 10, background: alpha(c, 0.16), border: `2px ${m.empty ? 'dashed' : 'solid'} ${alpha(c, 0.9)}`,
+              transform: `scaleY(${0.4 + 0.6 * g})`, opacity: clamp(dt / 0.12, 0, 1), boxShadow: `0 0 18px ${alpha(c, 0.35)}` }} />
+          );
+        })}
+        {scanning && (
+          <div data-bleed="" style={{ position: 'absolute', left: p * W - 1.5, top: -14, bottom: -14, width: 3, borderRadius: 2,
+            background: TEXT, boxShadow: `0 0 14px ${alpha(CYAN, 0.9)}` }} />
+        )}
+      </div>
+      <div style={{ position: 'relative', height: 34, marginTop: 12 }}>
+        {marks.map((m, i) => {
+          const dt = lt - m.at;
+          return (
+            <div key={i} style={{ position: 'absolute', left: ((m.x0 + m.x1) / 2) * W, top: 0, transform: 'translateX(-50%)',
+              fontFamily: MONO, fontWeight: 600, fontSize: 22, color: tone(m.color), whiteSpace: 'nowrap',
+              ...enter.drop(dt - 0.05, 18) }}>{m.label}</div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
+// Scene 6 pieces: re-record a flagged line, then the two output files
+// ═════════════════════════════════════════════════════════════════════════════
+function RerecordCard({ y, at, pressAt, doneAt }) {
+  const lt = useLT();
+  const dt = lt - at;
+  const press = lt >= pressAt && lt < pressAt + 0.25 ? 1 - 0.14 * Math.sin(Math.PI * (lt - pressAt) / 0.25) : 1;
+  const state = lt < pressAt ? 'missing' : lt < doneAt ? 'rec' : 'ok';
+  const pop = state === 'ok' ? sp(lt - doneAt, PUNCH.k, PUNCH.d) : state === 'rec' ? sp(lt - pressAt, PUNCH.k, PUNCH.d) : 1;
+  const look = {
+    missing: { c: DANGER, icon: 'x', text: 'missing' },
+    rec: { c: DANGER, icon: 'rec', text: 'recording' },
+    ok: { c: OK, icon: 'check', text: 're-recorded' },
+  }[state];
+  return (
+    <div style={centered(y)}>
+      <div style={{ width: 560, display: 'flex', alignItems: 'center', gap: 16, padding: '16px 20px', borderRadius: 20,
+        background: CARD, border: `1px solid ${state === 'ok' ? alpha(OK, 0.5) : CARD_BORDER}`,
+        boxShadow: `${SHADOW}${state === 'ok' ? `, 0 0 ${30 * Math.exp(-(lt - doneAt) * 2)}px ${alpha(OK, 0.5)}` : ''}`,
+        ...entry('fromLeft', dt) }}>
+        <div style={{ width: 50, height: 50, borderRadius: 12, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
+          background: lt >= pressAt ? alpha(VIOLET, 0.3) : 'rgba(255,255,255,0.06)', border: '1.5px solid rgba(255,255,255,0.28)',
+          borderBottomWidth: 4, transform: `scale(${press})`, fontFamily: DISPLAY, fontWeight: 700, fontSize: 26, color: TEXT }}>R</div>
+        <span style={{ fontFamily: MONO, fontWeight: 600, fontSize: 26, color: TEXT }}>s3.1</span>
+        <span style={{ fontFamily: SANS, fontWeight: 500, fontSize: 22, color: MUTED }}>flagged line</span>
+        <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 8, height: 42, padding: '0 14px', borderRadius: 999,
+          background: alpha(look.c, 0.16), border: `1.5px solid ${alpha(look.c, 0.6)}`, transform: `scale(${0.7 + 0.3 * pop})` }}>
+          <Icon name={look.icon} size={20} color={look.c} stroke={3}
+            style={state === 'rec' ? { opacity: 0.5 + 0.5 * Math.abs(Math.cos(lt * 4)) } : null} />
+          <span style={{ fontFamily: SANS, fontWeight: 600, fontSize: 22, color: mix(look.c, '#FFFFFF', 0.25) }}>{look.text}</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Dashed placeholder in the take timeline where the missing line will land.
+function MissingSlot({ top, left, width, height, at, until }) {
+  const lt = useLT();
+  if (!(lt >= at) || lt >= until) return null;
+  const pulse = 0.55 + 0.45 * Math.abs(Math.sin(lt * 3));
+  return (
+    <div data-bleed="" style={{ position: 'absolute', top, left, width, height, borderRadius: 12, zIndex: 1,
+      border: `2px dashed ${alpha(DANGER, 0.5 + 0.4 * pulse)}`, background: alpha(DANGER, 0.06 + 0.06 * pulse),
+      display: 'flex', alignItems: 'center', justifyContent: 'center', ...enter.fadeIn(lt - at) }}>
+      <Icon name="mic" size={24} color={DANGER} />
+    </div>
+  );
+}
+
+function FileCard({ at, icon, name, sub, color }) {
+  const lt = useLT();
+  const dt = lt - at;
+  const c = tone(color);
+  const flash = dt >= 0 ? Math.exp(-dt * 2.4) : 0;
+  return (
+    <div style={{ width: 250, padding: '20px 20px 18px', borderRadius: 22, background: CODE_BG, position: 'relative',
+      border: `1.5px solid ${alpha(c, 0.55 + 0.4 * flash)}`,
+      boxShadow: `${SHADOW}, 0 0 ${26 + 40 * flash}px ${alpha(c, 0.22 + 0.4 * flash)}`, ...enter.pop(dt, 0.5) }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div style={{ width: 52, height: 52, borderRadius: 15, display: 'flex', alignItems: 'center', justifyContent: 'center',
+          background: alpha(c, 0.18) }}>
+          <Icon name={icon} size={30} color={c} />
+        </div>
+        <Badge variant="ok" icon="check" size={18} at={at + 0.25}>new</Badge>
+      </div>
+      <div style={{ marginTop: 16, fontFamily: MONO, fontWeight: 600, fontSize: 24, color: TEXT, whiteSpace: 'nowrap' }}>{name}</div>
+      <div style={{ marginTop: 6, fontFamily: SANS, fontWeight: 500, fontSize: 22, color: MUTED, whiteSpace: 'nowrap' }}>{sub}</div>
+    </div>
+  );
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
+// Scene 1 · hook: two doors, one set of files
+// ═════════════════════════════════════════════════════════════════════════════
+function Scene1() {
+  const win = useSceneWindow(1);
+  const cueReelsmith = useWordCue(1, "Reelsmith");
+  const cueTwo = useWordCue(1, "two ways");
+  const cueWays = useWordCue(1, "ways");
+  const cueVoice = useWordCue(1, "voice");
+  const cueText = useWordCue(1, "text to speech");
+  const cueOr = useWordCue(1, "or your");
+  const cueOwn = useWordCue(1, "your own");
+  const cueBoth = useWordCue(1, "both end");
+  const cueSame = useWordCue(1, "same files");
+  const DOOR_Y = 340;
+  const DOOR_H = 360;
+  return (
+    <Sprite {...win}>
+      {({ localTime }) => (
+        <SceneRoot idx={1}>
+          <Glow x={360} y={520} r={400} color={VIOLET} opacity={0.24} breathe={0.04} />
+          <Kicker y={108} at={cueReelsmith}>Episode 05 · Voice</Kicker>
+          <Title y={156} size={66} ats={[cueTwo, cueWays, undefined, undefined, undefined, cueVoice]} stagger={0.1}
+            text="Two ways to|get a *voice*" />
+          <Door left={50} top={DOOR_Y} h={DOOR_H} n="1" from="left" showAt={cueReelsmith} openAt={cueText} color={VIOLET}
+            icon="wave" title="TTS" sub="text-to-speech model" cmd="reelsmith tts">
+            <Waveform width={252} height={100} bars={22} seed={5} at={cueText + 0.25} active={[cueText + 0.25, Infinity]} />
+          </Door>
+          <Door left={373} top={DOOR_Y} h={DOOR_H} n="2" from="right" showAt={cueReelsmith + 0.1} openAt={cueOwn} color={CYAN}
+            icon="mic" title="Your take" sub="your own recording" cmd="reelsmith record">
+            <RecReadout at={cueOwn + 0.25} />
+          </Door>
+          <Medallion x={360} y={DOOR_Y + DOOR_H / 2} at={cueOr} />
+          <Arrow from={[198, DOOR_Y + DOOR_H + 8]} to={[290, 808]} curve={-24} at={cueBoth} dur={0.45} color={VIOLET} />
+          <Arrow from={[522, DOOR_Y + DOOR_H + 8]} to={[430, 808]} curve={24} at={cueBoth + 0.1} dur={0.45} color={CYAN} />
+          <Card y={816} width={560} padding={22} at={cueBoth + 0.3} enter="rise" title="Same files, either way" icon="file"
+            color={CYAN} glowAt={cueSame}>
+            <div style={{ display: 'flex', justifyContent: 'center', gap: 14 }}>
+              <Chip mono icon="words" color="cyan" at={cueBoth + 0.45}>scenes.json</Chip>
+              <Chip mono icon="wave" color="ok" at={cueBoth + 0.6}>voiceover.mp3</Chip>
+            </div>
+          </Card>
+          <SubtitleRail sceneIdx={1} bottom={150} fontSize={28} variant="clean" accentColor={CYAN} fontFamily="Inter" />
+        </SceneRoot>
+      )}
+    </Sprite>
+  );
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
+// Scene 2 · sentence mode: one call per line, cached clips, clean gaps
+// ═════════════════════════════════════════════════════════════════════════════
+function Scene2() {
+  const win = useSceneWindow(2);
+  const cueText = useWordCue(2, "text to speech");
+  const cueModes = useWordCue(2, "two modes");
+  const cueSentence = useWordCue(2, "sentence mode");
+  const cueCalls = useWordCue(2, "calls");
+  const cueModel = useWordCue(2, "the model");
+  const cueOnce = useWordCue(2, "once");
+  const cuePer = useWordCue(2, "per line");
+  const cueCaches = useWordCue(2, "caches every clip");
+  const cueJoins = useWordCue(2, "joins them");
+  const cueGaps = useWordCue(2, "clean gaps");
+  const cueChange = useWordCue(2, "change one line");
+  const cueOnly = useWordCue(2, "only that line");
+  const cueThat = useWordCue(2, "that line is");
+  const req = [cueCalls, cueModel, cueOnce, cuePer];
+  const DOT = 0.24;
+  return (
+    <Sprite {...win}>
+      {({ localTime }) => {
+        const edited = localTime >= cueChange;
+        const lines = [
+          { text: 'Reelsmith gives you two ways…', label: 's1.1', at: cueSentence + 0.3 },
+          edited
+            ? { text: 'A TTS model, or your take.', label: 's1.2', labelTone: 'warn', type: true, at: cueChange }
+            : { text: 'A text to speech model…', label: 's1.2', at: cueSentence + 0.42 },
+          { text: 'Both end in the same files.', label: 's1.3', at: cueSentence + 0.54 },
+          { text: 'Text to speech has two modes.', label: 's2.1', at: cueSentence + 0.66 },
+        ];
+        return (
+          <SceneRoot idx={2} enter="wipe" pattern="grid">
+            <Glow x={360} y={620} r={360} color={VIOLET} opacity={0.2} breathe={0.04} />
+            <Kicker y={108} at={cueText}>Path 1 · Text-to-speech</Kicker>
+            <ModeSwitch y={154} at={cueModes} activeAt={cueSentence} />
+            <CodeCard y={254} title="script.md" at={cueModes + 0.3} enter="rise" fontSize={22} lines={lines}
+              highlight={[
+                { line: 0, at: req[0], until: req[1] }, { line: 1, at: req[1], until: req[2] },
+                { line: 2, at: req[2], until: req[3] }, { line: 3, at: req[3], until: cueCaches },
+                { line: 1, at: cueChange, color: WARN },
+              ]} />
+            <div data-bleed="" style={{ position: 'absolute', left: 359, top: 480, width: 2, height: 68,
+              background: `repeating-linear-gradient(180deg, ${alpha(CYAN, 0.5)} 0 5px, transparent 5px 11px)`,
+              opacity: e3((localTime - cueCalls) / 0.3) }} />
+            <RequestDots times={[...req, cueOnly]} y0={480} y1={552} dur={DOT} />
+            <ModelPill y={548} at={cueSentence + 0.35} pulses={[...req, cueOnly].map((t) => t + DOT)} />
+            <ClipBlocks top={676} from={[360, 586]} arrive={req.map((t) => t + DOT)} cacheAt={cueCaches} joinAt={cueJoins}
+              gapAt={cueGaps} staleAt={cueChange} regenAt={cueOnly + DOT} labels={['s1.1', 's1.2', 's1.3', 's2.1']} />
+            <Chip y={816} at={cueCaches} mono size={22} icon="folder" color="ok" variant="soft">voiceover/tts/ · 4 clips cached</Chip>
+            <Badge y={900} at={cueThat} variant="ok" icon="bolt" size={24}>1 API call · 3 cached</Badge>
+            <SubtitleRail sceneIdx={2} bottom={150} fontSize={28} variant="clean" accentColor={CYAN} fontFamily="Inter" />
+          </SceneRoot>
+        );
+      }}
+    </Sprite>
+  );
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
+// Scene 3 · performance mode: one prompt, one call, one voice (this one)
+// ═════════════════════════════════════════════════════════════════════════════
+function Scene3() {
+  const win = useSceneWindow(3);
+  const cuePerformance = useWordCue(3, "performance mode");
+  const cueSends = useWordCue(3, "sends");
+  const cueWhole = useWordCue(3, "whole script");
+  const cueScript = useWordCue(3, "script");
+  const cueOne = useWordCue(3, "one call");
+  const cueDirection = useWordCue(3, "direction prompt");
+  const cueStyle = useWordCue(3, "style");
+  const cuePace = useWordCue(3, "pace");
+  const cueAccent = useWordCue(3, "accent");
+  const cueSounds = useWordCue(3, "it sounds");
+  const cuePerson = useWordCue(3, "one person");
+  const cueItIs = useWordCue(3, "it is what");
+  const cueHearing = useWordCue(3, "hearing");
+  const cueNow = useWordCue(3, "right now");
+  const H = (s) => [{ s, c: CODE.kw, b: true }];
+  return (
+    <Sprite {...win}>
+      {({ localTime }) => (
+        <SceneRoot idx={3} enter="zoom">
+          <Glow x={360} y={810} r={340} color={CYAN} opacity={0.16} breathe={0.05} at={cueSounds} />
+          <Kicker y={108} at={cuePerformance}>Mode 2 · Performance</Kicker>
+          <ModeSwitch y={154} at={0} activeAt={0} swapAt={cuePerformance} />
+          <CodeCard y={254} title="performance-prompt.md" at={cueSends} fontSize={22} lines={[
+            { text: 'PERFORMANCE', segs: H('PERFORMANCE'), at: cueDirection },
+            { text: 'Style: Energetic, conversational', at: cueStyle },
+            { text: 'Pace: Fast and engaging', at: cuePace },
+            { text: 'Accent: Natural South Asian English', at: cueAccent },
+            { text: 'CONTEXT', segs: H('CONTEXT'), at: cueDirection + 0.15 },
+            { text: 'The narrator explains two voice…', at: cueDirection + 0.3 },
+            { text: 'TRANSCRIPT', segs: H('TRANSCRIPT'), at: cueWhole },
+            { text: 'Reelsmith gives you two ways…', at: cueScript + 0.1 },
+          ]} highlight={[
+            { line: 6, at: cueWhole, until: cueDirection, color: CYAN }, { line: 7, at: cueWhole, until: cueDirection, color: CYAN },
+            { line: 1, at: cueStyle, until: cuePace, color: CYAN }, { line: 2, at: cuePace, until: cueAccent, color: CYAN },
+            { line: 3, at: cueAccent, until: cueSounds, color: CYAN },
+          ]} />
+          <CallPill y={640} at={cueOne} />
+          <Card y={722} width={560} padding={22} at={cueSounds} enter="rise" title="performance.wav" titleMono icon="wave"
+            color={CYAN} glowAt={cueHearing}>
+            <Waveform width={516} height={92} bars={46} seed={9} at={cueSounds} active={[cueSounds, Infinity]} sweep={[cueSounds, cueNow]} />
+          </Card>
+          <Badge x={446} y={740} at={cuePerson} variant="cyan" icon="user">one voice</Badge>
+          <Arrow from={[250, 930]} to={[204, 874]} curve={-28} at={cueItIs + 0.1} dur={0.35} color={CYAN} />
+          <Chip y={930} at={cueItIs} icon="play" color="cyan" variant="solid" size={26}>you're hearing this</Chip>
+          <SubtitleRail sceneIdx={3} bottom={150} fontSize={28} variant="clean" accentColor={CYAN} fontFamily="Inter" />
+        </SceneRoot>
+      )}
+    </Sprite>
+  );
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
+// Scene 4 · your own take: reelsmith record opens the teleprompter
+// ═════════════════════════════════════════════════════════════════════════════
+function Scene4() {
+  const win = useSceneWindow(4);
+  const cuePrefer = useWordCue(4, "prefer");
+  const cueYour = useWordCue(4, "your own");
+  const cueOwn = useWordCue(4, "own voice");
+  const cueVoice = useWordCue(4, "voice");
+  const cueRun = useWordCue(4, "run reelsmith");
+  const cueRecord = useWordCue(4, "record");
+  const cueTele = useWordCue(4, "a teleprompter");
+  const cueBrowser = useWordCue(4, "in your browser");
+  const cueScrolls = useWordCue(4, "scrolls");
+  const cuePace = useWordCue(4, "your pace");
+  const cueRecords = useWordCue(4, "and records");
+  return (
+    <Sprite {...win}>
+      {({ localTime }) => (
+        <SceneRoot idx={4} enter="push">
+          <Glow x={360} y={700} r={360} color={DANGER} opacity={0.08} breathe={0.04} at={cueRecords} />
+          <Glow x={360} y={640} r={360} color={VIOLET} opacity={0.18} breathe={0.03} />
+          <Kicker y={108} at={0.1}>Path 2 · Your own voice</Kicker>
+          <Title y={154} size={62} ats={[cuePrefer, cueYour, cueOwn, cueVoice]} text="Prefer your|own *voice*?" />
+          <Terminal y={316} title="~/my-channel" command="reelsmith record" at={cueRun} showAt={cueYour} rows={[
+            { text: 'teleprompter → localhost:4310', status: 'ok', at: cueRecord + 0.2 },
+          ]} />
+          <BrowserFrame y={512} url="localhost:4310" width={600} height={420} at={cueTele}>
+            <Teleprompter keys={[[0, 2], [cueBrowser, 3], [cueScrolls, 4], [cueRecords, 5]]} recAt={cueRecords} paceAt={cuePace} />
+          </BrowserFrame>
+          <SubtitleRail sceneIdx={4} bottom={150} fontSize={28} variant="clean" accentColor={CYAN} fontFamily="Inter" />
+        </SceneRoot>
+      )}
+    </Sprite>
+  );
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
+// Scene 5 · analyze: Whisper aligns the take, take.json flags the problems
+// ═════════════════════════════════════════════════════════════════════════════
+function Scene5() {
+  const win = useSceneWindow(5);
+  const cueThen = useWordCue(5, "then");
+  const cueReelsmith = useWordCue(5, "reelsmith analyze");
+  const cueRuns = useWordCue(5, "runs whisper");
+  const cueWhisper = useWordCue(5, "whisper");
+  const cueAligns = useWordCue(5, "aligns");
+  const cueScript = useWordCue(5, "to the script");
+  const cueFlags = useWordCue(5, "flags");
+  const cueFillers = useWordCue(5, "fillers");
+  const cueStutters = useWordCue(5, "stutters");
+  const cuePauses = useWordCue(5, "long pauses");
+  const cueLines = useWordCue(5, "lines you skipped");
+  return (
+    <Sprite {...win}>
+      {({ localTime }) => (
+        <SceneRoot idx={5} enter="iris">
+          <Glow x={360} y={640} r={340} color={VIOLET} opacity={0.18} breathe={0.04} />
+          <Kicker y={108} at={cueThen}>Path 2 · Analyze</Kicker>
+          <Terminal y={154} title="~/my-channel" command="reelsmith analyze my-video" at={cueReelsmith} rows={[
+            { text: 'whisper turbo · take-01.wav', status: 'info', at: cueWhisper },
+            { text: 'aligned to script.md', status: 'ok', at: cueAligns },
+          ]} />
+          <TakeStrip y={394} at={cueThen + 0.2} scan={[cueRuns, cueLines]} marks={[
+            { x0: 0.15, x1: 0.2, color: 'warn', label: 'um', at: cueFillers },
+            { x0: 0.37, x1: 0.44, color: 'warn', label: 'the the', at: cueStutters },
+            { x0: 0.58, x1: 0.68, color: 'warn', label: '2.4 s', at: cuePauses, quiet: true },
+            { x0: 0.84, x1: 0.96, color: 'danger', label: 's3.1 ?', at: cueLines, empty: true },
+          ]} />
+          <StatusRows y={574} at={cueScript - 0.2} title="take.json" mono fontSize={26} rows={[
+            { label: 's1.1 clean', state: 'ok', detail: 'wer 0.00', at: cueScript },
+            { label: 's1.2 filler', state: 'warn', detail: '"um" @1.2s', at: cueFlags, doneAt: cueFillers },
+            { label: 's2.1 stutter', state: 'warn', detail: '"the the"', at: cueFlags + 0.15, doneAt: cueStutters },
+            { label: 's2.2 pause', state: 'warn', detail: '2.4 s gap', at: cueFlags + 0.3, doneAt: cuePauses },
+            { label: 's3.1 missing', state: 'bad', detail: 'skipped', at: cueFlags + 0.45, doneAt: cueLines },
+          ]} />
+          <SubtitleRail sceneIdx={5} bottom={150} fontSize={28} variant="clean" accentColor={CYAN} fontFamily="Inter" />
+        </SceneRoot>
+      )}
+    </Sprite>
+  );
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
+// Scene 6 · re-record + cut: fillers trimmed, best attempt kept, two files out
+// ═════════════════════════════════════════════════════════════════════════════
+function Scene6() {
+  const win = useSceneWindow(6);
+  const cueRe = useWordCue(6, "re record");
+  const cueFlagged = useWordCue(6, "flagged lines");
+  const cueLines = useWordCue(6, "lines");
+  const cueRun = useWordCue(6, "run reelsmith");
+  const cueCut = useWordCue(6, "cut");
+  const cueFillers = useWordCue(6, "fillers");
+  const cueTrimmed = useWordCue(6, "trimmed");
+  const cueKept = useWordCue(6, "is kept");
+  const cueGet = useWordCue(6, "you get");
+  const cueScenes = useWordCue(6, "scenes.json");
+  const cueClean = useWordCue(6, "clean voiceover");
+  return (
+    <Sprite {...win}>
+      {({ localTime }) => (
+        <SceneRoot idx={6} enter="up">
+          <Glow x={360} y={790} r={360} color={OK} opacity={0.12} breathe={0.04} at={cueScenes} />
+          <Glow x={360} y={500} r={340} color={VIOLET} opacity={0.18} breathe={0.03} />
+          <Kicker y={108} at={0.1}>Path 2 · Cut</Kicker>
+          <RerecordCard y={154} at={cueRe} pressAt={cueFlagged} doneAt={cueLines + 0.35} />
+          <MissingSlot top={282} left={551} width={99} height={66} at={cueRe + 0.5} until={cueLines + 0.35} />
+          <Timeline y={282} at={cueRe + 0.2} playhead={{ at: cueFillers, until: cueGet }} clips={[
+            { label: 's1.1', dur: 2.0 },
+            { label: 'um', dur: 0.95, color: 'warn', cutAt: cueTrimmed },
+            { label: 's1.2', dur: 2.1 },
+            { label: '#1', dur: 1.5, color: 'warn', cutAt: cueKept },
+            { label: '#2', dur: 1.5, color: 'ok' },
+            { label: 's3.1', dur: 1.8, color: 'ok', at: cueLines + 0.35 },
+          ]} />
+          <Terminal y={418} title="~/my-channel" command="reelsmith cut my-video" at={cueRun} showAt={cueFlagged} rows={[
+            { text: 'fillers + pauses trimmed', status: 'ok', at: cueTrimmed },
+            { text: 's2.1 · kept attempt #2 of 2', status: 'ok', at: cueKept },
+          ]} />
+          <Kicker y={654} at={cueGet} color={OK}>Same files as TTS</Kicker>
+          <div style={{ position: 'absolute', top: 700, left: 0, right: 0, display: 'flex', justifyContent: 'center', gap: 24 }}>
+            <FileCard at={cueScenes} icon="words" name="scenes.json" sub="6 scenes · timings" color="cyan" />
+            <FileCard at={cueClean} icon="wave" name="voiceover.mp3" sub="clean · 50.1 s" color="ok" />
+          </div>
+          <SubtitleRail sceneIdx={6} bottom={150} fontSize={28} variant="clean" accentColor={CYAN} fontFamily="Inter" />
+        </SceneRoot>
+      )}
+    </Sprite>
+  );
+}
+
+function App() {
+  return (
+    <Stage width={720} height={1280} scenesSrc="scenes.json" background={INK} loop={false} autoplay={true} persistKey="tut-05-voice">
+      <Scene1 />
+      <Scene2 />
+      <Scene3 />
+      <Scene4 />
+      <Scene5 />
+      <Scene6 />
+    </Stage>
+  );
+}
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>

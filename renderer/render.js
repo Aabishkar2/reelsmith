@@ -15,6 +15,11 @@
  * and the audio is muxed in at the end.
  *
  *   --draft        fps 15, 0.75× size, JPEG q80, fast encoder settings → <videoDir>/draft.mp4, no preview gate
+ *   --audio=F      muxed in at the end. Without --duration the length is Σ scenes.json dur, unless F is
+ *                  longer by 0.1–6 s (a music tail: tools/mix-music.js adds 2.5 s): then the video runs to
+ *                  the end of F and the tail holds the closing frame (the frame at Σdur). The last scene's
+ *                  Sprite unmounts after its end (runtime useSceneWindow), so frames past Σdur are captured
+ *                  at Σdur instead of showing an empty stage. Longer than that: Σdur (F is cut).
  *   --from/--to    only frames with t in [from, to) → <videoDir>/clip-<from>s-<to>s.mp4, audio trimmed, no gate
  *   --shards=N     default min(4, cores − 1, available RAM / 400 MB); never more than cores − 1
  *   --gpu          opt-in full Chromium + Metal/GPU raster (faster, pixels differ slightly from software raster)
@@ -23,8 +28,12 @@
  * same command is re-run. The cache is removed after a successful render unless --keep-segments.
  *
  * Preview gate: a full-range, non-draft render refuses to run until the human approved the preview for
- * exactly this version of the video (scripts/approve-preview.js). --no-preview-gate skips it — only for
- * fixtures/tests, never for a real video.
+ * exactly this version of the video (tools/approve-preview.js, `reelsmith approve`). --no-preview-gate skips
+ * it — only for fixtures/tests, never for a real video.
+ *
+ * Serving: the page is loaded over HTTP from the PROJECT ROOT (core/project.rootFor(videoDir)) through
+ * core/serve.js, so ../../runtime/animations.jsx and ../../styles/<pack>/kit.jsx resolve in clone mode
+ * and in package mode (symlinks into node_modules/reelsmith, followed). ffmpeg/ffprobe come from core/env.js.
  *
  * Exit codes: 0 ok · 1 error · 3 preview gate · 130 interrupted (SIGINT).
  * Requirements: npm install && npx playwright install chromium · brew install ffmpeg
@@ -33,12 +42,15 @@
 const path = require('path');
 const fs = require('fs');
 const os = require('os');
-const http = require('http');
 const crypto = require('crypto');
 const { spawn, execFileSync } = require('child_process');
+const project = require('../core/project');
+const env = require('../core/env');
+const serve = require('../core/serve');
 
-const PROJECT_ROOT = path.resolve(__dirname, '..');
-const RUNTIME = path.join(PROJECT_ROOT, 'runtime', 'animations.jsx');
+const PROJECT_ROOT = project.FRAMEWORK_ROOT;     // the framework checkout (clone mode); a video's own root: project.rootFor()
+const FFMPEG = () => env.bin('ffmpeg');
+const FFPROBE = () => env.bin('ffprobe');
 const MB = 1024 * 1024;
 const BASE = { fps: 30, width: 720, height: 1280, quality: 95 };
 const DRAFT = { fps: 15, scale: 0.75, quality: 80 };
@@ -49,6 +61,9 @@ const FRAME_TIMEOUT_MS = 60000;
 const FRAME_TRIES = 3;
 const MAX_RELAUNCHES = 3;
 const EPS = 1e-6;               // float guard: 2.0000000001·30 frames is 60, not 61
+const TAIL_MIN_SEC = 0.1;       // --audio longer than Σdur by less than this is encoder padding, not a tail
+const TAIL_MAX_SEC = 6;         // …and by more than this is not a tail either (keep Σdur, cut the audio)
+const HOLD_EPS = 1e-4;          // the held frame is captured just inside the last scene's window
 const HEADLESS_ARGS = ['--no-sandbox'];
 const GPU_ARGS = ['--no-sandbox', '--use-angle=metal', '--enable-gpu-rasterization', '--ignore-gpu-blocklist', '--enable-zero-copy'];
 
@@ -112,9 +127,19 @@ function parseArgv(argv) {
 const secLabel = (x) => String(+x.toFixed(2));
 const even = (x) => Math.max(2, Math.round(x / 2) * 2);
 
+/** Duration of an audio file in seconds (ffprobe), or null when it can't be read. */
+function probeAudioDuration(file) {
+  try {
+    const out = execFileSync(FFPROBE(), ['-v', 'error', '-show_entries', 'format=duration', '-of', 'csv=p=0', file],
+      { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim();
+    const d = Number(out);
+    return Number.isFinite(d) && d > 0 ? d : null;
+  } catch { return null; }
+}
+
 /**
  * Everything the render needs from the CLI args, with draft/range defaults applied.
- * `opts.duration` overrides --duration/scenes.json (tests).
+ * `opts.duration` overrides --duration/scenes.json (tests); `opts.probeAudio(file)` replaces ffprobe (tests).
  */
 function resolveMode(argv, opts = {}) {
   const { flags, positional } = parseArgv(argv);
@@ -130,13 +155,27 @@ function resolveMode(argv, opts = {}) {
   const draft = Boolean(flags.draft);
   const range = flags.from !== undefined || flags.to !== undefined;
 
+  const audio = typeof flags.audio === 'string' && flags.audio ? path.resolve(flags.audio) : null;
   let duration = opts.duration != null ? Number(opts.duration) : num('duration', null);
   let durationSource = opts.duration != null ? 'option' : duration != null ? '--duration' : null;
+  let sceneDuration = null, audioDuration = null, holdAt = null, durationNote = null;
   if (duration == null) {
     const sidecar = path.join(videoDir, 'scenes.json');
     if (!fs.existsSync(sidecar)) throw new Error('No --duration given and no scenes.json next to HTML — cannot determine video length.');
-    duration = JSON.parse(fs.readFileSync(sidecar, 'utf8')).reduce((a, s) => a + s.dur, 0);
+    duration = sceneDuration = JSON.parse(fs.readFileSync(sidecar, 'utf8')).reduce((a, s) => a + s.dur, 0);
     durationSource = 'scenes.json';
+    if (audio && fs.existsSync(audio)) {
+      audioDuration = (opts.probeAudio || probeAudioDuration)(audio);
+      const extra = audioDuration == null ? null : audioDuration - sceneDuration;
+      if (extra == null) durationNote = `could not read the length of ${path.basename(audio)}; using Σdur`;
+      else if (extra > TAIL_MAX_SEC) durationNote = `${path.basename(audio)} is ${extra.toFixed(2)}s longer than Σdur (more than a ${TAIL_MAX_SEC}s tail); using Σdur, the audio is cut`;
+      else if (extra >= TAIL_MIN_SEC) {
+        duration = audioDuration;
+        durationSource = 'audio';
+        holdAt = Math.max(0, sceneDuration - HOLD_EPS);
+        durationNote = `${path.basename(audio)} runs ${extra.toFixed(2)}s past Σdur ${sceneDuration.toFixed(2)}s (music tail); the tail holds the closing frame`;
+      } else durationNote = `${path.basename(audio)} ends with the scenes (${extra >= 0 ? '+' : ''}${extra.toFixed(2)}s)`;
+    }
   }
   if (!(duration > 0)) throw new Error(`video duration must be > 0 (got ${duration})`);
 
@@ -164,10 +203,10 @@ function resolveMode(argv, opts = {}) {
 
   return {
     htmlPath, videoDir, outputPath,
-    fps, width, height, quality, duration, durationSource,
+    fps, width, height, quality, duration, durationSource, sceneDuration, audioDuration, holdAt, durationNote,
     draft, range, from, to, totalFrames, frameStart, frameEnd,
     gate: !draft && !range && !flags['no-preview-gate'],
-    audio: typeof flags.audio === 'string' && flags.audio ? path.resolve(flags.audio) : null,
+    audio,
     shards: flags.shards === undefined || flags.shards === true ? null : flags.shards,
     encoder: typeof flags.encoder === 'string' ? flags.encoder : 'auto',
     gpu: Boolean(flags.gpu),
@@ -176,7 +215,10 @@ function resolveMode(argv, opts = {}) {
   };
 }
 
-module.exports = { planShards, pickShards, encoderArgs, resolveMode, shardChoice };
+/** Capture time of frame i: i/fps, held at the closing frame during a music tail. */
+const frameTime = (mode, i) => (mode.holdAt != null ? Math.min(i / mode.fps, mode.holdAt) : i / mode.fps);
+
+module.exports = { planShards, pickShards, encoderArgs, resolveMode, shardChoice, frameTime, probeAudioDuration, TAIL_MIN_SEC, TAIL_MAX_SEC };
 // (startServer, captureFrame, PROJECT_ROOT are appended below for the e2e test's cold-seek check)
 
 // ── Environment probes ────────────────────────────────────────────────────────
@@ -185,7 +227,7 @@ let encodersCache;
 /** `ffmpeg -encoders` listing (cached in-process), or null when ffmpeg is missing. */
 function ffmpegEncoders() {
   if (encodersCache === undefined) {
-    try { encodersCache = execFileSync('ffmpeg', ['-hide_banner', '-encoders'], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }); }
+    try { encodersCache = execFileSync(FFMPEG(), ['-hide_banner', '-encoders'], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }); }
     catch { encodersCache = null; }
   }
   return encodersCache;
@@ -208,7 +250,7 @@ function availableMemory() {
 /** Frame count of a video file: container nb_frames (fast), decoded count as fallback; 0 if unreadable. */
 function probeFrames(file, { decode = false } = {}) {
   const run = (args) => {
-    try { return execFileSync('ffprobe', ['-v', 'error', '-select_streams', 'v:0', ...args, '-of', 'csv=p=0', file], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim(); }
+    try { return execFileSync(FFPROBE(), ['-v', 'error', '-select_streams', 'v:0', ...args, '-of', 'csv=p=0', file], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim(); }
     catch { return ''; }
   };
   const n = decode ? NaN : parseInt(run(['-show_entries', 'stream=nb_frames']), 10);
@@ -216,28 +258,11 @@ function probeFrames(file, { decode = false } = {}) {
   return parseInt(run(['-count_frames', '-show_entries', 'stream=nb_read_frames']), 10) || 0;
 }
 
-// ── Local HTTP server (serve the project root so ../../runtime/animations.jsx resolves) ──
+// ── Local HTTP server: the project root (core/serve.js), so ../../runtime/animations.jsx resolves ──
 
-const MIME = {
-  '.html': 'text/html', '.js': 'application/javascript', '.mjs': 'application/javascript', '.jsx': 'application/javascript',
-  '.json': 'application/json', '.css': 'text/css', '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg',
-  '.webp': 'image/webp', '.gif': 'image/gif', '.svg': 'image/svg+xml', '.mp3': 'audio/mpeg', '.wav': 'audio/wav',
-  '.mp4': 'video/mp4', '.woff': 'font/woff', '.woff2': 'font/woff2', '.ttf': 'font/ttf', '.otf': 'font/otf',
-};
-
+/** → Promise<{ server, port }> serving `dir` (a project root) on 127.0.0.1, random port. */
 function startServer(dir) {
-  return new Promise((resolve) => {
-    const server = http.createServer((req, res) => {
-      const filePath = path.join(dir, decodeURIComponent(req.url.split('?')[0]));
-      if (!filePath.startsWith(dir) || !fs.existsSync(filePath) || fs.statSync(filePath).isDirectory()) {
-        res.writeHead(404);
-        return res.end('Not found');
-      }
-      res.writeHead(200, { 'Content-Type': MIME[path.extname(filePath).toLowerCase()] || 'application/octet-stream' });
-      fs.createReadStream(filePath).pipe(res);
-    });
-    server.listen(0, '127.0.0.1', () => resolve({ server, port: server.address().port }));
-  });
+  return serve.start(dir).then(({ server, port }) => ({ server, port }));
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -258,7 +283,7 @@ function withTimeout(promise, ms, what) {
 
 function runFfmpeg(args, children) {
   return new Promise((resolve, reject) => {
-    const ff = spawn('ffmpeg', args, { stdio: ['ignore', 'ignore', 'pipe'] });
+    const ff = spawn(FFMPEG(), args, { stdio: ['ignore', 'ignore', 'pipe'] });
     children.add(ff);
     let stderr = '';
     ff.stderr.on('data', (d) => { stderr += d; });
@@ -375,7 +400,7 @@ Object.assign(module.exports, { startServer, captureFrame, PROJECT_ROOT });
 
 function startEncoder(ctx, seg) {
   const partial = seg.file.replace(/\.mp4$/, '.partial.mp4');
-  const ff = spawn('ffmpeg', ['-y', '-loglevel', 'error', '-f', 'image2pipe', '-framerate', String(ctx.mode.fps), '-i', 'pipe:0',
+  const ff = spawn(FFMPEG(), ['-y', '-loglevel', 'error', '-f', 'image2pipe', '-framerate', String(ctx.mode.fps), '-i', 'pipe:0',
     ...ctx.enc.args, '-pix_fmt', 'yuv420p', partial], { stdio: ['pipe', 'ignore', 'pipe'] });
   ctx.children.add(ff);
   let stderr = '', ended = false;
@@ -432,7 +457,7 @@ async function runShard(ctx, shard) {
             try { session = await openSession(ctx); }
             catch (err) { if (ctx.aborted) throw ctx.abortError; await relaunch(`page failed to open: ${firstLine(err)}`); continue; }
           }
-          try { buf = await captureFrame(session, i / ctx.mode.fps, ctx.mode.quality); }
+          try { buf = await captureFrame(session, frameTime(ctx.mode, i), ctx.mode.quality); }
           catch (err) {
             if (ctx.aborted) throw ctx.abortError;
             if (attempt < FRAME_TRIES) {
@@ -469,14 +494,16 @@ function usage() {
 
 function cacheKey(mode, enc, gpu) {
   let fp;
-  try { fp = require('../scripts/approve-preview').fingerprint(mode.videoDir); }
+  try { fp = require('../tools/approve-preview').fingerprint(mode.videoDir); }
   catch { // not a standard video folder (no index.html/scenes.json) — hash the page + runtime instead
     const h = crypto.createHash('sha256').update(fs.readFileSync(mode.htmlPath));
-    if (fs.existsSync(RUNTIME)) h.update(fs.readFileSync(RUNTIME));
+    const runtime = path.join(project.rootFor(mode.videoDir), 'runtime', 'animations.jsx');
+    if (fs.existsSync(runtime)) h.update(fs.readFileSync(runtime));
     fp = h.digest('hex');
   }
   const params = { fps: mode.fps, width: mode.width, height: mode.height, quality: mode.quality, encoderArgs: enc.args,
     from: mode.range ? mode.from : null, to: mode.range ? mode.to : null };
+  if (mode.holdAt != null) params.holdAt = mode.holdAt; // tail frames are captured at the closing frame
   if (gpu) params.gpu = true; // GPU raster pixels differ — never mix with software-raster segments
   return crypto.createHash('sha256').update(fp).update(JSON.stringify(params)).digest('hex').slice(0, 12);
 }
@@ -487,7 +514,9 @@ async function main(argv, ctx) {
   let mode;
   try { mode = resolveMode(argv); } catch (err) { console.error(err.message); return 1; }
   ctx.mode = mode;
-  if (mode.durationSource === 'scenes.json') console.log(`Duration from scenes.json: ${mode.duration.toFixed(2)}s`);
+  env.ensureOnPath();
+  if (mode.durationSource === 'scenes.json') console.log(`Duration from scenes.json: ${mode.duration.toFixed(2)}s${mode.durationNote ? ` (${mode.durationNote})` : ''}`);
+  if (mode.durationSource === 'audio') console.log(`Duration from --audio: ${mode.duration.toFixed(2)}s (${mode.durationNote})`);
 
   const encoders = ffmpegEncoders();
   if (!encoders) { console.error('\nFFmpeg not found. Install: brew install ffmpeg'); return 1; }
@@ -495,13 +524,13 @@ async function main(argv, ctx) {
   const cacheRoot = path.join(mode.videoDir, 'frames', 'render-cache');
   if (mode.framesDirFlag) console.log(`Note: --frames-dir was removed; crash resume is automatic via the segment cache in ${rel(cacheRoot)}/.`);
   if (mode.gate) {
-    const gate = require('../scripts/approve-preview').checkApproval(mode.videoDir);
+    const gate = require('../tools/approve-preview').checkApproval(mode.videoDir);
     if (!gate.ok) {
-      const r = path.relative(process.cwd(), mode.videoDir);
+      const r = path.relative(process.cwd(), mode.videoDir) || '.';
       console.error(`\nPreview gate: ${gate.reason}.`);
-      console.error(`  1. node scripts/contact-sheet.js ${r} --stills`);
-      console.error(`  2. show the user the contact sheet + stills, wait for an explicit "approved"`);
-      console.error(`  3. node scripts/approve-preview.js ${r} --by="<who>"   then re-run this render`);
+      console.error(`  1. reelsmith draft ${r}  and  reelsmith sheet ${r} --stills`);
+      console.error(`  2. show the user draft.mp4, the contact sheet and the stills; wait for an explicit "approved"`);
+      console.error(`  3. reelsmith approve ${r} --by="<who>"   then re-run this render`);
       return 3;
     }
   }
@@ -571,10 +600,11 @@ async function main(argv, ctx) {
   console.log(`Cache:     ${rel(cacheDir)}  ${segments.filter((s) => s.reused).length}/${segments.length} segments reusable${stale ? `, removed ${stale} stale` : ''}`);
   console.log(`Audio:     ${audio ? rel(audio) + (mode.range ? ` (trimmed ${fmtSec(mode.frameStart / mode.fps)}s + ${fmtSec(frames / mode.fps)}s)` : '') : 'none'}\n`);
 
-  // Capture + encode
-  const { server, port } = await startServer(PROJECT_ROOT);
+  // Capture + encode (serve the video's project root, not the framework checkout)
+  const root = project.rootFor(mode.videoDir);
+  const { server, port } = await startServer(root);
   ctx.server = server;
-  ctx.url = `http://127.0.0.1:${port}/${path.relative(PROJECT_ROOT, mode.htmlPath).split(path.sep).join('/')}?render=1`;
+  ctx.url = `http://127.0.0.1:${port}${serve.urlFor(root, mode.htmlPath)}?render=1`;
   ctx.progress = makeProgress(ctx);
   ctx.captureStart = Date.now();
   if (busy.length) {

@@ -1,0 +1,749 @@
+[
+  {
+    "idx": 1,
+    "dur": 6.322,
+    "file": "voiceover/s1.mp3",
+    "words": [
+      {
+        "word": "Most",
+        "start": 0,
+        "end": 0.487
+      },
+      {
+        "word": "AI",
+        "start": 0.487,
+        "end": 0.672
+      },
+      {
+        "word": "made",
+        "start": 0.672,
+        "end": 1.043
+      },
+      {
+        "word": "videos",
+        "start": 1.043,
+        "end": 1.391
+      },
+      {
+        "word": "drift.",
+        "start": 1.391,
+        "end": 1.739
+      },
+      {
+        "word": "The",
+        "start": 2,
+        "end": 2.261
+      },
+      {
+        "word": "text",
+        "start": 2.261,
+        "end": 2.557
+      },
+      {
+        "word": "shows",
+        "start": 2.557,
+        "end": 2.835
+      },
+      {
+        "word": "up",
+        "start": 2.835,
+        "end": 3.026
+      },
+      {
+        "word": "before",
+        "start": 3.026,
+        "end": 3.27
+      },
+      {
+        "word": "the",
+        "start": 3.27,
+        "end": 3.409
+      },
+      {
+        "word": "voice",
+        "start": 3.409,
+        "end": 3.617
+      },
+      {
+        "word": "says",
+        "start": 3.617,
+        "end": 3.878
+      },
+      {
+        "word": "it.",
+        "start": 3.878,
+        "end": 4.07
+      },
+      {
+        "word": "Reelsmith",
+        "start": 4.609,
+        "end": 5.043
+      },
+      {
+        "word": "makes",
+        "start": 5.043,
+        "end": 5.409
+      },
+      {
+        "word": "that",
+        "start": 5.409,
+        "end": 5.6
+      },
+      {
+        "word": "impossible.",
+        "start": 5.6,
+        "end": 6.104
+      }
+    ]
+  },
+  {
+    "idx": 2,
+    "dur": 7.878,
+    "file": "voiceover/s2.mp3",
+    "words": [
+      {
+        "word": "The",
+        "start": 0.217,
+        "end": 0.739
+      },
+      {
+        "word": "animation",
+        "start": 0.739,
+        "end": 1.052
+      },
+      {
+        "word": "is",
+        "start": 1.052,
+        "end": 1.348
+      },
+      {
+        "word": "one",
+        "start": 1.348,
+        "end": 1.661
+      },
+      {
+        "word": "HTML",
+        "start": 1.661,
+        "end": 2.061
+      },
+      {
+        "word": "file,",
+        "start": 2.061,
+        "end": 2.478
+      },
+      {
+        "word": "using",
+        "start": 2.583,
+        "end": 2.93
+      },
+      {
+        "word": "React",
+        "start": 2.93,
+        "end": 3.226
+      },
+      {
+        "word": "and",
+        "start": 3.226,
+        "end": 3.47
+      },
+      {
+        "word": "a",
+        "start": 3.47,
+        "end": 3.574
+      },
+      {
+        "word": "small",
+        "start": 3.574,
+        "end": 3.8
+      },
+      {
+        "word": "runtime.",
+        "start": 3.8,
+        "end": 4.096
+      },
+      {
+        "word": "Each",
+        "start": 4.461,
+        "end": 4.983
+      },
+      {
+        "word": "scene",
+        "start": 4.983,
+        "end": 5.209
+      },
+      {
+        "word": "is",
+        "start": 5.209,
+        "end": 5.383
+      },
+      {
+        "word": "a",
+        "start": 5.383,
+        "end": 5.487
+      },
+      {
+        "word": "sprite",
+        "start": 5.487,
+        "end": 5.8
+      },
+      {
+        "word": "whose",
+        "start": 5.8,
+        "end": 6.096
+      },
+      {
+        "word": "window",
+        "start": 6.096,
+        "end": 6.357
+      },
+      {
+        "word": "comes",
+        "start": 6.357,
+        "end": 6.635
+      },
+      {
+        "word": "from",
+        "start": 6.635,
+        "end": 6.826
+      },
+      {
+        "word": "scenes.json.",
+        "start": 6.826,
+        "end": 7.678
+      }
+    ]
+  },
+  {
+    "idx": 3,
+    "dur": 6.9,
+    "file": "voiceover/s3.mp3",
+    "words": [
+      {
+        "word": "Inside",
+        "start": 0.2,
+        "end": 0.722
+      },
+      {
+        "word": "a",
+        "start": 0.722,
+        "end": 0.913
+      },
+      {
+        "word": "scene,",
+        "start": 0.913,
+        "end": 1.104
+      },
+      {
+        "word": "you",
+        "start": 1.261,
+        "end": 1.522
+      },
+      {
+        "word": "never",
+        "start": 1.522,
+        "end": 1.887
+      },
+      {
+        "word": "hard",
+        "start": 1.887,
+        "end": 2.096
+      },
+      {
+        "word": "code",
+        "start": 2.096,
+        "end": 2.304
+      },
+      {
+        "word": "a",
+        "start": 2.304,
+        "end": 2.443
+      },
+      {
+        "word": "delay.",
+        "start": 2.443,
+        "end": 2.635
+      },
+      {
+        "word": "You",
+        "start": 2.791,
+        "end": 3.226
+      },
+      {
+        "word": "call",
+        "start": 3.226,
+        "end": 3.47
+      },
+      {
+        "word": "useWordQ",
+        "start": 3.47,
+        "end": 4.148
+      },
+      {
+        "word": "with",
+        "start": 4.148,
+        "end": 4.339
+      },
+      {
+        "word": "a",
+        "start": 4.339,
+        "end": 4.426
+      },
+      {
+        "word": "phrase,",
+        "start": 4.426,
+        "end": 4.704
+      },
+      {
+        "word": "and",
+        "start": 4.739,
+        "end": 5.157
+      },
+      {
+        "word": "you",
+        "start": 5.157,
+        "end": 5.261
+      },
+      {
+        "word": "get",
+        "start": 5.261,
+        "end": 5.383
+      },
+      {
+        "word": "the",
+        "start": 5.383,
+        "end": 5.539
+      },
+      {
+        "word": "second",
+        "start": 5.539,
+        "end": 5.835
+      },
+      {
+        "word": "that",
+        "start": 5.835,
+        "end": 6.043
+      },
+      {
+        "word": "word",
+        "start": 6.043,
+        "end": 6.2
+      },
+      {
+        "word": "is",
+        "start": 6.2,
+        "end": 6.322
+      },
+      {
+        "word": "spoken.",
+        "start": 6.322,
+        "end": 6.565
+      }
+    ]
+  },
+  {
+    "idx": 4,
+    "dur": 8.839,
+    "file": "voiceover/s4.mp3",
+    "words": [
+      {
+        "word": "Every",
+        "start": 0.335,
+        "end": 0.587
+      },
+      {
+        "word": "frame",
+        "start": 0.587,
+        "end": 0.848
+      },
+      {
+        "word": "is",
+        "start": 0.848,
+        "end": 1.039
+      },
+      {
+        "word": "a",
+        "start": 1.039,
+        "end": 1.143
+      },
+      {
+        "word": "pure",
+        "start": 1.143,
+        "end": 1.439
+      },
+      {
+        "word": "function",
+        "start": 1.439,
+        "end": 1.752
+      },
+      {
+        "word": "of",
+        "start": 1.752,
+        "end": 1.926
+      },
+      {
+        "word": "time.",
+        "start": 1.926,
+        "end": 2.1
+      },
+      {
+        "word": "No",
+        "start": 2.326,
+        "end": 2.691
+      },
+      {
+        "word": "timers,",
+        "start": 2.691,
+        "end": 3.057
+      },
+      {
+        "word": "no",
+        "start": 3.213,
+        "end": 3.422
+      },
+      {
+        "word": "random",
+        "start": 3.422,
+        "end": 3.683
+      },
+      {
+        "word": "numbers,",
+        "start": 3.683,
+        "end": 3.978
+      },
+      {
+        "word": "no",
+        "start": 4.17,
+        "end": 4.483
+      },
+      {
+        "word": "CSS",
+        "start": 4.483,
+        "end": 4.848
+      },
+      {
+        "word": "transitions.",
+        "start": 4.848,
+        "end": 5.317
+      },
+      {
+        "word": "The",
+        "start": 5.613,
+        "end": 6.03
+      },
+      {
+        "word": "renderer",
+        "start": 6.03,
+        "end": 6.465
+      },
+      {
+        "word": "seeks",
+        "start": 6.465,
+        "end": 6.639
+      },
+      {
+        "word": "to",
+        "start": 6.639,
+        "end": 6.778
+      },
+      {
+        "word": "a",
+        "start": 6.778,
+        "end": 6.883
+      },
+      {
+        "word": "time,",
+        "start": 6.883,
+        "end": 7.109
+      },
+      {
+        "word": "takes",
+        "start": 7.387,
+        "end": 7.526
+      },
+      {
+        "word": "a",
+        "start": 7.526,
+        "end": 7.613
+      },
+      {
+        "word": "frame,",
+        "start": 7.613,
+        "end": 7.839
+      },
+      {
+        "word": "and",
+        "start": 7.961,
+        "end": 8.187
+      },
+      {
+        "word": "moves",
+        "start": 8.187,
+        "end": 8.396
+      },
+      {
+        "word": "on.",
+        "start": 8.396,
+        "end": 8.57
+      }
+    ]
+  },
+  {
+    "idx": 5,
+    "dur": 5.809,
+    "file": "voiceover/s5.mp3",
+    "words": [
+      {
+        "word": "Subtitles",
+        "start": 0.27,
+        "end": 0.774
+      },
+      {
+        "word": "are",
+        "start": 0.774,
+        "end": 0.878
+      },
+      {
+        "word": "free.",
+        "start": 0.878,
+        "end": 1.087
+      },
+      {
+        "word": "Drop",
+        "start": 1.33,
+        "end": 1.73
+      },
+      {
+        "word": "a",
+        "start": 1.73,
+        "end": 1.87
+      },
+      {
+        "word": "subtitle",
+        "start": 1.87,
+        "end": 2.235
+      },
+      {
+        "word": "rail",
+        "start": 2.235,
+        "end": 2.391
+      },
+      {
+        "word": "into",
+        "start": 2.391,
+        "end": 2.617
+      },
+      {
+        "word": "any",
+        "start": 2.617,
+        "end": 2.913
+      },
+      {
+        "word": "scene",
+        "start": 2.913,
+        "end": 3.209
+      },
+      {
+        "word": "and",
+        "start": 3.209,
+        "end": 3.435
+      },
+      {
+        "word": "the",
+        "start": 3.435,
+        "end": 3.574
+      },
+      {
+        "word": "spoken",
+        "start": 3.574,
+        "end": 3.887
+      },
+      {
+        "word": "word",
+        "start": 3.887,
+        "end": 4.13
+      },
+      {
+        "word": "highlights",
+        "start": 4.13,
+        "end": 4.513
+      },
+      {
+        "word": "on",
+        "start": 4.513,
+        "end": 4.722
+      },
+      {
+        "word": "Whisper's",
+        "start": 4.722,
+        "end": 5.122
+      },
+      {
+        "word": "timestamps.",
+        "start": 5.122,
+        "end": 5.557
+      }
+    ]
+  },
+  {
+    "idx": 6,
+    "dur": 10.513,
+    "file": "voiceover/s6.mp3",
+    "words": [
+      {
+        "word": "Two",
+        "start": 0.252,
+        "end": 0.496
+      },
+      {
+        "word": "linters",
+        "start": 0.496,
+        "end": 0.878
+      },
+      {
+        "word": "guard",
+        "start": 0.878,
+        "end": 1.191
+      },
+      {
+        "word": "all",
+        "start": 1.191,
+        "end": 1.47
+      },
+      {
+        "word": "of",
+        "start": 1.47,
+        "end": 1.574
+      },
+      {
+        "word": "this.",
+        "start": 1.574,
+        "end": 1.817
+      },
+      {
+        "word": "Check",
+        "start": 2.287,
+        "end": 2.557
+      },
+      {
+        "word": "sync",
+        "start": 2.557,
+        "end": 2.774
+      },
+      {
+        "word": "bans",
+        "start": 2.774,
+        "end": 3.157
+      },
+      {
+        "word": "wall",
+        "start": 3.157,
+        "end": 3.435
+      },
+      {
+        "word": "clock",
+        "start": 3.435,
+        "end": 3.713
+      },
+      {
+        "word": "code.",
+        "start": 3.713,
+        "end": 4.078
+      },
+      {
+        "word": "Validate",
+        "start": 4.687,
+        "end": 5.023
+      },
+      {
+        "word": "sync",
+        "start": 5.023,
+        "end": 5.191
+      },
+      {
+        "word": "makes",
+        "start": 5.191,
+        "end": 5.452
+      },
+      {
+        "word": "sure",
+        "start": 5.452,
+        "end": 5.609
+      },
+      {
+        "word": "every",
+        "start": 5.609,
+        "end": 6.009
+      },
+      {
+        "word": "scene",
+        "start": 6.009,
+        "end": 6.287
+      },
+      {
+        "word": "has",
+        "start": 6.287,
+        "end": 6.496
+      },
+      {
+        "word": "a",
+        "start": 6.496,
+        "end": 6.635
+      },
+      {
+        "word": "rail",
+        "start": 6.635,
+        "end": 6.878
+      },
+      {
+        "word": "and",
+        "start": 6.878,
+        "end": 7.157
+      },
+      {
+        "word": "every",
+        "start": 7.157,
+        "end": 7.504
+      },
+      {
+        "word": "cue",
+        "start": 7.504,
+        "end": 7.713
+      },
+      {
+        "word": "resolves.",
+        "start": 7.713,
+        "end": 8.2
+      },
+      {
+        "word": "Both",
+        "start": 8.409,
+        "end": 8.896
+      },
+      {
+        "word": "must",
+        "start": 8.896,
+        "end": 9.104
+      },
+      {
+        "word": "pass",
+        "start": 9.104,
+        "end": 9.4
+      },
+      {
+        "word": "before",
+        "start": 9.4,
+        "end": 9.643
+      },
+      {
+        "word": "you",
+        "start": 9.643,
+        "end": 9.852
+      },
+      {
+        "word": "render.",
+        "start": 9.852,
+        "end": 10.078
+      }
+    ]
+  }
+]

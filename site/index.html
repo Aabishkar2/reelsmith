@@ -1,0 +1,370 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Reelsmith: script in, short out</title>
+<meta name="description" content="A plugin-based framework for agent-made short videos. Write a markdown script; get a voice, word-synced subtitles, motion graphics and an MP4.">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&family=Sora:wght@600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/site.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+
+<header class="nav">
+  <div class="wrap nav-inner">
+    <a class="brand" href="index.html" aria-label="Reelsmith home">
+      <img src="assets/logo.svg" alt="" width="30" height="30">
+      <span>Reelsmith</span>
+    </a>
+    <nav class="nav-links" aria-label="Site">
+      <a href="docs/index.html">Docs</a>
+      <a href="#tutorials">Tutorials</a>
+      <a href="https://github.com/Aabishkar2/reelsmith">GitHub</a>
+    </nav>
+  </div>
+</header>
+
+<main id="main">
+
+<!-- ── hero ─────────────────────────────────────────────────────────────── -->
+<section class="hero">
+  <div class="wrap hero-grid">
+    <div class="hero-copy">
+      <p class="eyebrow">Open source · MIT</p>
+      <h1>Script in,<br><span class="grad">short out.</span></h1>
+      <p class="lede">A plugin-based framework for agent-made short videos.</p>
+      <p class="pitch">Write 150 words of markdown. Your coding agent turns them into a finished vertical video: a voice, subtitles synced to every word, motion graphics, and an MP4 ready to post. Every step is a plain file, every provider is a plugin, and nothing renders or posts until you approve it.</p>
+      <div class="cta">
+        <a class="btn btn-primary" href="docs/getting-started.html">Get started</a>
+        <a class="btn btn-ghost" href="https://github.com/Aabishkar2/reelsmith">
+          <svg viewBox="0 0 16 16" width="18" height="18" aria-hidden="true"><path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+          GitHub
+        </a>
+      </div>
+    </div>
+
+    <div class="hero-visual" aria-hidden="true">
+      <div class="terminal">
+        <div class="term-bar"><i></i><i></i><i></i><span>my-channel</span></div>
+<pre class="term-body"><span class="p">$</span> reelsmith new demo
+<span class="p">$</span> reelsmith tts demo --voice=Leda
+<span class="c"># voice + timings → scenes.json</span>
+<span class="p">$</span> reelsmith sheet demo
+<span class="p">$</span> reelsmith draft demo
+<span class="c"># you watch draft.mp4, then:</span>
+<span class="p">$</span> reelsmith approve demo --by=you
+<span class="p">$</span> reelsmith render demo
+<span class="ok">✓</span> videos/demo/output.mp4</pre>
+      </div>
+      <div class="phone">
+        <div class="phone-screen">
+          <p class="ph-label">SCENE 1</p>
+          <p class="ph-num">150</p>
+          <p class="ph-word">words in</p>
+          <div class="ph-card">
+            <span class="ph-dot"></span><span>a finished short out</span>
+          </div>
+          <p class="ph-sub">You write one hundred and <b>fifty</b> words.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── how it works ─────────────────────────────────────────────────────── -->
+<section class="section" id="how">
+  <div class="wrap">
+    <p class="kicker">How it works</p>
+    <h2>Three steps, each one a file you can read.</h2>
+    <ol class="steps">
+      <li>
+        <span class="step-n">1</span>
+        <h3>Write</h3>
+        <p>A markdown script: scenes, one sentence per line, a line of scene hints each. You write it, or your agent does.</p>
+        <code>videos/&lt;name&gt;/script.md</code>
+      </li>
+      <li>
+        <span class="step-n">2</span>
+        <h3>Voice</h3>
+        <p>A TTS voice or your own take from the built-in teleprompter. Whisper gives every word a timestamp.</p>
+        <code>reelsmith tts</code>
+      </li>
+      <li>
+        <span class="step-n">3</span>
+        <h3>Animate and render</h3>
+        <p>One HTML file, every overlay bound to the word that introduces it. Rendered in parallel browsers straight into ffmpeg.</p>
+        <code>reelsmith render</code>
+      </li>
+    </ol>
+
+    <figure class="pipeline" aria-label="Pipeline: script.md to voice to words to index.html to output.mp4">
+      <svg class="pipe-h" viewBox="0 0 1000 170" role="img" aria-hidden="true">
+        <defs>
+          <linearGradient id="pg" x1="0" x2="1"><stop offset="0" stop-color="#7C5CFF"/><stop offset="1" stop-color="#22D3EE"/></linearGradient>
+          <marker id="arr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" class="pipe-arrow"/></marker>
+        </defs>
+        <g class="pipe-lines">
+          <line x1="172" y1="62" x2="222" y2="62" marker-end="url(#arr)"/>
+          <line x1="378" y1="62" x2="428" y2="62" marker-end="url(#arr)"/>
+          <line x1="584" y1="62" x2="634" y2="62" marker-end="url(#arr)"/>
+          <line x1="790" y1="62" x2="840" y2="62" marker-end="url(#arr)"/>
+        </g>
+        <g class="pipe-node"><rect x="16" y="30" width="156" height="64" rx="14"/><text x="94" y="68">script.md</text><text class="pipe-sub" x="94" y="126">you or the agent</text></g>
+        <g class="pipe-node"><rect x="222" y="30" width="156" height="64" rx="14"/><text x="300" y="68">voice</text><text class="pipe-sub" x="300" y="126">TTS or your take</text></g>
+        <g class="pipe-node"><rect x="428" y="30" width="156" height="64" rx="14"/><text x="506" y="68">words</text><text class="pipe-sub" x="506" y="126">Whisper timings</text></g>
+        <g class="pipe-node"><rect x="634" y="30" width="156" height="64" rx="14"/><text x="712" y="68">index.html</text><text class="pipe-sub" x="712" y="126">React scenes</text></g>
+        <g class="pipe-node pipe-end"><rect x="840" y="30" width="144" height="64" rx="14"/><text x="912" y="68">output.mp4</text><text class="pipe-sub" x="912" y="126">Chromium → ffmpeg</text></g>
+      </svg>
+      <svg class="pipe-v" viewBox="0 0 320 560" role="img" aria-hidden="true">
+        <defs>
+          <marker id="arrv" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" class="pipe-arrow"/></marker>
+        </defs>
+        <g class="pipe-lines">
+          <line x1="90" y1="72" x2="90" y2="110" marker-end="url(#arrv)"/>
+          <line x1="90" y1="184" x2="90" y2="222" marker-end="url(#arrv)"/>
+          <line x1="90" y1="296" x2="90" y2="334" marker-end="url(#arrv)"/>
+          <line x1="90" y1="408" x2="90" y2="446" marker-end="url(#arrv)"/>
+        </g>
+        <g class="pipe-node"><rect x="10" y="8" width="160" height="64" rx="14"/><text x="90" y="46">script.md</text><text class="pipe-sub pipe-sub-v" x="186" y="46">you or the agent</text></g>
+        <g class="pipe-node"><rect x="10" y="120" width="160" height="64" rx="14"/><text x="90" y="158">voice</text><text class="pipe-sub pipe-sub-v" x="186" y="158">TTS or your take</text></g>
+        <g class="pipe-node"><rect x="10" y="232" width="160" height="64" rx="14"/><text x="90" y="270">words</text><text class="pipe-sub pipe-sub-v" x="186" y="270">Whisper timings</text></g>
+        <g class="pipe-node"><rect x="10" y="344" width="160" height="64" rx="14"/><text x="90" y="382">index.html</text><text class="pipe-sub pipe-sub-v" x="186" y="382">React scenes</text></g>
+        <g class="pipe-node pipe-end"><rect x="10" y="456" width="160" height="64" rx="14"/><text x="90" y="494">output.mp4</text><text class="pipe-sub pipe-sub-v" x="186" y="494">Chromium → ffmpeg</text></g>
+      </svg>
+      <figcaption>Between the animation and the render sit four gates: the sync linters, a contact sheet the agent scores, a draft you watch, and an approval the renderer checks.</figcaption>
+    </figure>
+  </div>
+</section>
+
+<!-- ── features ─────────────────────────────────────────────────────────── -->
+<section class="section section-alt" id="features">
+  <div class="wrap">
+    <p class="kicker">What you get</p>
+    <h2>The boring parts, done right every time.</h2>
+    <div class="features">
+      <article class="feature">
+        <span class="ico" aria-hidden="true">Aa</span>
+        <h3>Word-synced subtitles</h3>
+        <p>One <code>SubtitleRail</code> per scene highlights every word on Whisper's timestamps. Overlays appear exactly when their word is spoken.</p>
+      </article>
+      <article class="feature">
+        <span class="ico" aria-hidden="true">t</span>
+        <h3>Deterministic renders</h3>
+        <p>Every frame is a pure function of time, so a render is repeatable and splits across parallel browsers.</p>
+      </article>
+      <article class="feature">
+        <span class="ico" aria-hidden="true">{ }</span>
+        <h3>Plugins all the way down</h3>
+        <p>TTS, STT, styles and publish targets share one registry. The built-ins are plugins too, so yours are first-class.</p>
+      </article>
+      <article class="feature">
+        <span class="ico" aria-hidden="true">◐</span>
+        <h3>Style packs</h3>
+        <p>A <code>STYLE.md</code> and a component kit define the look. Reflective, tech-news and motion ship built in.</p>
+      </article>
+      <article class="feature">
+        <span class="ico" aria-hidden="true">●</span>
+        <h3>Own voice or TTS</h3>
+        <p>Record with the teleprompter and re-record single lines, or synthesize per line or in one performance call. Same output either way.</p>
+      </article>
+      <article class="feature">
+        <span class="ico" aria-hidden="true">✓</span>
+        <h3>Quality gates</h3>
+        <p>Linters, a contact sheet scored to 8+, a draft you watch, and an approval fingerprint. The final render refuses without it.</p>
+      </article>
+      <article class="feature">
+        <span class="ico" aria-hidden="true">&gt;_</span>
+        <h3>Agent-native</h3>
+        <p>Skills, <code>CLAUDE.md</code> and markdown config tell a coding agent exactly how to drive the pipeline, and where to stop.</p>
+      </article>
+      <article class="feature">
+        <span class="ico" aria-hidden="true">.md</span>
+        <h3>Plain files</h3>
+        <p>A markdown script, one HTML file, JSON contracts between steps. Everything diffs, reviews and versions in git.</p>
+      </article>
+    </div>
+  </div>
+</section>
+
+<!-- ── agents ───────────────────────────────────────────────────────────── -->
+<section class="section" id="agents">
+  <div class="wrap agent-grid">
+    <div>
+      <p class="kicker">Built for coding agents</p>
+      <h2>Your agent does the creative work. You approve.</h2>
+      <p>Open a Reelsmith project in Claude Code and ask for a video. The shipped skills tell the agent how to research, write the script, voice it, build the animation, check its own frames, and publish. It stops for you at every gate.</p>
+      <ul class="skills">
+        <li><code>reelsmith-pipeline</code></li>
+        <li><code>research</code></li>
+        <li><code>script-writing</code></li>
+        <li><code>teleprompter-prep</code></li>
+        <li><code>take-review</code></li>
+        <li><code>html-animation</code></li>
+        <li><code>publish</code></li>
+        <li><code>market-research</code></li>
+      </ul>
+      <p><a href="docs/agent-workflow.html">How the agent drives it →</a></p>
+    </div>
+    <div class="chat" aria-label="Example session">
+      <div class="msg you"><span class="who">You</span>make me a video about prompt caching</div>
+      <div class="msg bot"><span class="who">Agent</span>research.md is ready (Status: DRAFT) with three angles. Approve one?</div>
+      <div class="gate">gate · research</div>
+      <div class="msg you"><span class="who">You</span>approved, angle A</div>
+      <div class="msg bot"><span class="who">Agent</span>Script written, 152 spoken words. Which voice should I use?</div>
+      <div class="gate">gate · script + voice</div>
+      <div class="msg you"><span class="who">You</span>looks good. Leda, performance mode</div>
+      <div class="msg bot"><span class="who">Agent</span>Lint clean, contact sheet 8+ on every criterion. Here is draft.mp4. OK to render?</div>
+      <div class="gate">gate · preview</div>
+    </div>
+  </div>
+</section>
+
+<!-- ── plugins ──────────────────────────────────────────────────────────── -->
+<section class="section section-alt" id="plugins">
+  <div class="wrap">
+    <p class="kicker">Plugin kinds</p>
+    <h2>Four kinds. One contract.</h2>
+    <div class="kinds">
+      <div class="kind">
+        <p class="kind-name">tts</p>
+        <p>Text to audio.</p>
+        <p class="kind-built">tts-openrouter</p>
+      </div>
+      <div class="kind">
+        <p class="kind-name">stt</p>
+        <p>Audio to word timings.</p>
+        <p class="kind-built">stt-whisper</p>
+      </div>
+      <div class="kind">
+        <p class="kind-name">style</p>
+        <p>A visual look.</p>
+        <p class="kind-built">reflective · tech-news · motion</p>
+      </div>
+      <div class="kind">
+        <p class="kind-name">publish</p>
+        <p>Send the MP4 somewhere.</p>
+        <p class="kind-built">youtube · meta · discord</p>
+      </div>
+    </div>
+<pre class="code-snip"><span class="k">module</span>.exports = {
+  name: <span class="s">'tts-elevenlabs'</span>,
+  kind: <span class="s">'tts'</span>,
+  version: <span class="s">'1.0.0'</span>,
+  <span class="k">async</span> synthesize({ text, voice, model, format }) {
+    <span class="c">// call the provider, return { audio: Buffer, format: 'mp3' }</span>
+  },
+};</pre>
+    <p class="center"><a href="docs/plugins.html">Write a plugin →</a></p>
+  </div>
+</section>
+
+<!-- ── tutorials ────────────────────────────────────────────────────────── -->
+<section class="section" id="tutorials">
+  <div class="wrap">
+    <p class="kicker">Tutorial series</p>
+    <h2>Ten shorts, made with Reelsmith itself.</h2>
+    <p class="section-lede">From install to a published short, one command at a time. Each links to its folder, with the script and the animation.</p>
+    <div class="tuts">
+      <a class="tut" href="https://github.com/Aabishkar2/reelsmith/tree/main/videos/tut-01-what-is-reelsmith">
+        <div class="poster"><span class="ep">01</span><span class="play" aria-hidden="true"></span><img src="assets/tut-01.jpg" alt="" loading="lazy" onerror="this.remove()"></div>
+        <h3>Reelsmith in 60 seconds</h3>
+        <p>Script, voice, timings, animation, MP4: the whole pipeline.</p>
+      </a>
+      <a class="tut" href="https://github.com/Aabishkar2/reelsmith/tree/main/videos/tut-02-install">
+        <div class="poster"><span class="ep">02</span><span class="play" aria-hidden="true"></span><img src="assets/tut-02.jpg" alt="" loading="lazy" onerror="this.remove()"></div>
+        <h3>Install Reelsmith in 3 minutes</h3>
+        <p>Node, ffmpeg, Python, init, one key, and the doctor.</p>
+      </a>
+      <a class="tut" href="https://github.com/Aabishkar2/reelsmith/tree/main/videos/tut-03-first-video">
+        <div class="poster"><span class="ep">03</span><span class="play" aria-hidden="true"></span><img src="assets/tut-03.jpg" alt="" loading="lazy" onerror="this.remove()"></div>
+        <h3>Your first video, start to finish</h3>
+        <p>Six commands from a blank folder to output.mp4.</p>
+      </a>
+      <a class="tut" href="https://github.com/Aabishkar2/reelsmith/tree/main/videos/tut-04-script-format">
+        <div class="poster"><span class="ep">04</span><span class="play" aria-hidden="true"></span><img src="assets/tut-04.jpg" alt="" loading="lazy" onerror="this.remove()"></div>
+        <h3>script.md, the one file that matters</h3>
+        <p>Frontmatter, scenes, cue lines and scene hints.</p>
+      </a>
+      <a class="tut" href="https://github.com/Aabishkar2/reelsmith/tree/main/videos/tut-05-voice">
+        <div class="poster"><span class="ep">05</span><span class="play" aria-hidden="true"></span><img src="assets/tut-05.jpg" alt="" loading="lazy" onerror="this.remove()"></div>
+        <h3>Voice, TTS or your own take</h3>
+        <p>Sentence mode, performance mode, recording and the cut.</p>
+      </a>
+      <a class="tut" href="https://github.com/Aabishkar2/reelsmith/tree/main/videos/tut-06-animation">
+        <div class="poster"><span class="ep">06</span><span class="play" aria-hidden="true"></span><img src="assets/tut-06.jpg" alt="" loading="lazy" onerror="this.remove()"></div>
+        <h3>How the animation stays in sync</h3>
+        <p>Word cues, pure-function frames, subtitles, linters.</p>
+      </a>
+      <a class="tut" href="https://github.com/Aabishkar2/reelsmith/tree/main/videos/tut-07-styles">
+        <div class="poster"><span class="ep">07</span><span class="play" aria-hidden="true"></span><img src="assets/tut-07.jpg" alt="" loading="lazy" onerror="this.remove()"></div>
+        <h3>Styles and style packs</h3>
+        <p>Reflective, tech-news, motion, and your own brand.</p>
+      </a>
+      <a class="tut" href="https://github.com/Aabishkar2/reelsmith/tree/main/videos/tut-08-plugins">
+        <div class="poster"><span class="ep">08</span><span class="play" aria-hidden="true"></span><img src="assets/tut-08.jpg" alt="" loading="lazy" onerror="this.remove()"></div>
+        <h3>Plugins, bring your own everything</h3>
+        <p>Four plugin kinds and a two-function contract.</p>
+      </a>
+      <a class="tut" href="https://github.com/Aabishkar2/reelsmith/tree/main/videos/tut-09-quality-gates">
+        <div class="poster"><span class="ep">09</span><span class="play" aria-hidden="true"></span><img src="assets/tut-09.jpg" alt="" loading="lazy" onerror="this.remove()"></div>
+        <h3>The quality gates that stop bad videos</h3>
+        <p>Lint, contact sheet, draft, approval, render.</p>
+      </a>
+      <a class="tut" href="https://github.com/Aabishkar2/reelsmith/tree/main/videos/tut-10-publish">
+        <div class="poster"><span class="ep">10</span><span class="play" aria-hidden="true"></span><img src="assets/tut-10.jpg" alt="" loading="lazy" onerror="this.remove()"></div>
+        <h3>Publish, without surprises</h3>
+        <p>publish.md, dry runs, YouTube, Meta and Discord.</p>
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- ── requirements ─────────────────────────────────────────────────────── -->
+<section class="section section-alt" id="requirements">
+  <div class="wrap req-grid">
+    <div>
+      <p class="kicker">Requirements</p>
+      <h2>A laptop, four tools and a key.</h2>
+      <p>macOS or Linux. <code>reelsmith doctor</code> checks all of it and tells you what is missing.</p>
+    </div>
+    <ul class="reqs">
+      <li><strong>Node.js 22</strong><span>18 is the minimum</span></li>
+      <li><strong>ffmpeg</strong><span>audio, mixing, encoding</span></li>
+      <li><strong>Python 3.11 + Whisper</strong><span>word timings</span></li>
+      <li><strong>Playwright Chromium</strong><span>contact sheets and renders</span></li>
+      <li><strong>An OpenRouter key</strong><span>for TTS; not needed for your own voice</span></li>
+    </ul>
+  </div>
+  <div class="wrap">
+<pre class="install"><span class="p">$</span> npx reelsmith init my-channel
+<span class="p">$</span> cd my-channel
+<span class="p">$</span> npx reelsmith doctor</pre>
+    <p class="center small">Not on npm yet? <code>npx github:Aabishkar2/reelsmith init my-channel</code></p>
+    <div class="cta center-cta">
+      <a class="btn btn-primary" href="docs/getting-started.html">Get started</a>
+      <a class="btn btn-ghost" href="docs/index.html">Read the docs</a>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<footer class="footer">
+  <div class="wrap footer-inner">
+    <a class="brand" href="index.html"><img src="assets/logo.svg" alt="" width="24" height="24"><span>Reelsmith</span></a>
+    <nav aria-label="Footer">
+      <a href="docs/index.html">Docs</a>
+      <a href="docs/cli.html">CLI</a>
+      <a href="docs/plugins.html">Plugins</a>
+      <a href="https://github.com/Aabishkar2/reelsmith">GitHub</a>
+    </nav>
+    <p>MIT licensed. Example music by Kevin MacLeod (incompetech.com), CC BY 4.0.</p>
+  </div>
+</footer>
+</body>
+</html>

@@ -1,0 +1,719 @@
+[
+  {
+    "idx": 1,
+    "dur": 4.843,
+    "file": "voiceover/s1.mp3",
+    "words": [
+      {
+        "word": "Three",
+        "start": 0,
+        "end": 0.33
+      },
+      {
+        "word": "tools,",
+        "start": 0.33,
+        "end": 0.678
+      },
+      {
+        "word": "one",
+        "start": 1.009,
+        "end": 1.235
+      },
+      {
+        "word": "command",
+        "start": 1.235,
+        "end": 1.617
+      },
+      {
+        "word": "and",
+        "start": 1.617,
+        "end": 2.052
+      },
+      {
+        "word": "Reelsmith",
+        "start": 2.052,
+        "end": 2.574
+      },
+      {
+        "word": "is",
+        "start": 2.574,
+        "end": 2.8
+      },
+      {
+        "word": "ready.",
+        "start": 2.8,
+        "end": 3.043
+      },
+      {
+        "word": "Let",
+        "start": 3.287,
+        "end": 3.739
+      },
+      {
+        "word": "me",
+        "start": 3.739,
+        "end": 3.861
+      },
+      {
+        "word": "show",
+        "start": 3.861,
+        "end": 4.017
+      },
+      {
+        "word": "you",
+        "start": 4.017,
+        "end": 4.104
+      },
+      {
+        "word": "the",
+        "start": 4.104,
+        "end": 4.209
+      },
+      {
+        "word": "whole",
+        "start": 4.209,
+        "end": 4.383
+      },
+      {
+        "word": "install.",
+        "start": 4.383,
+        "end": 4.661
+      }
+    ]
+  },
+  {
+    "idx": 2,
+    "dur": 8.617,
+    "file": "voiceover/s2.mp3",
+    "words": [
+      {
+        "word": "You",
+        "start": 0.183,
+        "end": 0.67
+      },
+      {
+        "word": "need",
+        "start": 0.67,
+        "end": 0.913
+      },
+      {
+        "word": "Node",
+        "start": 0.913,
+        "end": 1.209
+      },
+      {
+        "word": "22",
+        "start": 1.209,
+        "end": 1.626
+      },
+      {
+        "word": "or",
+        "start": 1.626,
+        "end": 1.817
+      },
+      {
+        "word": "newer,",
+        "start": 1.817,
+        "end": 2.026
+      },
+      {
+        "word": "ffmpeg",
+        "start": 2.6,
+        "end": 3.122
+      },
+      {
+        "word": "for",
+        "start": 3.122,
+        "end": 3.296
+      },
+      {
+        "word": "audio",
+        "start": 3.296,
+        "end": 3.574
+      },
+      {
+        "word": "and",
+        "start": 3.574,
+        "end": 3.73
+      },
+      {
+        "word": "video,",
+        "start": 3.73,
+        "end": 3.957
+      },
+      {
+        "word": "and",
+        "start": 4.183,
+        "end": 4.461
+      },
+      {
+        "word": "python",
+        "start": 4.461,
+        "end": 4.791
+      },
+      {
+        "word": "3.11",
+        "start": 4.791,
+        "end": 5.278
+      },
+      {
+        "word": "for",
+        "start": 5.278,
+        "end": 5.522
+      },
+      {
+        "word": "whisper.",
+        "start": 5.522,
+        "end": 5.783
+      },
+      {
+        "word": "On",
+        "start": 6.043,
+        "end": 6.565
+      },
+      {
+        "word": "a",
+        "start": 6.565,
+        "end": 6.67
+      },
+      {
+        "word": "Mac,",
+        "start": 6.67,
+        "end": 6.861
+      },
+      {
+        "word": "that",
+        "start": 7,
+        "end": 7.243
+      },
+      {
+        "word": "is",
+        "start": 7.243,
+        "end": 7.383
+      },
+      {
+        "word": "one",
+        "start": 7.383,
+        "end": 7.713
+      },
+      {
+        "word": "brew",
+        "start": 7.713,
+        "end": 8.009
+      },
+      {
+        "word": "install.",
+        "start": 8.009,
+        "end": 8.357
+      }
+    ]
+  },
+  {
+    "idx": 3,
+    "dur": 9.939,
+    "file": "voiceover/s3.mp3",
+    "words": [
+      {
+        "word": "Then",
+        "start": 0.261,
+        "end": 0.783
+      },
+      {
+        "word": "run",
+        "start": 0.783,
+        "end": 1.096
+      },
+      {
+        "word": "npx",
+        "start": 1.096,
+        "end": 1.396
+      },
+      {
+        "word": "reelsmith",
+        "start": 1.396,
+        "end": 2.296
+      },
+      {
+        "word": "init",
+        "start": 2.296,
+        "end": 2.696
+      },
+      {
+        "word": "and",
+        "start": 2.696,
+        "end": 3.2
+      },
+      {
+        "word": "give",
+        "start": 3.2,
+        "end": 3.357
+      },
+      {
+        "word": "it",
+        "start": 3.357,
+        "end": 3.443
+      },
+      {
+        "word": "a",
+        "start": 3.443,
+        "end": 3.53
+      },
+      {
+        "word": "folder",
+        "start": 3.53,
+        "end": 3.791
+      },
+      {
+        "word": "name.",
+        "start": 3.791,
+        "end": 4.052
+      },
+      {
+        "word": "It",
+        "start": 4.296,
+        "end": 4.73
+      },
+      {
+        "word": "creates",
+        "start": 4.73,
+        "end": 5.043
+      },
+      {
+        "word": "the",
+        "start": 5.043,
+        "end": 5.165
+      },
+      {
+        "word": "project,",
+        "start": 5.165,
+        "end": 5.513
+      },
+      {
+        "word": "a",
+        "start": 5.687,
+        "end": 5.948
+      },
+      {
+        "word": "videos",
+        "start": 5.948,
+        "end": 6.209
+      },
+      {
+        "word": "folder,",
+        "start": 6.209,
+        "end": 6.539
+      },
+      {
+        "word": "a",
+        "start": 6.748,
+        "end": 6.974
+      },
+      {
+        "word": "config",
+        "start": 6.974,
+        "end": 7.322
+      },
+      {
+        "word": "folder,",
+        "start": 7.322,
+        "end": 7.704
+      },
+      {
+        "word": "and",
+        "start": 7.843,
+        "end": 8.122
+      },
+      {
+        "word": "the",
+        "start": 8.122,
+        "end": 8.261
+      },
+      {
+        "word": "agent",
+        "start": 8.261,
+        "end": 8.609
+      },
+      {
+        "word": "skills",
+        "start": 8.609,
+        "end": 8.887
+      },
+      {
+        "word": "for",
+        "start": 8.887,
+        "end": 9.165
+      },
+      {
+        "word": "Claude",
+        "start": 9.165,
+        "end": 9.461
+      },
+      {
+        "word": "code.",
+        "start": 9.461,
+        "end": 9.652
+      }
+    ]
+  },
+  {
+    "idx": 4,
+    "dur": 7.835,
+    "file": "voiceover/s4.mp3",
+    "words": [
+      {
+        "word": "Open",
+        "start": 0.287,
+        "end": 0.774
+      },
+      {
+        "word": "the",
+        "start": 0.774,
+        "end": 0.948
+      },
+      {
+        "word": ".in",
+        "start": 0.948,
+        "end": 1.487
+      },
+      {
+        "word": "file",
+        "start": 1.487,
+        "end": 1.8
+      },
+      {
+        "word": "and",
+        "start": 1.8,
+        "end": 2.235
+      },
+      {
+        "word": "paste",
+        "start": 2.235,
+        "end": 2.513
+      },
+      {
+        "word": "your",
+        "start": 2.513,
+        "end": 2.687
+      },
+      {
+        "word": "OpenRouter",
+        "start": 2.687,
+        "end": 3.174
+      },
+      {
+        "word": "key.",
+        "start": 3.174,
+        "end": 3.452
+      },
+      {
+        "word": "That",
+        "start": 3.73,
+        "end": 4.217
+      },
+      {
+        "word": "key",
+        "start": 4.217,
+        "end": 4.391
+      },
+      {
+        "word": "powers",
+        "start": 4.391,
+        "end": 4.774
+      },
+      {
+        "word": "text",
+        "start": 4.774,
+        "end": 4.983
+      },
+      {
+        "word": "to",
+        "start": 4.983,
+        "end": 5.087
+      },
+      {
+        "word": "speech.",
+        "start": 5.087,
+        "end": 5.4
+      },
+      {
+        "word": "If",
+        "start": 5.557,
+        "end": 5.991
+      },
+      {
+        "word": "you",
+        "start": 5.991,
+        "end": 6.061
+      },
+      {
+        "word": "record",
+        "start": 6.061,
+        "end": 6.357
+      },
+      {
+        "word": "your",
+        "start": 6.357,
+        "end": 6.496
+      },
+      {
+        "word": "own",
+        "start": 6.496,
+        "end": 6.722
+      },
+      {
+        "word": "voice,",
+        "start": 6.722,
+        "end": 6.948
+      },
+      {
+        "word": "you",
+        "start": 7.07,
+        "end": 7.104
+      },
+      {
+        "word": "can",
+        "start": 7.104,
+        "end": 7.226
+      },
+      {
+        "word": "skip",
+        "start": 7.226,
+        "end": 7.435
+      },
+      {
+        "word": "it.",
+        "start": 7.435,
+        "end": 7.591
+      }
+    ]
+  },
+  {
+    "idx": 5,
+    "dur": 7.452,
+    "file": "voiceover/s5.mp3",
+    "words": [
+      {
+        "word": "Now",
+        "start": 0.243,
+        "end": 0.73
+      },
+      {
+        "word": "run",
+        "start": 0.73,
+        "end": 1.026
+      },
+      {
+        "word": "Reelsmith",
+        "start": 1.026,
+        "end": 1.687
+      },
+      {
+        "word": "Doctor.",
+        "start": 1.687,
+        "end": 2.052
+      },
+      {
+        "word": "It",
+        "start": 2.4,
+        "end": 2.87
+      },
+      {
+        "word": "checks",
+        "start": 2.87,
+        "end": 3.165
+      },
+      {
+        "word": "every",
+        "start": 3.165,
+        "end": 3.513
+      },
+      {
+        "word": "tool,",
+        "start": 3.513,
+        "end": 3.809
+      },
+      {
+        "word": "every",
+        "start": 4.122,
+        "end": 4.33
+      },
+      {
+        "word": "key,",
+        "start": 4.33,
+        "end": 4.626
+      },
+      {
+        "word": "and",
+        "start": 4.678,
+        "end": 4.904
+      },
+      {
+        "word": "every",
+        "start": 4.904,
+        "end": 5.148
+      },
+      {
+        "word": "plugin",
+        "start": 5.148,
+        "end": 5.513
+      },
+      {
+        "word": "and",
+        "start": 5.513,
+        "end": 5.809
+      },
+      {
+        "word": "tells",
+        "start": 5.809,
+        "end": 6.052
+      },
+      {
+        "word": "you",
+        "start": 6.052,
+        "end": 6.191
+      },
+      {
+        "word": "exactly",
+        "start": 6.191,
+        "end": 6.661
+      },
+      {
+        "word": "what",
+        "start": 6.661,
+        "end": 6.904
+      },
+      {
+        "word": "is",
+        "start": 6.904,
+        "end": 7.009
+      },
+      {
+        "word": "missing.",
+        "start": 7.009,
+        "end": 7.287
+      }
+    ]
+  },
+  {
+    "idx": 6,
+    "dur": 6.252,
+    "file": "voiceover/s6.mp3",
+    "words": [
+      {
+        "word": "Green",
+        "start": 0.165,
+        "end": 0.6
+      },
+      {
+        "word": "across",
+        "start": 0.6,
+        "end": 0.861
+      },
+      {
+        "word": "the",
+        "start": 0.861,
+        "end": 0.983
+      },
+      {
+        "word": "board?",
+        "start": 0.983,
+        "end": 1.209
+      },
+      {
+        "word": "Then",
+        "start": 1.365,
+        "end": 1.8
+      },
+      {
+        "word": "open",
+        "start": 1.8,
+        "end": 2.043
+      },
+      {
+        "word": "the",
+        "start": 2.043,
+        "end": 2.165
+      },
+      {
+        "word": "folder",
+        "start": 2.165,
+        "end": 2.426
+      },
+      {
+        "word": "in",
+        "start": 2.426,
+        "end": 2.67
+      },
+      {
+        "word": "Claude",
+        "start": 2.67,
+        "end": 2.93
+      },
+      {
+        "word": "Code",
+        "start": 2.93,
+        "end": 3.139
+      },
+      {
+        "word": "and",
+        "start": 3.139,
+        "end": 3.33
+      },
+      {
+        "word": "say,",
+        "start": 3.33,
+        "end": 3.539
+      },
+      {
+        "word": "make",
+        "start": 3.661,
+        "end": 3.922
+      },
+      {
+        "word": "me",
+        "start": 3.922,
+        "end": 4.078
+      },
+      {
+        "word": "a",
+        "start": 4.078,
+        "end": 4.2
+      },
+      {
+        "word": "video.",
+        "start": 4.2,
+        "end": 4.391
+      },
+      {
+        "word": "The",
+        "start": 4.635,
+        "end": 4.983
+      },
+      {
+        "word": "agent",
+        "start": 4.983,
+        "end": 5.191
+      },
+      {
+        "word": "already",
+        "start": 5.191,
+        "end": 5.452
+      },
+      {
+        "word": "knows",
+        "start": 5.452,
+        "end": 5.643
+      },
+      {
+        "word": "the",
+        "start": 5.643,
+        "end": 5.748
+      },
+      {
+        "word": "rest.",
+        "start": 5.748,
+        "end": 5.939
+      }
+    ]
+  }
+]

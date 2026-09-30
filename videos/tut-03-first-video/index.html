@@ -1,0 +1,585 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Your first video, start to finish</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@600;700;800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+  <script type="text/babel" src="../../runtime/animations.jsx"></script>
+  <script type="text/babel" src="../../styles/motion/kit.jsx"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { width: 100%; height: 100%; background: #0B0F19; overflow: hidden; }
+    #root { width: 100%; height: 100vh; position: relative; }
+  </style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+// Reelsmith tutorials · episode 03 · "Your first video, start to finish"
+// Style: motion (styles/motion/STYLE.md + kit.jsx). Every reveal is bound to a
+// Whisper word cue; every frame is a pure function of the Sprite clock.
+
+const e3 = (p) => Easing.easeOutCubic(clamp(p, 0, 1));
+
+// The six commands this episode walks through, in order.
+const STEPS = ['new', 'tts', 'sheet', 'draft', 'approve', 'render'];
+
+// ── Local pieces (compositions of kit parts; no kit component re-implemented) ──
+
+// Camera move: the hero window starts `from` px lower (centred in the frame) and
+// springs up to its final place at `at`, making room for what comes next.
+function Glide({ from = 0, scale = 1, at, k = 190, d = 25, children }) {
+  const { localTime } = useSprite();
+  const dt = localTime - at;
+  const s = !(dt > 0) ? 0 : dt > 8 ? 1 : spring(dt, k, d);
+  return (
+    <div style={{ position: 'absolute', inset: 0,
+      transform: `translateY(${from * (1 - s)}px) scale(${1 + (scale - 1) * (1 - s)})` }}>{children}</div>
+  );
+}
+
+// Six thin segments under the kicker: which of the six commands are done.
+// `done` segments are lit from the start; fills[i] lights segment done + i.
+function StepRail({ y = 146, done = 0, fills = [] }) {
+  const { localTime } = useSprite();
+  return (
+    <div data-bleed="" style={{ position: 'absolute', top: y, left: 0, right: 0, display: 'flex', justifyContent: 'center', gap: 8 }}>
+      {STEPS.map((s, i) => {
+        const k = i - done;
+        const at = k >= 0 && k < fills.length ? fills[k] : null;
+        const p = i < done ? 1 : at != null && localTime >= at ? e3((localTime - at) / 0.45) : 0;
+        const flash = at != null && localTime >= at ? Math.exp(-(localTime - at) * 2.5) : 0;
+        return (
+          <div key={s} style={{ position: 'relative', width: 48, height: 6, borderRadius: 3, background: 'rgba(255,255,255,0.12)' }}>
+            <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: `${p * 100}%`, borderRadius: 3,
+              background: i < done ? alpha(VIOLET, 0.75) : GRAD,
+              boxShadow: at != null && p > 0 ? `0 0 ${10 + 16 * flash}px ${alpha(CYAN, 0.55 + 0.4 * flash)}` : 'none' }} />
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+// Numbered command pill for the hook: (1) new … (6) render. An empty dashed
+// slot shows from `slotAt` (scene-open flourish); the pill pops into it at `at`.
+function StepChip({ n, label, at, slotAt }) {
+  const { localTime } = useSprite();
+  return (
+    <div style={{ position: 'relative', height: 58 }}>
+      <div style={{ position: 'absolute', inset: 0, borderRadius: 999, border: '1.5px dashed rgba(255,255,255,0.24)', background: 'rgba(255,255,255,0.02)',
+        ...enter.fadeIn(localTime - slotAt, 0.4) }} />
+      <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', gap: 10, padding: '0 12px', borderRadius: 999,
+        background: alpha(VIOLET, 0.14), border: `1.5px solid ${alpha(VIOLET, 0.55)}`, boxShadow: '0 8px 24px rgba(0,0,0,0.28)',
+        ...enter.pop(localTime - at) }}>
+        <div style={{ width: 34, height: 34, borderRadius: '50%', flexShrink: 0, background: GRAD_DIAG, display: 'flex',
+          alignItems: 'center', justifyContent: 'center', fontFamily: DISPLAY, fontWeight: 700, fontSize: 19, color: '#FFFFFF' }}>{n}</div>
+        <span style={{ fontFamily: MONO, fontWeight: 600, fontSize: 22, color: TEXT, whiteSpace: 'nowrap' }}>{label}</span>
+      </div>
+    </div>
+  );
+}
+
+// The "blank folder" of the hook: a hollow dashed folder with a 0 files tag.
+// It starts big and centred, then slides aside (moveAt) to make room for the phone.
+function FolderCard({ x, y, at, emptyAt, moveAt }) {
+  const { localTime } = useSprite();
+  const c = VIOLET;
+  const dt = localTime - moveAt;
+  const m = !(dt > 0) ? 0 : dt > 8 ? 1 : spring(dt, 200, 24);
+  const dx = (360 - 112 - x) * (1 - m);
+  return (
+    <div style={{ position: 'absolute', left: x, top: y, width: 224, transformOrigin: '50% 50%',
+      transform: `translateX(${dx}px) scale(${1.28 - 0.28 * m})` }}>
+    <div style={{ ...enter.rise(localTime - at) }}>
+      <div style={{ borderRadius: 24, background: CARD, border: `1px solid ${CARD_BORDER}`, boxShadow: SHADOW,
+        padding: '30px 18px 24px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16 }}>
+        <div style={{ position: 'relative', width: 124, height: 96 }}>
+          <div style={{ position: 'absolute', left: 0, top: 0, width: 54, height: 26, borderRadius: '10px 10px 0 0',
+            border: `2.5px dashed ${alpha(c, 0.85)}`, borderBottom: 'none' }} />
+          <div style={{ position: 'absolute', left: 0, right: 0, top: 20, bottom: 0, borderRadius: 12,
+            border: `2.5px dashed ${alpha(c, 0.85)}`, background: alpha(c, 0.08) }} />
+        </div>
+        <div style={{ fontFamily: MONO, fontWeight: 600, fontSize: 24, color: TEXT }}>my-channel/</div>
+        <Badge variant="ghost" at={emptyAt}>0 files</Badge>
+      </div>
+    </div>
+    </div>
+  );
+}
+
+// Annotation pill under a command, its arrow pointing up at the argument it explains.
+function Note({ x, y, at, children }) {
+  const { localTime } = useSprite();
+  return (
+    <div style={{ position: 'absolute', left: x, top: y, display: 'flex', alignItems: 'center', gap: 10,
+      padding: '8px 16px 8px 12px', borderRadius: 12, background: alpha(CYAN, 0.1), border: `1.5px solid ${alpha(CYAN, 0.45)}`,
+      fontFamily: SANS, fontWeight: 600, fontSize: 24, color: TEXT, whiteSpace: 'nowrap', transformOrigin: '12% 0%',
+      ...enter.pop(localTime - at, 0.6) }}>
+      <Icon name="arrow" size={24} color={CYAN} stroke={2.6} style={{ transform: 'rotate(-90deg)' }} />
+      <span>{children}</span>
+    </div>
+  );
+}
+
+// "or" medallion between two ways of doing the same step.
+function OrMedallion({ y, at }) {
+  const { localTime } = useSprite();
+  return (
+    <div style={{ position: 'absolute', top: y, left: 0, right: 0, display: 'flex', justifyContent: 'center', zIndex: 3 }}>
+      <div style={{ width: 58, height: 58, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
+        border: '2px solid transparent', backgroundImage: `linear-gradient(${INK}, ${INK}), ${GRAD_DIAG}`,
+        backgroundOrigin: 'border-box', backgroundClip: 'padding-box, border-box', fontFamily: DISPLAY, fontWeight: 700,
+        fontSize: 22, color: TEXT, boxShadow: `0 0 24px ${alpha(VIOLET, 0.45)}`, ...enter.pop(localTime - at) }}>or</div>
+    </div>
+  );
+}
+
+// tts output: the waveform being synthesized, then Whisper's playhead dropping
+// timed word blocks under it (word start times, as scenes.json stores them).
+const TIMED = [
+  { w: 'Caching', s: 0.0, e: 0.42 },
+  { w: 'cuts', s: 0.46, e: 0.72 },
+  { w: 'the', s: 0.76, e: 0.89 },
+  { w: 'bill.', s: 0.93, e: 1.3 },
+];
+function VoiceCard({ y, at, sweepAt, sweepEnd, timesAt }) {
+  const { localTime } = useSprite();
+  const W = 508;
+  const SPAN = 1.34;
+  const dur = Math.max(0.3, sweepEnd - sweepAt);
+  const p = clamp((localTime - sweepAt) / dur, 0, 1);
+  const head = localTime >= sweepAt ? 1 - e3((localTime - sweepEnd) / 0.3) : 0;
+  return (
+    <Card y={y} width={560} at={at} enter="rise" title="voiceover.mp3" titleMono icon="wave" color={CYAN} padding="22px 26px 20px">
+      <div style={{ position: 'absolute', right: 24, top: 16 }}>
+        <Badge variant="cyan" icon="words" at={sweepAt} size={20}>whisper</Badge>
+      </div>
+      <div style={{ position: 'relative', width: W }}>
+        <Waveform width={W} height={112} bars={46} seed={12} at={at} active={[at, Infinity]} />
+        <div style={{ position: 'relative', height: 82, marginTop: 16 }}>
+          {TIMED.map((wd, i) => {
+            const x0 = (wd.s / SPAN) * W;
+            const x1 = (wd.e / SPAN) * W;
+            const wat = sweepAt + (wd.s / SPAN) * dur;
+            return (
+              <div key={wd.w} style={{ position: 'absolute', left: x0, top: 0, width: x1 - x0 }}>
+                <div style={{ height: 44, borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  background: alpha(CYAN, 0.14), border: `1.5px solid ${alpha(CYAN, 0.6)}`, fontFamily: SANS, fontWeight: 600,
+                  fontSize: 24, color: TEXT, whiteSpace: 'nowrap', ...enter.drop(localTime - wat, 34) }}>{wd.w}</div>
+                <div style={{ marginTop: 8, fontFamily: MONO, fontWeight: 600, fontSize: 20, color: CYAN, whiteSpace: 'nowrap',
+                  ...enter.fadeIn(localTime - timesAt - i * 0.08) }}>{wd.s.toFixed(2)}</div>
+              </div>
+            );
+          })}
+        </div>
+        {head > 0 && (
+          <div data-bleed="" style={{ position: 'absolute', left: p * W - 1.5, top: -8, width: 3, height: 112 + 16 + 44 + 16,
+            borderRadius: 2, background: TEXT, opacity: head, boxShadow: `0 0 14px ${alpha(CYAN, 0.9)}` }}>
+            <div style={{ position: 'absolute', left: -6.5, top: -8, width: 16, height: 16, borderRadius: '50%', background: CYAN }} />
+          </div>
+        )}
+      </div>
+    </Card>
+  );
+}
+
+// A live preview of the code above it: a mini subtitle line plays, and the stat
+// pops on exactly the frame the word "bill" lights up.
+function LiveDemo({ y, at, playAt, hitAt }) {
+  const { localTime } = useSprite();
+  const words = [
+    { w: 'Caching', t: hitAt - 1.05 },
+    { w: 'cuts', t: hitAt - 0.7 },
+    { w: 'the', t: hitAt - 0.35 },
+    { w: 'bill.', t: hitAt },
+  ];
+  let cur = -1;
+  words.forEach((wd, i) => { if (localTime >= wd.t) cur = i; });
+  const hit = localTime >= hitAt;
+  const lit = hit ? e3((localTime - hitAt) / 0.3) : 0;
+  return (
+    <Window y={y} at={at} title="preview · scene 1" icon="play" width={580} padding="18px 28px 22px">
+      <div style={{ position: 'relative', height: 164, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ position: 'absolute', left: 96, right: 96, top: 2, bottom: 2, borderRadius: 20,
+          border: `2px ${hit ? 'solid' : 'dashed'} ${hit ? alpha(CYAN, 0.3 + 0.4 * lit) : 'rgba(255,255,255,0.16)'}`,
+          background: alpha(CYAN, 0.07 * lit), boxShadow: hit ? `0 0 ${44 * lit}px ${alpha(CYAN, 0.28 * lit)}` : 'none' }} />
+        <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
+          <Counter value={90} suffix="%" at={hitAt} dur={0.6} size={92} gradient enter="pop" />
+          <div style={{ fontFamily: SANS, fontWeight: 500, fontSize: 24, color: MUTED, ...enter.slideUp(localTime - hitAt - 0.12) }}>off the bill</div>
+        </div>
+      </div>
+      <div style={{ display: 'flex', justifyContent: 'center', gap: 13, marginTop: 16, ...enter.fadeIn(localTime - playAt) }}>
+        {words.map((wd, i) => (
+          <span key={wd.w} style={{ position: 'relative', fontFamily: SANS, fontWeight: 600, fontSize: 30, lineHeight: 1.3,
+            color: i === cur ? CYAN : i < cur ? 'rgba(245,247,255,0.45)' : 'rgba(245,247,255,0.82)' }}>
+            {wd.w}
+            {i === 3 && hit && (
+              <span style={{ position: 'absolute', left: 0, bottom: -4, height: 3, borderRadius: 2, background: CYAN,
+                width: `${100 * lit}%` }} />
+            )}
+          </span>
+        ))}
+      </div>
+    </Window>
+  );
+}
+
+// The finished file.
+function OutputCard({ y, at, diskAt }) {
+  const { localTime } = useSprite();
+  return (
+    <Card y={y} width={540} at={at} enter="pop" glowAt={diskAt} color={OK} padding="24px 26px">
+      <div style={{ display: 'flex', alignItems: 'center', gap: 22 }}>
+        <div style={{ position: 'relative', width: 74, height: 90, flexShrink: 0 }}>
+          <div style={{ position: 'absolute', inset: 0, borderRadius: 10, background: alpha(OK, 0.16), border: `2.5px solid ${OK}`,
+            clipPath: 'polygon(0 0, calc(100% - 24px) 0, 100% 24px, 100% 100%, 0 100%)' }} />
+          <div style={{ position: 'absolute', right: 0, top: 0, width: 24, height: 24, borderRadius: '0 0 0 4px',
+            background: `linear-gradient(225deg, transparent 50%, ${OK} 50%)` }} />
+          <div style={{ position: 'absolute', left: 0, right: 0, top: 30, display: 'flex', justifyContent: 'center' }}>
+            <Icon name="play" size={34} color={OK} />
+          </div>
+        </div>
+        <div style={{ minWidth: 0 }}>
+          <div style={{ fontFamily: DISPLAY, fontWeight: 800, fontSize: 44, lineHeight: 1.05, color: TEXT, letterSpacing: '-0.02em' }}>output.mp4</div>
+          <div style={{ fontFamily: SANS, fontWeight: 500, fontSize: 24, color: MUTED, marginTop: 8 }}>720×1280 · 30 fps</div>
+        </div>
+      </div>
+      <div style={{ position: 'absolute', right: 22, top: -20 }}>
+        <Badge variant="ok" icon="check" at={diskAt}>on disk</Badge>
+      </div>
+    </Card>
+  );
+}
+
+// ── Scene 1 · hook: blank folder → rendered short, in six commands ──────────────
+function Scene1() {
+  const win = useSceneWindow(1);
+  const cueFrom = useWordCue(1, "from a blank");
+  const cueBlank = useWordCue(1, "blank folder");
+  const cueRendered = useWordCue(1, "rendered short");
+  const cueShort = useWordCue(1, "short in");
+  const cueSix = useWordCue(1, "six commands");
+  const cueYour = useWordCue(1, "your first");
+  const cueFirst = useWordCue(1, "first reelsmith");
+  const cueReelsmith = useWordCue(1, "reelsmith video");
+  const cueVideo = useWordCue(1, "video");
+  return (
+    <Sprite {...win}>
+      {({ localTime }) => (
+        <SceneRoot idx={1}>
+          <Glow x={518} y={392} r={310} color={VIOLET} opacity={0.3} breathe={0.04} />
+          <Glow x={360} y={720} r={260} color={CYAN} opacity={0.12} at={cueSix} />
+          <Kicker y={104} at={0}>Episode 03 · First video</Kicker>
+          <FolderCard x={90} y={264} at={cueFrom} emptyAt={cueBlank} moveAt={cueRendered} />
+          <Arrow from={[326, 392]} to={[390, 392]} at={cueRendered} dur={0.35} />
+          <PhoneFrame x={398} y={180} width={242} at={cueRendered}>
+            <MiniReel at={cueShort} title="Prompt caching, explained" kicker="EPISODE 1"
+              words={'caching cuts the bill here is how it works'.split(' ')} />
+          </PhoneFrame>
+          <div style={{ position: 'absolute', top: 648, left: 100, width: 520, display: 'grid',
+            gridTemplateColumns: 'repeat(3, 1fr)', gap: 14 }}>
+            {STEPS.map((s, i) => <StepChip key={s} n={i + 1} label={s} slotAt={0.1 + i * 0.05} at={cueSix + i * 0.1} />)}
+          </div>
+          <Title y={820} size={54} ats={[cueYour, cueFirst, cueReelsmith, cueVideo]} text="Your first|*Reelsmith* video" />
+          <SubtitleRail sceneIdx={1} bottom={150} fontSize={28} variant="clean" accentColor={CYAN} fontFamily="Inter" />
+        </SceneRoot>
+      )}
+    </Sprite>
+  );
+}
+
+// ── Scene 2 · reelsmith new: a folder with a script.md template ─────────────────
+function Scene2() {
+  const win = useSceneWindow(2);
+  const cueNew = useWordCue(2, "reelsmith new");
+  const cueName = useWordCue(2, "a name");
+  const cueGet = useWordCue(2, "you get");
+  const cueVideos = useWordCue(2, "videos folder");
+  const cueFolder = useWordCue(2, "folder with");
+  const cueScript = useWordCue(2, "script.md template");
+  const cueTemplate = useWordCue(2, "template inside");
+  return (
+    <Sprite {...win}>
+      {({ localTime }) => (
+        <SceneRoot idx={2} enter="push">
+          <Glow x={360} y={320} r={320} color={VIOLET} opacity={0.16} />
+          <Kicker y={100} at={0.15}>Command 1 of 6 · new</Kicker>
+          <StepRail done={0} fills={[cueNew]} />
+          <Watermark text="new" y={610} size={330} opacity={0.07} at={0.2} />
+          <Glide from={260} scale={1.08} at={cueVideos}>
+            <Terminal y={180} title="~/my-channel" showAt={0.2} command="reelsmith new prompt-caching" at={cueNew} finalPrompt rows={[
+              { text: 'videos/prompt-caching/', status: 'ok', right: 'created', at: cueGet },
+            ]} />
+            <Note x={292} y={398} at={cueName}>your video's name</Note>
+          </Glide>
+          <FileTree y={462} title="my-channel/" at={cueVideos + 0.15} rows={[
+            { name: 'videos/', depth: 0, at: cueVideos + 0.3 },
+            { name: 'prompt-caching/', depth: 1, at: cueFolder },
+            { name: 'script.md', depth: 2, at: cueScript, hotAt: cueScript, badge: 'template', badgeAt: cueTemplate },
+          ]} />
+          <CodeCard y={690} title="script.md" at={cueScript + 0.15} enter="rise" stagger={0.1} lines={[
+            { text: '---', dim: true },
+            'title: Prompt caching',
+            'style: motion',
+            { text: '---', dim: true },
+            '## Script',
+          ]} />
+          <SubtitleRail sceneIdx={2} bottom={150} fontSize={28} variant="clean" accentColor={CYAN} fontFamily="Inter" />
+        </SceneRoot>
+      )}
+    </Sprite>
+  );
+}
+
+// ── Scene 3 · write the script (or ask the agent) ───────────────────────────────
+function Scene3() {
+  const win = useSceneWindow(3);
+  const cueWrite = useWordCue(3, "write your script");
+  const cueOne = useWordCue(3, "one sentence");
+  const cueSentence = useWordCue(3, "sentence per");
+  const cuePer = useWordCue(3, "per line");
+  const cueGrouped = useWordCue(3, "grouped into");
+  const cueScenes = useWordCue(3, "scenes or");
+  const cueOr = useWordCue(3, "or ask");
+  const cueAsk = useWordCue(3, "ask your agent");
+  const cueSkill = useWordCue(3, "script writing skill");
+  const cueSkillEnd = useWordCue(3, "skill");
+  return (
+    <Sprite {...win}>
+      {({ localTime }) => (
+        <SceneRoot idx={3} enter="wipe">
+          <Glow x={200} y={360} r={300} color={VIOLET} opacity={0.18} />
+          <Kicker y={100} at={0.15}>Your part · script.md</Kicker>
+          <StepRail done={1} />
+          <Glide from={190} at={cueOr}>
+            <CodeCard y={180} title="script.md" at={cueWrite} stagger={0.1} highlight={[
+              { line: 2, at: cueOne, until: cueSentence },
+              { line: 3, at: cueSentence, until: cuePer },
+              { line: 5, at: cuePer, until: cueGrouped },
+              { line: 1, at: cueGrouped, color: CYAN },
+              { line: 4, at: cueScenes, color: CYAN },
+            ]} lines={[
+              '## Script',
+              '### Scene 1',
+              { text: 'Caching cuts the bill.', label: 's1.1', labelTone: 'violet', labelAt: cueOne },
+              { text: 'Here is how it works.', label: 's1.2', labelTone: 'violet', labelAt: cueSentence },
+              '### Scene 2',
+              { text: 'Reuse the same prefix.', label: 's2.1', labelTone: 'violet', labelAt: cuePer },
+            ]} />
+          </Glide>
+          <OrMedallion y={494} at={cueOr + 0.2} />
+          <PromptBox y={566} showAt={cueOr + 0.15} at={cueAsk} text="write a script about prompt caching" sendAt={cueSkillEnd} label="Claude Code" />
+          <Chip y={764} at={cueSkill} icon="sparkle" color="cyan" mono>skills/script-writing</Chip>
+          <SubtitleRail sceneIdx={3} bottom={150} fontSize={28} variant="clean" accentColor={CYAN} fontFamily="Inter" />
+        </SceneRoot>
+      )}
+    </Sprite>
+  );
+}
+
+// ── Scene 4 · reelsmith tts: voice + Whisper timings → scenes.json ─────────────
+function Scene4() {
+  const win = useSceneWindow(4);
+  const cueRun = useWordCue(4, "reelsmith tts");
+  const cueTts = useWordCue(4, "tts with");
+  const cueVoiceName = useWordCue(4, "voice name");
+  const cueSynth = useWordCue(4, "synthesizes");
+  const cueTheVoice = useWordCue(4, "the voice");
+  const cueWhisper = useWordCue(4, "whisper for");
+  const cueWord = useWordCue(4, "word timings");
+  const cueTimings = useWordCue(4, "timings and");
+  const cueScenesJson = useWordCue(4, "scenes.json");
+  return (
+    <Sprite {...win}>
+      {({ localTime }) => (
+        <SceneRoot idx={4} enter="up">
+          <Glow x={360} y={660} r={320} color={CYAN} opacity={0.14} at={cueSynth} breathe={0.04} />
+          <Kicker y={100} at={0.15}>Command 2 of 6 · tts</Kicker>
+          <StepRail done={1} fills={[cueTts]} />
+          <Watermark text="tts" y={600} size={330} opacity={0.07} at={0.2} />
+          <Glide from={250} scale={1.08} at={cueSynth}>
+            <Terminal y={180} title="~/my-channel" showAt={0.2} command={'reelsmith tts prompt-caching \\\n  --voice=Leda'} at={cueRun} rows={[
+              { text: 'voiceover.mp3', status: 'ok', right: '52.4s', at: cueTheVoice },
+              { text: 'word timings: whisper', status: 'ok', at: cueTimings },
+              { text: 'scenes.json written', status: 'ok', right: '7 scenes', at: cueScenesJson },
+            ]} />
+            <Note x={96} y={470} at={cueVoiceName}>you pick the voice</Note>
+          </Glide>
+          <VoiceCard y={544} at={cueSynth + 0.15} sweepAt={cueWhisper} sweepEnd={cueTimings + 0.4} timesAt={cueWord} />
+          <SubtitleRail sceneIdx={4} bottom={150} fontSize={28} variant="clean" accentColor={CYAN} fontFamily="Inter" />
+        </SceneRoot>
+      )}
+    </Sprite>
+  );
+}
+
+// ── Scene 5 · the agent writes index.html: overlays bound to spoken words ───────
+function Scene5() {
+  const win = useSceneWindow(5);
+  const cueAgent = useWordCue(5, "agent writes");
+  const cueWrites = useWordCue(5, "writes index.html");
+  const cueIndex = useWordCue(5, "index.html");
+  const cueThe = useWordCue(5, "the animation");
+  const cueAnimation = useWordCue(5, "animation");
+  const cueEvery = useWordCue(5, "every overlay");
+  const cueBound = useWordCue(5, "bound to");
+  const cueWord = useWordCue(5, "word so");
+  const cueBefore = useWordCue(5, "before it");
+  return (
+    <Sprite {...win}>
+      {({ localTime }) => (
+        <SceneRoot idx={5} enter="zoom">
+          <Glow x={360} y={720} r={300} color={CYAN} opacity={0.14} at={cueAnimation} />
+          <Kicker y={100} at={0.15}>Agent · index.html</Kicker>
+          <StepRail done={2} />
+          <Glide from={190} at={cueAnimation}>
+            <Chip y={172} at={cueAgent} icon="sparkle" size={22}>Claude Code</Chip>
+            <CodeCard y={238} title="index.html" at={0.2} enter="wipe" fontSize={22} speed={70} highlight={[
+              { line: 1, at: cueBound, color: VIOLET },
+              { line: 3, at: cueWord, color: CYAN },
+            ]} lines={[
+              { text: 'const cueBill =', type: true, at: cueWrites },
+              { text: '  useWordCue(1, "bill");', type: true, at: cueWrites + 0.25 }, // sync-ok (on-screen code)
+              { text: '', at: cueIndex },
+              { text: '<Counter at={cueBill}', type: true, at: cueIndex + 0.3 },
+              { text: '  value={90} suffix="%" />', type: true, at: cueIndex + 0.65 },
+              { text: '<SubtitleRail sceneIdx={1} />', type: true, at: cueThe },
+            ]} />
+          </Glide>
+          <LiveDemo y={572} at={cueAnimation + 0.15} playAt={cueEvery} hitAt={cueWord} />
+          <Stamp y={900} at={cueBefore} rotate={-6} size={34} color="cyan">never early</Stamp>
+          <SubtitleRail sceneIdx={5} bottom={150} fontSize={28} variant="clean" accentColor={CYAN} fontFamily="Inter" />
+        </SceneRoot>
+      )}
+    </Sprite>
+  );
+}
+
+// ── Scene 6 · reelsmith sheet + draft: look, then watch ────────────────────────
+function Scene6() {
+  const win = useSceneWindow(6);
+  const cueSheetCmd = useWordCue(6, "reelsmith sheet");
+  const cueSheet = useWordCue(6, "sheet to");
+  const cueContact = useWordCue(6, "contact sheet");
+  const cueFrames = useWordCue(6, "frames");
+  const cueDraftCmd = useWordCue(6, "reelsmith draft");
+  const cueDraft = useWordCue(6, "draft for");
+  const cueQuick = useWordCue(6, "quick low res");
+  const cuePreview = useWordCue(6, "preview");
+  const cueWatch = useWordCue(6, "watch it");
+  const cueFeedback = useWordCue(6, "feedback");
+  const cueIterate = useWordCue(6, "iterate");
+  const cells = ['0.3s', '1.0s', '2.0s', '4.2s', '8.1s', '12.6s', '16.4s', '20.9s'].map((label) => ({ label }));
+  return (
+    <Sprite {...win}>
+      {({ localTime }) => (
+        <SceneRoot idx={6} enter="iris">
+          <Glow x={360} y={680} r={320} color={VIOLET} opacity={0.16} />
+          <Kicker y={100} at={0.15}>Commands 3–4 · preview</Kicker>
+          <StepRail done={2} fills={[cueSheet, cueDraft]} />
+          <Watermark text="sheet" y={600} size={260} opacity={0.07} at={0.2} />
+          <Glide from={270} scale={1.08} at={cueContact}>
+            <Terminal y={180} title="~/my-channel" showAt={0.2} at={cueSheetCmd} finalPrompt steps={[
+              { cmd: 'reelsmith sheet prompt-caching', at: cueSheetCmd },
+              { text: 'frames/contact-sheet.png', status: 'ok', at: cueContact },
+              { cmd: 'reelsmith draft prompt-caching', at: cueDraftCmd },
+              { text: 'draft.mp4', status: 'ok', right: '15 fps · 0.75×', at: cueQuick },
+            ]} />
+          </Glide>
+          <div style={{ position: 'absolute', top: 500, left: 0, right: 0, display: 'flex', justifyContent: 'center',
+            alignItems: 'center', gap: 22 }}>
+            <Card at={cueContact + 0.15} title="contact-sheet.png" titleMono icon="file" color={CYAN} glowAt={cueFrames}
+              padding="18px 18px 14px" enter="fromLeft">
+              <Grid cols={4} width={300} gap={8} at={cueContact + 0.1} stagger={0.06} cells={cells} />
+            </Card>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14 }}>
+              <PhoneFrame width={188} at={cueDraft} enter="fromRight">
+                <MiniReel at={cueQuick} title="Prompt caching" kicker="DRAFT"
+                  words={'caching cuts the bill here is how it works'.split(' ')} />
+              </PhoneFrame>
+              <Badge variant="cyan" icon="play" mono at={cuePreview}>draft.mp4</Badge>
+            </div>
+          </div>
+          <div style={{ position: 'absolute', top: 908, left: 0, right: 0, display: 'flex', justifyContent: 'center',
+            alignItems: 'center', gap: 10 }}>
+            <Chip at={cueWatch} icon="eye" color="cyan">watch</Chip>
+            <div style={{ opacity: localTime >= cueFeedback ? 1 : 0.25 }}><Icon name="arrow" size={22} color={FAINT} /></div>
+            <Chip at={cueFeedback} icon="chat" color="violet">feedback</Chip>
+            <div style={{ opacity: localTime >= cueIterate ? 1 : 0.25 }}><Icon name="arrow" size={22} color={FAINT} /></div>
+            <Chip at={cueIterate} icon="code" color="cyan">iterate</Chip>
+          </div>
+          <SubtitleRail sceneIdx={6} bottom={150} fontSize={28} variant="clean" accentColor={CYAN} fontFamily="Inter" />
+        </SceneRoot>
+      )}
+    </Sprite>
+  );
+}
+
+// ── Scene 7 · approve + render → output.mp4 on disk ────────────────────────────
+function Scene7() {
+  const win = useSceneWindow(7);
+  const cueHappy = useWordCue(7, "happy");
+  const cueApproveCmd = useWordCue(7, "reelsmith approve");
+  const cueApprove = useWordCue(7, "approve then");
+  const cueThen = useWordCue(7, "then reelsmith");
+  const cueRenderCmd = useWordCue(7, "reelsmith render");
+  const cueRender = useWordCue(7, "render");
+  const cue90 = useWordCue(7, "90 seconds");
+  const cueOutput = useWordCue(7, "output.mp4");
+  const cueDisk = useWordCue(7, "on disk");
+  return (
+    <Sprite {...win}>
+      {({ localTime }) => (
+        <SceneRoot idx={7} enter="wipe">
+          <Glow x={360} y={840} r={320} color={OK} opacity={0.12} at={cueOutput} breathe={0.03} />
+          <Kicker y={100} at={0.15}>Commands 5–6 · ship it</Kicker>
+          <StepRail done={4} fills={[cueApprove, cueRender]} />
+          <Watermark text="ship" y={560} size={300} opacity={0.07} at={0.2} />
+          <Glide from={230} scale={1.08} at={cueRender + 0.3}>
+            <Terminal y={180} title="~/my-channel" showAt={cueHappy} at={cueApproveCmd} speed={40} finalPrompt steps={[
+              { cmd: 'reelsmith approve prompt-caching \\\n  --by=you', at: cueApproveCmd },
+              { text: 'preview-approved.json', status: 'ok', at: cueThen + 0.15 },
+              { cmd: 'reelsmith render prompt-caching', at: cueRenderCmd },
+              { text: 'output.mp4', status: 'ok', right: '52.4s', at: cueOutput },
+            ]} />
+            <Note x={96} y={506} at={cueThen}>you sign off first</Note>
+          </Glide>
+          <ProgressBar y={574} at={cueRender + 0.45} until={cueOutput} label="rendering · 4 shards" />
+          <div style={{ position: 'absolute', top: 652, left: 0, right: 0, display: 'flex', justifyContent: 'center',
+            alignItems: 'center', gap: 18 }}>
+            <div style={enter.pop(localTime - cue90)}><Icon name="clock" size={64} color={CYAN} stroke={2} /></div>
+            <Counter value={90} at={cue90} dur={1.4} size={112} gradient
+              format={(n) => { const s = Math.round(n); return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`; }} />
+          </div>
+          <OutputCard y={806} at={cueOutput} diskAt={cueDisk} />
+          <SubtitleRail sceneIdx={7} bottom={150} fontSize={28} variant="clean" accentColor={CYAN} fontFamily="Inter" />
+        </SceneRoot>
+      )}
+    </Sprite>
+  );
+}
+
+function App() {
+  return (
+    <Stage width={720} height={1280} scenesSrc="scenes.json" background={INK} loop={false} autoplay={true} persistKey="tut-03-first-video">
+      <Scene1 />
+      <Scene2 />
+      <Scene3 />
+      <Scene4 />
+      <Scene5 />
+      <Scene6 />
+      <Scene7 />
+    </Stage>
+  );
+}
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>

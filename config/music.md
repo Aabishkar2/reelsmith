@@ -22,12 +22,15 @@ Every video with background music uses these defaults. Don't ask the creator aga
 
 ## Tracks
 
-Tracks live in `music/` (the mp3s are gitignored; re-download from the URL below). Every track needs a credit line in the YouTube description. See `music/CREDITS.md`.
+Tracks live in `music/` (the mp3s are gitignored; `bash music/download.sh` fetches the incompetech tracks again, and prints how to get the Audio Library one). Every CC BY track needs a credit line in the video description. See `music/CREDITS.md`.
+
+**YouTube:** Content ID often claims Kevin MacLeod tracks, and a claimed Short over 1 minute can be blocked. For a YouTube upload use a YouTube Audio Library bed (`intergalactic.mp3`) or none. See `docs/publishing.md`.
 
 | File | Track | Mood | Source |
 |---|---|---|---|
 | `music/clean-soul.mp3` | "Clean Soul", Kevin MacLeod | Calm, warm, reflective | https://incompetech.com/music/royalty-free/mp3-royaltyfree/Clean%20Soul.mp3 (CC BY 4.0) |
 | `music/voxel-revolution.mp3` | "Voxel Revolution", Kevin MacLeod | Energetic electronic, ~123 BPM, 2:10 (loops) — fast tech-news breakdowns | https://incompetech.com/music/royalty-free/mp3-royaltyfree/Voxel%20Revolution.mp3 (CC BY 4.0) |
 | `music/digital-lemonade.mp3` | "Digital Lemonade", Kevin MacLeod | Bright electronic groove, mid-tempo, 3:00 | https://incompetech.com/music/royalty-free/mp3-royaltyfree/Digital%20Lemonade.mp3 (CC BY 4.0) |
+| `music/intergalactic.mp3` | "Intergalactic", Alex Jones / Xander Jones | Dance and electronic, inspirational, 2:44. The YouTube-safe energetic bed | YouTube Audio Library (attribution not required) |
 
 **Pick the track by the video's mood** (creator, 2026-09-30: "choose a better suited background music"). Clean Soul is for calm reflective essays; an energetic tech video gets an energetic bed. If nothing here fits, source a new CC BY track from incompetech, measure it, and add it to this table and to `music/CREDITS.md`.

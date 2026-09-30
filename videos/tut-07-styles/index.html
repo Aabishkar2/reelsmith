@@ -1,0 +1,692 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Styles and style packs</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@600;700;800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <!-- Specimen faces only: this episode shows the reflective and tech-news packs beside motion,
+       so their display fonts load for the swatch cards and phone screens (never for motion UI). -->
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,700;1,700&family=Barlow+Condensed:wght@700;800&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+  <script type="text/babel" src="../../runtime/animations.jsx"></script>
+  <script type="text/babel" src="../../styles/motion/kit.jsx"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { width: 100%; height: 100%; background: #0B0F19; overflow: hidden; }
+    #root { width: 100%; height: 100vh; position: relative; }
+  </style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+// tut-07-styles · Styles and style packs (motion style, episode 7 of the Reelsmith tutorials)
+//
+// Local helpers use names that do not collide with the runtime's globals
+// (clamp, spring, track, Easing ... live on window already).
+
+const ez = (p) => Easing.easeOutCubic(clamp(p, 0, 1));
+const springP = (dt, k = 320, d = 30) => (!(dt > 0) ? 0 : dt > 8 ? 1 : spring(dt, k, d));
+function hexRGB(h) {
+  const n = parseInt(String(h).replace('#', '').slice(0, 6), 16);
+  return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+}
+// blend('#7C5CFF', '#F472B6', 0.5, 0.4) → rgba halfway between, at alpha 0.4
+function blend(a, b, p, al = 1) {
+  const A = hexRGB(a);
+  const B = hexRGB(b);
+  const q = clamp(p, 0, 1);
+  const c = A.map((v, i) => Math.round(v + (B[i] - v) * q));
+  return `rgba(${c[0]},${c[1]},${c[2]},${al})`;
+}
+const phoneH = (w) => { const b = Math.round(w * 0.04); return (w - 2 * b) * 16 / 9 + 2 * b; };
+
+// Specimen palettes, copied from styles/reflective/STYLE.md and styles/tech-news/STYLE.md.
+const SERIF_F = "'Fraunces', Georgia, serif";
+const COND_F = "'Barlow Condensed', 'Inter', sans-serif";
+const REF_BG = '#0b0906';
+const REF_GOLD = '#e0a458';
+const REF_GOLD2 = '#f2c46d';
+const REF_CREAM = '#f5efe6';
+const NEWS_BG = '#080c14';
+const NEWS_RED = '#c8102e';
+// The made-up "acme" brand in scene 5 (pink + amber, both already in the kit's extended palette).
+const ACME = '#F472B6';
+const ACME2 = WARN;
+
+const SUB_WORDS = ['same', 'script,', 'new', 'look,', 'every', 'time'];
+const CP_CMD = 'cp -r styles/motion styles/acme';
+
+// ── Small shared pieces ──────────────────────────────────────────────────────
+// Reveal inline children at `at` with any kit entry.
+function Late({ at, en = 'fadeIn', children, style }) {
+  const { localTime } = useSprite();
+  return <span style={{ display: 'inline-block', ...entry(en, localTime - at), ...style }}>{children}</span>;
+}
+
+function Swatch({ color, at, size = 26 }) {
+  const { localTime } = useSprite();
+  return (
+    <div style={{ width: size, height: size, borderRadius: '50%', flexShrink: 0, background: color,
+      border: '2px solid rgba(255,255,255,0.28)', boxShadow: '0 4px 12px rgba(0,0,0,0.45)', ...enter.pop(localTime - at) }} />
+  );
+}
+
+// Karaoke line inside a phone screen (360×640 virtual px).
+function PhoneSubs({ at, font = SANS, size = 24, weight = 600, base = TEXT, accent = CYAN, upper = false, top = 560 }) {
+  const { localTime: lt } = useSprite();
+  const dt = lt - at - 0.5;
+  if (!(dt >= 0)) return null;
+  const wi = Math.floor(dt * 2.4) % SUB_WORDS.length;
+  const chunk = Math.floor(wi / 3);
+  const cur = SUB_WORDS.slice(chunk * 3, chunk * 3 + 3);
+  return (
+    <div style={{ position: 'absolute', left: 20, right: 20, top, display: 'flex', justifyContent: 'center', columnGap: 10,
+      fontFamily: font, fontWeight: weight, fontSize: size, textTransform: upper ? 'uppercase' : 'none',
+      textShadow: '0 2px 8px rgba(0,0,0,0.8)' }}>
+      {cur.map((w, i) => {
+        const g = chunk * 3 + i;
+        return <span key={i} style={{ color: g === wi ? accent : base, opacity: g === wi ? 1 : g < wi ? 0.5 : 0.85 }}>{w}</span>;
+      })}
+    </div>
+  );
+}
+
+function PhoneProgress({ at, color }) {
+  const { localTime: lt } = useSprite();
+  const p = clamp((lt - at) / 12, 0, 1);
+  return (
+    <div style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: 5, background: 'rgba(255,255,255,0.16)' }}>
+      <div style={{ width: `${p * 100}%`, height: '100%', background: color }} />
+    </div>
+  );
+}
+
+// ── Phone screens: the same script in three looks ────────────────────────────
+// reflective: graded "photo" (drawn in CSS) with a slow push-in, Fraunces headline, gold.
+function LookReflective({ at }) {
+  const { localTime: lt } = useSprite();
+  const dt = lt - at;
+  const kb = 1.02 + 0.08 * clamp(dt / 9, 0, 1);
+  return (
+    <div style={{ position: 'absolute', inset: 0, background: REF_BG, overflow: 'hidden' }}>
+      <div style={{ position: 'absolute', left: 0, top: 0, width: 360, height: 390, overflow: 'hidden', ...enter.fadeIn(dt, 0.6) }}>
+        <div style={{ position: 'absolute', inset: 0, transform: `scale(${kb})`, transformOrigin: '62% 45%' }}>
+          <div style={{ position: 'absolute', inset: 0,
+            background: 'linear-gradient(180deg, #1e130a 0%, #5a3519 36%, #b8753a 60%, #e0a458 72%, #2a1a0d 100%)' }} />
+          <div style={{ position: 'absolute', left: 190, top: 150, width: 104, height: 104, borderRadius: '50%',
+            background: 'radial-gradient(circle, #fff4d6 0%, #f2c46d 42%, rgba(242,196,109,0) 72%)' }} />
+          <div style={{ position: 'absolute', left: -70, top: 248, width: 310, height: 210, borderRadius: '50%', background: '#20150b' }} />
+          <div style={{ position: 'absolute', left: 140, top: 266, width: 340, height: 230, borderRadius: '50%', background: '#140d07' }} />
+        </div>
+        <div style={{ position: 'absolute', inset: 0,
+          background: 'linear-gradient(180deg, rgba(11,9,6,0.15) 0%, rgba(11,9,6,0) 30%, rgba(11,9,6,0.82) 80%, #0b0906 100%)' }} />
+      </div>
+      <div style={{ position: 'absolute', left: 34, top: 318, display: 'flex', alignItems: 'center', gap: 10, ...enter.fadeIn(dt - 0.2) }}>
+        <div style={{ width: 30, height: 2, background: REF_GOLD }} />
+        <span style={{ fontFamily: SANS, fontWeight: 600, fontSize: 15, letterSpacing: '0.24em', color: REF_GOLD }}>EPISODE 07</span>
+      </div>
+      <div style={{ position: 'absolute', left: 34, top: 346, width: 300, fontFamily: SERIF_F, fontWeight: 700, fontSize: 56,
+        lineHeight: 1.02, color: REF_CREAM, ...enter.rise(dt - 0.25, 40) }}>
+        Words in,<br />
+        <span style={{ fontStyle: 'italic', color: REF_GOLD2, textShadow: '0 0 26px rgba(242,196,109,0.5)' }}>video out.</span>
+      </div>
+      <PhoneSubs at={at} base={REF_CREAM} accent={REF_GOLD2} />
+      <PhoneProgress at={at} color={REF_GOLD} />
+    </div>
+  );
+}
+
+// tech-news: near-black, one red accent, Barlow Condensed caps, a code-driven block.
+function LookNews({ at }) {
+  const { localTime: lt } = useSprite();
+  const dt = lt - at;
+  const bars = [[0.34, NEWS_RED], [0.62, 'rgba(255,255,255,0.7)'], [0.48, 'rgba(255,255,255,0.4)'], [0.72, 'rgba(255,255,255,0.7)']];
+  return (
+    <div style={{ position: 'absolute', inset: 0, background: NEWS_BG, overflow: 'hidden' }}>
+      <div style={{ position: 'absolute', inset: 0,
+        background: 'radial-gradient(ellipse 75% 45% at 90% 4%, rgba(200,16,46,0.40) 0%, rgba(200,16,46,0) 70%)' }} />
+      <div style={{ position: 'absolute', inset: 0,
+        backgroundImage: 'repeating-linear-gradient(0deg, rgba(255,255,255,0.035) 0 1px, transparent 1px 7px)' }} />
+      <div style={{ position: 'absolute', left: 30, top: 72, display: 'flex', alignItems: 'center', gap: 10, ...enter.push(dt - 0.05, 'left', 60) }}>
+        <span style={{ fontFamily: COND_F, fontWeight: 700, fontSize: 24, letterSpacing: '0.08em', color: '#ffffff',
+          background: NEWS_RED, padding: '2px 10px' }}>BREAKING</span>
+        <span style={{ fontFamily: COND_F, fontWeight: 700, fontSize: 24, letterSpacing: '0.08em', color: 'rgba(255,255,255,0.7)' }}>TECH</span>
+      </div>
+      <div style={{ position: 'absolute', left: 30, top: 118, fontFamily: COND_F, fontWeight: 800, fontSize: 60, lineHeight: 1.02,
+        textTransform: 'uppercase', color: '#ffffff', whiteSpace: 'nowrap', ...enter.slideUp(dt - 0.15, 0.4, 30) }}>
+        Words in,<br />
+        <span style={{ background: NEWS_RED, padding: '0 8px' }}>video out.</span>
+      </div>
+      <div style={{ position: 'absolute', left: 30, top: 292, width: 300, height: 176, borderRadius: 12, background: '#0e1422',
+        border: '1px solid rgba(255,255,255,0.09)', overflow: 'hidden', ...enter.wipe(dt - 0.3, 0.5) }}>
+        <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 6, background: NEWS_RED }} />
+        <div style={{ position: 'absolute', left: 24, top: 16, fontFamily: COND_F, fontWeight: 700, fontSize: 20,
+          letterSpacing: '0.08em', color: 'rgba(255,255,255,0.5)' }}>RENDER.JS</div>
+        {bars.map(([w, c], i) => (
+          <div key={i} style={{ position: 'absolute', left: 24 + (i % 2) * 22, top: 56 + i * 28, height: 12, borderRadius: 3,
+            width: 240 * w * ez((dt - 0.5 - i * 0.1) / 0.4), background: c }} />
+        ))}
+      </div>
+      <PhoneSubs at={at} font={COND_F} size={32} weight={800} base="#ffffff" accent={NEWS_RED} upper top={552} />
+      <PhoneProgress at={at} color={NEWS_RED} />
+    </div>
+  );
+}
+
+// motion (this video's look). In scene 5 the same screen is the copied "acme" pack and
+// recolours (paletteAt), swaps its display face (fontAt), splits its layout (splitAt) and
+// gains a new kit component (lowerAt), all live.
+function LookMotion({ at, mid = 'terminal', paletteAt = Infinity, fontAt = Infinity, splitAt = Infinity, lowerAt = Infinity }) {
+  const { localTime: lt } = useSprite();
+  const dt = lt - at;
+  const p = ez((lt - paletteAt) / 0.6);
+  const A1 = blend(VIOLET, ACME, p);
+  const A2 = blend(CYAN, ACME2, p);
+  const grad = `linear-gradient(90deg, ${A1}, ${A2})`;
+  const swapped = lt >= fontAt;
+  const bump = swapped && lt < fontAt + 0.3 ? Math.sin(Math.PI * (lt - fontAt) / 0.3) : 0;
+  const sP = springP(lt - splitAt, 260, 20);
+  const lw = ez((lt - lowerAt) / 0.5);
+  const titleFont = swapped
+    ? { fontFamily: COND_F, fontWeight: 800, fontSize: 62, lineHeight: 0.98, textTransform: 'uppercase', letterSpacing: '0.01em' }
+    : { fontFamily: DISPLAY, fontWeight: 800, fontSize: 54, lineHeight: 1.04, letterSpacing: '-0.02em' };
+  return (
+    <div style={{ position: 'absolute', inset: 0, background: INK, overflow: 'hidden' }}>
+      <div style={{ position: 'absolute', inset: 0,
+        background: `radial-gradient(ellipse 80% 50% at 12% 6%, ${blend(VIOLET, ACME, p, 0.42)} 0%, rgba(0,0,0,0) 70%), radial-gradient(ellipse 70% 45% at 92% 96%, ${blend(CYAN, ACME2, p, 0.24)} 0%, rgba(0,0,0,0) 70%)` }} />
+      <div style={{ position: 'absolute', inset: 0, opacity: 0.6,
+        backgroundImage: 'radial-gradient(rgba(255,255,255,0.08) 1.4px, transparent 1.8px)', backgroundSize: '26px 26px' }} />
+      <div style={{ position: 'absolute', left: 34, top: 76, display: 'flex', alignItems: 'center', gap: 10, opacity: dt >= 0 ? 1 : 0 }}>
+        <div style={{ width: 26 * ez(dt / 0.4), height: 3, borderRadius: 2, background: grad }} />
+        <span style={{ fontFamily: SANS, fontWeight: 600, fontSize: 16, letterSpacing: '0.22em', color: A2, ...enter.wipe(dt - 0.05, 0.4) }}>TUTORIAL</span>
+      </div>
+      <div style={{ position: 'absolute', left: 34, top: 106, width: 310, ...enter.rise(dt - 0.12, 40) }}>
+        <div style={{ ...titleFont, color: TEXT, whiteSpace: 'nowrap', transformOrigin: '0 100%',
+          transform: `scaleY(${1 - 0.35 * bump}) scaleX(${1 + 0.08 * bump})` }}>
+          Words in,<br />
+          <span style={{ backgroundImage: grad, WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent' }}>video out.</span>
+        </div>
+      </div>
+      {mid === 'terminal' ? (
+        <div style={{ position: 'absolute', left: 30, top: 296, width: 300, height: 160, borderRadius: 16, background: CODE_BG,
+          border: '1px solid rgba(255,255,255,0.1)', overflow: 'hidden', boxShadow: '0 12px 30px rgba(0,0,0,0.4)', ...enter.pop(dt - 0.3, 0.7) }}>
+          <div style={{ height: 30, display: 'flex', alignItems: 'center', gap: 7, padding: '0 12px',
+            background: 'rgba(255,255,255,0.04)', borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
+            {['#FF5F57', '#FEBC2E', '#28C840'].map((c) => <div key={c} style={{ width: 10, height: 10, borderRadius: '50%', background: c }} />)}
+          </div>
+          <div style={{ padding: '16px 18px', fontFamily: MONO, fontSize: 21, lineHeight: 1.7, color: CODE.text }}>
+            <div><span style={{ color: CYAN, fontWeight: 600 }}>$</span> <Typed text="reelsmith render" at={at + 0.5} speed={26} cursor={dt < 1.3} /></div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: OK, ...enter.slideUp(dt - 1.3, 0.35, 10) }}>
+              <Icon name="check" size={20} color={OK} stroke={3} /> output.mp4
+            </div>
+          </div>
+        </div>
+      ) : (
+        <div style={{ position: 'absolute', left: 34, top: 296, width: 292, height: 156, ...enter.pop(dt - 0.3, 0.7) }}>
+          <div style={{ position: 'absolute', left: 0, top: 0, width: 292 - 152 * sP, height: 156, borderRadius: 18, overflow: 'hidden',
+            background: blend(VIOLET, ACME, p, 0.18), border: `2px solid ${blend(VIOLET, ACME, p, 0.6)}` }}>
+            {[0.8, 0.55, 0.7].map((w, i) => (
+              <div key={i} style={{ position: 'absolute', left: 18, top: 28 + i * 34, height: 13, borderRadius: 7,
+                width: (256 - 152 * sP) * w * ez((dt - 0.5 - i * 0.12) / 0.4), background: i === 0 ? A2 : 'rgba(255,255,255,0.35)' }} />
+            ))}
+          </div>
+          <div style={{ position: 'absolute', left: 152, top: 0, width: 140, height: 156, borderRadius: 18,
+            background: blend(CYAN, ACME2, p, 0.14), border: `2px solid ${blend(CYAN, ACME2, p, 0.55)}`,
+            opacity: clamp(sP * 2.5, 0, 1), transform: `translateX(${(1 - sP) * 44}px) scale(${0.85 + 0.15 * sP})` }}>
+            <div style={{ position: 'absolute', left: 18, top: 22, width: 46, height: 46, borderRadius: '50%', background: blend(CYAN, ACME2, p, 0.85) }} />
+            <div style={{ position: 'absolute', left: 18, top: 88, width: 100, height: 12, borderRadius: 6, background: 'rgba(255,255,255,0.45)' }} />
+            <div style={{ position: 'absolute', left: 18, top: 114, width: 70, height: 12, borderRadius: 6, background: 'rgba(255,255,255,0.28)' }} />
+          </div>
+        </div>
+      )}
+      <div style={{ position: 'absolute', left: 20, top: 474, height: 62, display: 'flex', opacity: lt >= lowerAt ? 1 : 0,
+        clipPath: `inset(0 ${(1 - lw) * 100}% 0 0)`, boxShadow: '0 10px 24px rgba(0,0,0,0.5)' }}>
+        <div style={{ width: 10, background: ACME }} />
+        <div style={{ background: 'rgba(11,15,25,0.94)', padding: '7px 18px 8px', border: `1px solid ${alpha(ACME, 0.5)}`, borderLeft: 'none' }}>
+          <div style={{ fontFamily: COND_F, fontWeight: 800, fontSize: 28, lineHeight: 1.05, letterSpacing: '0.04em', color: '#ffffff' }}>ACME STUDIO</div>
+          <div style={{ fontFamily: SANS, fontWeight: 600, fontSize: 15, letterSpacing: '0.12em', color: ACME2 }}>NEW STYLE PACK</div>
+        </div>
+      </div>
+      <PhoneSubs at={at} accent={A2} top={566} />
+      <PhoneProgress at={at} color={grad} />
+    </div>
+  );
+}
+
+// ── Scene 1 · hook: one script card → three phones in three looks ──────────
+// Cues: same · script · three · different · that / is / what / style / packs / do
+function Scene1() {
+  const win = useSceneWindow(1);
+  const cueSame = useWordCue(1, "same");
+  const cueScript = useWordCue(1, "script");
+  const cueThree = useWordCue(1, "three");
+  const cueDifferent = useWordCue(1, "different");
+  const cueThat = useWordCue(1, "that");
+  const cueIs = useWordCue(1, "is");
+  const cueWhat = useWordCue(1, "what");
+  const cueStyle = useWordCue(1, "style");
+  const cuePacks = useWordCue(1, "packs");
+  const cueDo = useWordCue(1, "do");
+  const phones = [
+    { key: 'reflective', label: 'Reflective', color: REF_GOLD, cx: 196, top: 374, w: 196, rot: -7, delay: 0.08, Screen: LookReflective },
+    { key: 'news', label: 'Tech news', color: NEWS_RED, cx: 524, top: 374, w: 196, rot: 7, delay: 0.16, Screen: LookNews },
+    { key: 'motion', label: 'Motion', color: CYAN, cx: 360, top: 346, w: 216, rot: 0, delay: 0, Screen: LookMotion },
+  ];
+  const originY = 518;
+  return (
+    <Sprite {...win}>
+      {({ localTime }) => {
+        const cardTop = track(localTime, [[0, 392], [cueThree, 106]], 200, 24);
+        const cardScale = track(localTime, [[0, 1.3], [cueThree, 0.92]], 200, 24);
+        return (
+          <SceneRoot idx={1} pattern="dots">
+            <Glow x={360} y={530} r={360} color={VIOLET} opacity={0.3} breathe={0.04} />
+            <Watermark text="×3" y={560} size={460} opacity={0.06} at={cueThree} />
+            {phones.map((ph) => {
+              const d = localTime - (cueThree + ph.delay);
+              const s = springP(d, 190, 17);
+              const H = phoneH(ph.w);
+              const cx = 360 + (ph.cx - 360) * s;
+              const cy = originY + (ph.top + H / 2 - originY) * s;
+              return (
+                <div key={ph.key} style={{ position: 'absolute', left: cx - ph.w / 2, top: cy - H / 2, width: ph.w, height: H,
+                  opacity: clamp(d / 0.12, 0, 1), transform: `rotate(${ph.rot * s}deg) scale(${0.3 + 0.7 * s})` }}>
+                  <PhoneFrame width={ph.w} enter="none"><ph.Screen at={cueThree + ph.delay + 0.3} /></PhoneFrame>
+                </div>
+              );
+            })}
+            <div style={{ position: 'absolute', left: 0, right: 0, top: cardTop, display: 'flex', justifyContent: 'center', zIndex: 5,
+              transform: `scale(${cardScale})`, transformOrigin: '50% 0' }}>
+              <div style={{ position: 'relative', width: 400 }}>
+                {[CYAN, NEWS_RED, REF_GOLD].map((c, k) => {
+                  const fan = springP(localTime - cueScript - k * 0.08, 200, 16);
+                  const gone = ez((localTime - cueThree) / 0.25);
+                  return (
+                    <div key={c} style={{ position: 'absolute', left: 0, right: 0, top: 0, height: 197, borderRadius: 22,
+                      background: `linear-gradient(180deg, ${CODE_BG} 40%, ${alpha(c, 0.22)} 100%), ${CODE_BG}`,
+                      border: `2px solid ${alpha(c, 0.9)}`, boxShadow: `0 12px 30px rgba(0,0,0,0.5), 0 0 26px ${alpha(c, 0.35)}`,
+                      opacity: (localTime >= cueScript ? 1 : 0) * (1 - gone),
+                      transform: `translateY(${fan * 21 * (k + 1)}px) scale(${1 - 0.05 * (k + 1) * fan})` }} />
+                  );
+                }).reverse()}
+                <CodeCard title="script.md" width={400} at={cueSame} enter="pop"
+                highlight={[{ line: 1, at: cueScript }, { line: 2, at: cueScript + 0.1 }]}
+                lines={[
+                  { text: '### Scene 1', at: cueSame + 0.1 },
+                  { text: 'Words in,', at: cueSame + 0.2 },
+                  { text: 'video out.', at: cueSame + 0.3 },
+                ]} />
+              </div>
+            </div>
+            {phones.map((ph, i) => (
+              <div key={`l${ph.key}`} style={{ position: 'absolute', left: ph.cx - 100, width: 200, top: 742, display: 'flex', justifyContent: 'center' }}>
+                <Chip at={cueDifferent + [0, 0.15, 0.3][i]} color={ph.color} size={22}>{ph.label}</Chip>
+              </div>
+            ))}
+            <Title y={806} size={46} ats={[cueThat, cueIs, cueWhat, cueStyle, cuePacks, cueDo]} text="That is what|*style* *packs* do." />
+            <SubtitleRail sceneIdx={1} bottom={150} fontSize={28} variant="clean" accentColor={CYAN} fontFamily="Inter" />
+          </SceneRoot>
+        );
+      }}
+    </Sprite>
+  );
+}
+
+// ── Scene 2 · a style pack is a folder ───────────────────────────────────────
+// Cues: a style pack · style · pack · is a folder · folder · markdown · describes · look ·
+//       component · kit · reference · video
+function Scene2() {
+  const win = useSceneWindow(2);
+  const cueA = useWordCue(2, "a style pack");
+  const cueStyle = useWordCue(2, "style");
+  const cuePack = useWordCue(2, "pack");
+  const cueIs = useWordCue(2, "is a folder");
+  const cueFolder = useWordCue(2, "folder");
+  const cueMarkdown = useWordCue(2, "markdown");
+  const cueDescribes = useWordCue(2, "describes");
+  const cueLook = useWordCue(2, "look");
+  const cueComponent = useWordCue(2, "component");
+  const cueKit = useWordCue(2, "kit");
+  const cueReference = useWordCue(2, "reference");
+  const cueVideo = useWordCue(2, "video");
+  const noteStyle = { fontSize: 24, color: MUTED };
+  return (
+    <Sprite {...win}>
+      {({ localTime }) => (
+        <SceneRoot idx={2} enter="wipe" pattern="grid">
+          <Glow x={200} y={380} r={300} color={CYAN} opacity={0.14} breathe={0.03} />
+          <Kicker y={88} at={0.3}>Episode 07 · Style packs</Kicker>
+          <Title y={130} size={50} ats={[cueA, cueStyle, cuePack, cueIs, cueIs + 0.15, cueFolder]} text="A style pack|is a *folder*." />
+          <FileTree y={268} width={560} fontSize={26} title="styles/motion/" at={cueStyle} rows={[
+            { name: 'STYLE.md', at: cueMarkdown, hotAt: cueLook, note: <Late at={cueLook} en="wipe" style={noteStyle}>the look</Late> },
+            { name: 'kit.jsx', at: cueComponent, note: <Late at={cueKit} en="wipe" style={noteStyle}>components</Late> },
+            { name: 'reference/', at: cueReference, note: <Late at={cueReference + 0.15} en="wipe" style={noteStyle}>a finished video</Late> },
+          ]} />
+          <Arrow from={[640, 360]} to={[620, 526]} curve={-36} at={cueDescribes} dashed />
+          <CodeCard y={516} width={600} title="STYLE.md" at={cueDescribes}
+            highlight={[{ line: 1, at: cueLook }]}
+            lines={[
+              '## Palette',
+              { text: 'VIOLET #7C5CFF · CYAN #22D3EE', segs: [
+                { s: 'VIOLET ', c: CODE.text }, { s: '#7C5CFF', c: '#A994FF' }, { s: ' · ', c: CODE.punct },
+                { s: 'CYAN ', c: CODE.text }, { s: '#22D3EE', c: CYAN },
+              ] },
+              '## Fonts',
+              'Sora · Inter · JetBrains Mono',
+              '## Layouts',
+              'Hook · Terminal-led · Split',
+            ]} />
+          <SubtitleRail sceneIdx={2} bottom={150} fontSize={28} variant="clean" accentColor={CYAN} fontFamily="Inter" />
+        </SceneRoot>
+      )}
+    </Sprite>
+  );
+}
+
+// ── Scene 3 · the three built-in styles as swatch cards ──────────────────────
+// Cues: reelsmith · three · reflective · warm · photo led · serif headlines · tech news · dark ·
+//       red accent · code driven · motion · youre watching · built for teaching
+function StyleCard({ y, at, en, name, nameColor, accent, bg, swatches, specimen, chips, focusFrom, focusUntil, tag }) {
+  const { localTime: lt } = useSprite();
+  const on = ez((lt - focusFrom) / 0.35);
+  const off = focusUntil != null ? ez((lt - focusUntil) / 0.4) : 0;
+  const g = on * (1 - 0.8 * off);
+  return (
+    <div style={{ position: 'absolute', left: 80, top: y, width: 560, ...entry(en, lt - at) }}>
+      <div style={{ position: 'relative', borderRadius: 22, padding: '18px 24px 20px 28px', background: bg,
+        border: `1.5px solid ${alpha(accent, 0.28 + 0.5 * g)}`,
+        boxShadow: `${SHADOW}, inset 0 1px 0 rgba(255,255,255,0.05), 0 0 ${46 * g}px ${alpha(accent, 0.32 * g)}` }}>
+        <div style={{ position: 'absolute', left: 0, top: 20, bottom: 20, width: 4, borderRadius: 4, background: accent, opacity: 0.35 + 0.65 * g }} />
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <span style={{ fontFamily: MONO, fontWeight: 600, fontSize: 24, color: nameColor }}>{name}</span>
+          <div style={{ display: 'flex', gap: 8 }}>
+            {swatches.map((c, i) => <Swatch key={i} color={c} at={at + 0.25 + i * 0.07} />)}
+          </div>
+        </div>
+        <div style={{ marginTop: 10, ...enter.wipe(lt - at - 0.2, 0.6) }}>{specimen}</div>
+        <div style={{ display: 'flex', gap: 10, marginTop: 12, minHeight: 41 }}>
+          {chips.map((c, i) => <Chip key={i} at={c.at} color={accent} size={22}>{c.label}</Chip>)}
+        </div>
+        {tag}
+      </div>
+    </div>
+  );
+}
+
+function Scene3() {
+  const win = useSceneWindow(3);
+  const cueReelsmith = useWordCue(3, "reelsmith");
+  const cueThree = useWordCue(3, "three");
+  const cueReflective = useWordCue(3, "reflective");
+  const cueWarm = useWordCue(3, "warm");
+  const cuePhoto = useWordCue(3, "photo led");
+  const cueSerif = useWordCue(3, "serif headlines");
+  const cueTech = useWordCue(3, "tech news");
+  const cueDark = useWordCue(3, "dark");
+  const cueRed = useWordCue(3, "red accent");
+  const cueCode = useWordCue(3, "code driven");
+  const cueMotion = useWordCue(3, "motion");
+  const cueWatching = useWordCue(3, "youre watching");
+  const cueBuilt = useWordCue(3, "built for teaching");
+  const gradText = { backgroundImage: GRAD, WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent' };
+  return (
+    <Sprite {...win}>
+      {({ localTime }) => (
+        <SceneRoot idx={3} enter="zoom" pattern="dots">
+          <Glow x={220} y={330} r={250} color={REF_GOLD} opacity={0.16} at={cueReflective} />
+          <Glow x={520} y={530} r={250} color={NEWS_RED} opacity={0.16} at={cueTech} />
+          <Glow x={260} y={745} r={260} color={VIOLET} opacity={0.22} at={cueMotion} breathe={0.04} />
+          <div style={{ position: 'absolute', top: 86, left: 0, right: 0, display: 'flex', justifyContent: 'center' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 22 }}>
+              <Counter value={3} from={1} at={cueThree} dur={0.5} size={124} gradient enter="pop" />
+              <div>
+                <div style={{ fontFamily: SANS, fontWeight: 600, fontSize: 22, letterSpacing: '0.22em', textTransform: 'uppercase',
+                  color: CYAN, whiteSpace: 'nowrap', ...enter.wipe(localTime - cueReelsmith, 0.5) }}>Reelsmith ships</div>
+                <div style={{ fontFamily: DISPLAY, fontWeight: 800, fontSize: 44, lineHeight: 1.1, letterSpacing: '-0.02em',
+                  color: TEXT, whiteSpace: 'nowrap', ...enter.push(localTime - cueThree - 0.12, 'right', 60) }}>style packs</div>
+              </div>
+            </div>
+          </div>
+          <StyleCard y={236} at={cueReflective} en="fromLeft" name="reflective" nameColor={REF_GOLD} accent={REF_GOLD}
+            bg="linear-gradient(135deg, #1d140b 0%, #0b0906 70%)"
+            swatches={[REF_BG, REF_GOLD, REF_GOLD2, REF_CREAM]}
+            focusFrom={cueReflective} focusUntil={cueTech}
+            specimen={
+              <div style={{ fontFamily: SERIF_F, fontWeight: 700, fontSize: 42, lineHeight: 1.1, color: REF_CREAM, whiteSpace: 'nowrap' }}>
+                Words in, <span style={{ fontStyle: 'italic', color: REF_GOLD2, textShadow: '0 0 24px rgba(242,196,109,0.45)' }}>video out.</span>
+              </div>
+            }
+            chips={[{ label: 'warm', at: cueWarm }, { label: 'photo-led', at: cuePhoto }, { label: 'serif headlines', at: cueSerif }]} />
+          <StyleCard y={436} at={cueTech} en="fromRight" name="tech-news" nameColor={mix(NEWS_RED, '#FFFFFF', 0.35)} accent={NEWS_RED}
+            bg="linear-gradient(135deg, #170a10 0%, #080c14 55%, #000000 100%)"
+            swatches={[NEWS_BG, '#000000', NEWS_RED, '#ffffff']}
+            focusFrom={cueTech} focusUntil={cueMotion}
+            specimen={
+              <div style={{ fontFamily: COND_F, fontWeight: 800, fontSize: 50, lineHeight: 1.05, color: '#ffffff', textTransform: 'uppercase',
+                whiteSpace: 'nowrap', letterSpacing: '0.01em' }}>
+                Words in, <span style={{ background: NEWS_RED, padding: '0 10px' }}>video out.</span>
+              </div>
+            }
+            chips={[{ label: 'dark', at: cueDark }, { label: 'red accent', at: cueRed }, { label: 'code-driven', at: cueCode }]} />
+          <StyleCard y={652} at={cueMotion} en="rise" name="motion" nameColor={CYAN} accent={CYAN}
+            bg={`linear-gradient(135deg, ${alpha(VIOLET, 0.2)} 0%, ${CODE_BG} 62%)`}
+            swatches={[INK, VIOLET, CYAN, OK]}
+            focusFrom={cueMotion}
+            specimen={
+              <div style={{ fontFamily: DISPLAY, fontWeight: 800, fontSize: 38, lineHeight: 1.2, color: TEXT, letterSpacing: '-0.02em', whiteSpace: 'nowrap' }}>
+                Words in, <span style={gradText}>video out.</span>
+              </div>
+            }
+            chips={[{ label: 'built for teaching', at: cueBuilt }]}
+            tag={
+              <div style={{ position: 'absolute', right: 18, top: -17 }}>
+                <Badge variant="cyan" icon="eye" at={cueWatching} size={20}>you're watching this</Badge>
+              </div>
+            } />
+          <SubtitleRail sceneIdx={3} bottom={150} fontSize={28} variant="clean" accentColor={CYAN} fontFamily="Inter" />
+        </SceneRoot>
+      )}
+    </Sprite>
+  );
+}
+
+// ── Scene 4 · pick a style: frontmatter or project default, read first ───────
+// Cues: pick · frontmatter · or · set a default · default · project config · agent · style file ·
+//       first · writes
+function OrDivider({ y, at }) {
+  const { localTime } = useSprite();
+  const dt = localTime - at;
+  const w = ez(dt / 0.45);
+  const line = (dir) => (
+    <div style={{ width: 150 * w, height: 2, borderRadius: 2,
+      background: `linear-gradient(${dir}, rgba(34,211,238,0), ${alpha(CYAN, 0.55)})` }} />
+  );
+  return (
+    <div style={{ position: 'absolute', top: y, left: 0, right: 0, height: 50, display: 'flex', alignItems: 'center',
+      justifyContent: 'center', gap: 16, opacity: dt >= 0 ? 1 : 0 }}>
+      {line('90deg')}
+      <div style={{ width: 50, height: 50, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
+        border: '2px solid transparent', backgroundImage: `linear-gradient(${INK}, ${INK}), ${GRAD_DIAG}`,
+        backgroundOrigin: 'border-box', backgroundClip: 'padding-box, border-box', fontFamily: DISPLAY, fontWeight: 700,
+        fontSize: 22, color: TEXT, boxShadow: `0 0 22px ${alpha(VIOLET, 0.4)}`, ...enter.pop(dt) }}>or</div>
+      {line('270deg')}
+    </div>
+  );
+}
+
+function Scene4() {
+  const win = useSceneWindow(4);
+  const cuePick = useWordCue(4, "pick");
+  const cueFrontmatter = useWordCue(4, "frontmatter");
+  const cueOr = useWordCue(4, "or");
+  const cueSet = useWordCue(4, "set a default");
+  const cueDefault = useWordCue(4, "default");
+  const cueConfig = useWordCue(4, "project config");
+  const cueAgent = useWordCue(4, "agent");
+  const cueStyleFile = useWordCue(4, "style file");
+  const cueFirst = useWordCue(4, "first");
+  const cueWrites = useWordCue(4, "writes");
+  return (
+    <Sprite {...win}>
+      {({ localTime }) => (
+        <SceneRoot idx={4} enter="push" pattern="grid">
+          <Glow x={380} y={290} r={330} color={VIOLET} opacity={0.2} breathe={0.03} />
+          <Glow x={300} y={830} r={260} color={CYAN} opacity={0.12} at={cueAgent} />
+          <Kicker y={86} at={cuePick}>Choose a style</Kicker>
+          <CodeCard y={124} width={580} title="script.md" at={cuePick} enter="fromRight"
+            highlight={[{ line: 2, at: cueFrontmatter }]}
+            lines={[
+              '---',
+              'title: Styles and style packs',
+              { text: 'style: motion', label: 'this video', labelTone: 'violet', labelAt: cueFrontmatter + 0.15 },
+              '---',
+            ]} />
+          <OrDivider y={368} at={cueOr} />
+          <CodeCard y={426} width={580} title="reelsmith.config.json" at={cueSet} enter="fromLeft"
+            highlight={[{ line: 2, at: cueDefault, color: CYAN }]}
+            lines={[
+              '{',
+              '  "version": 1,',
+              { text: '  "style": "reflective",', label: 'default', labelAt: cueConfig },
+              '}',
+            ]} />
+          <Chip y={688} at={cueAgent} icon="sparkle" color="violet">Claude Code</Chip>
+          <FlowDiagram y={760} direction="horizontal" width={560} nodeH={136} at={cuePick + 0.4} nodes={[
+            { label: 'STYLE.md', sub: 'read first', icon: 'eye', at: cueStyleFile },
+            { label: 'index.html', sub: 'then write', icon: 'code', at: cueWrites, color: 'cyan' },
+          ]} />
+          <Stamp x={196} y={734} at={cueFirst} color="cyan" rotate={-9} size={26}>first</Stamp>
+          <SubtitleRail sceneIdx={4} bottom={150} fontSize={28} variant="clean" accentColor={CYAN} fontFamily="Inter" />
+        </SceneRoot>
+      )}
+    </Sprite>
+  );
+}
+
+// ── Scene 5 · make your own: copy, edit the markdown, extend the kit ─────────
+// Cues: want · copy · pack · palette · fonts · layouts · markdown · components · kit · brand ·
+//       style · agent · follow
+function EditorRow({ label, at, hotAt, until, children }) {
+  const { localTime: lt } = useSprite();
+  const on = ez((lt - hotAt) / 0.3);
+  const off = until != null ? ez((lt - until) / 0.35) : 0;
+  const h = on * (1 - off);
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 10, height: 54, padding: '0 12px', marginTop: 8, borderRadius: 12,
+      background: h > 0 ? alpha(CYAN, 0.1 * h) : 'rgba(255,255,255,0.03)',
+      border: `1px solid ${h > 0 ? alpha(CYAN, 0.2 + 0.4 * h) : 'rgba(255,255,255,0.07)'}`,
+      boxShadow: h > 0 ? `inset ${3 * h}px 0 0 ${CYAN}` : 'none', ...enter.push(lt - at, 'left', 40) }}>
+      <span style={{ width: 70, flexShrink: 0, fontFamily: SANS, fontWeight: 500, fontSize: 22, color: MUTED }}>{label}</span>
+      <div style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: 8, whiteSpace: 'nowrap' }}>{children}</div>
+      <div style={{ width: 22, flexShrink: 0, ...enter.pop(lt - hotAt - 0.25) }}><Icon name="check" size={22} color={OK} stroke={3} /></div>
+    </div>
+  );
+}
+
+function GroupLabel({ at, hotAt = Infinity, children }) {
+  const { localTime: lt } = useSprite();
+  const h = ez((lt - hotAt) / 0.3);
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 8, height: 30, fontFamily: MONO, fontWeight: 600, fontSize: 22,
+      color: h > 0.5 ? CYAN : TEXT, ...enter.fadeIn(lt - at) }}>
+      <Icon name="file" size={20} color={h > 0.5 ? CYAN : FAINT} stroke={2.4} />
+      <span>{children}</span>
+      <span style={{ marginLeft: 'auto' }}><Badge variant="ok" size={16} at={hotAt}>saved</Badge></span>
+    </div>
+  );
+}
+
+function Scene5() {
+  const win = useSceneWindow(5);
+  const cueWant = useWordCue(5, "want");
+  const cueCopy = useWordCue(5, "copy");
+  const cuePack = useWordCue(5, "pack");
+  const cuePalette = useWordCue(5, "palette");
+  const cueFonts = useWordCue(5, "fonts");
+  const cueLayouts = useWordCue(5, "layouts");
+  const cueMarkdown = useWordCue(5, "markdown");
+  const cueComponents = useWordCue(5, "components");
+  const cueKit = useWordCue(5, "kit");
+  const cueBrand = useWordCue(5, "brand");
+  const cueStyle = useWordCue(5, "style");
+  const cueAgent = useWordCue(5, "agent");
+  const cueFollow = useWordCue(5, "follow");
+  return (
+    <Sprite {...win}>
+      {({ localTime }) => {
+        const pal = ez((localTime - cuePalette) / 0.5);
+        const phoneX = track(localTime, [[0, 245], [cuePack + 0.3, 422]], 200, 26);
+        return (
+          <SceneRoot idx={5} enter="iris" pattern="dots">
+            <Glow x={360} y={200} r={300} color={VIOLET} opacity={0.18} breathe={0.03} />
+            <Glow x={537} y={520} r={250} color={ACME} opacity={0.26} at={cueBrand} breathe={0.04} />
+            <Kicker y={88} at={cueWant}>Want your own?</Kicker>
+            <Terminal y={124} width={580} title="~/my-channel" at={cueCopy} speed={40} steps={[
+              { cmd: CP_CMD, at: cueCopy },
+              { cmd: '', at: cueCopy + typeDuration(CP_CMD, 40) + 0.35 },
+            ]} />
+            <Window x={68} y={318} width={330} title="styles/acme/" icon="folder" at={cuePack + 0.3} enter="fromLeft" padding="14px 18px 18px">
+              <GroupLabel at={cuePack + 0.45} hotAt={cueMarkdown}>STYLE.md</GroupLabel>
+              <EditorRow label="accent" at={cuePack + 0.55} hotAt={cuePalette} until={cueFonts}>
+                <div style={{ width: 26, height: 26, borderRadius: 8, flexShrink: 0, background: blend(VIOLET, ACME, pal),
+                  border: '2px solid rgba(255,255,255,0.3)', boxShadow: `0 0 14px ${blend(VIOLET, ACME, pal, 0.5)}` }} />
+                <span style={{ fontFamily: MONO, fontSize: 22, color: TEXT }}>
+                  {localTime < cuePalette ? '#7C5CFF' : <Typed text="#F472B6" at={cuePalette} speed={30} cursor={false} />}
+                </span>
+              </EditorRow>
+              <EditorRow label="font" at={cuePack + 0.67} hotAt={cueFonts} until={cueLayouts}>
+                <span style={{ fontFamily: DISPLAY, fontWeight: 700, fontSize: 22, color: TEXT }}><Strike at={cueFonts} thickness={4}>Sora</Strike></span>
+                <Late at={cueFonts + 0.2} en="pop" style={{ fontFamily: COND_F, fontWeight: 800, fontSize: 27, color: TEXT }}>Barlow</Late>
+              </EditorRow>
+              <EditorRow label="layout" at={cuePack + 0.79} hotAt={cueLayouts} until={cueComponents}>
+                <span style={{ fontFamily: MONO, fontSize: 22, color: TEXT }}><Strike at={cueLayouts} thickness={4}>stack</Strike></span>
+                <Late at={cueLayouts + 0.2} en="pop" style={{ fontFamily: MONO, fontSize: 22, color: TEXT }}>split</Late>
+              </EditorRow>
+              <div style={{ height: 14 }} />
+              <GroupLabel at={cueComponents}>kit.jsx</GroupLabel>
+              <EditorRow label="export" at={cueComponents + 0.12} hotAt={cueKit}>
+                <span style={{ fontFamily: MONO, fontSize: 22, color: CODE.fn }}>LowerThird</span>
+              </EditorRow>
+            </Window>
+            <PhoneFrame x={phoneX} y={318} width={230} at={cueWant + 0.15} enter="rise">
+              <LookMotion at={cueWant + 0.3} mid="cards" paletteAt={cuePalette} fontAt={cueFonts} splitAt={cueLayouts} lowerAt={cueKit} />
+            </PhoneFrame>
+            <Window y={752} width={580} title="videos/launch/script.md" icon="file" at={cueBrand} enter="rise" padding="18px 28px 22px">
+              <div style={{ fontFamily: MONO, fontSize: 26, lineHeight: 1.4, color: CODE.text }}>
+                <span style={{ color: CODE.prop }}>style</span><span style={{ color: CODE.punct }}>: </span>
+                <span style={{ color: ACME, fontWeight: 600 }}><Typed text="acme" at={cueStyle} speed={14} cursorColor={ACME} /></span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 16 }}>
+                <Chip icon="sparkle" size={22} at={cueAgent}>Claude Code</Chip>
+                <Late at={cueAgent + 0.15} en="wipe"><Icon name="arrow" size={26} color={FAINT} /></Late>
+                <Badge variant="ok" icon="check" at={cueFollow} mono upper={false} size={22}>acme/STYLE.md</Badge>
+              </div>
+            </Window>
+            <SubtitleRail sceneIdx={5} bottom={150} fontSize={28} variant="clean" accentColor={CYAN} fontFamily="Inter" />
+          </SceneRoot>
+        );
+      }}
+    </Sprite>
+  );
+}
+
+function App() {
+  return (
+    <Stage width={720} height={1280} scenesSrc="scenes.json" background={INK} loop={false} autoplay={true} persistKey="tut-07-styles">
+      <Scene1 />
+      <Scene2 />
+      <Scene3 />
+      <Scene4 />
+      <Scene5 />
+    </Stage>
+  );
+}
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>

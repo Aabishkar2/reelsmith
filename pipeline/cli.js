@@ -7,7 +7,12 @@
  *   node pipeline/cli.js rerecord videos/<name> --sentence=s2.1 --clip=takes/rr-s2.1-1 [--no-jev] [--whisper-model=…] [--json]
  *   node pipeline/cli.js cut      videos/<name> [--json]        (alias: finalize)
  *   node pipeline/cli.js status   videos/<name> [--json]
- *   node pipeline/cli.js tts      videos/<name> --voice=<name> [--model=…] [--speed=1.15] [--timings=auto|whisper|estimate] [--cta=3] [--force] [--json]   (TTS voice instead of a take; pipeline/tts.js)
+ *   node pipeline/cli.js tts      videos/<name> --voice=<name> [--mode=sentence|performance] [--provider=openrouter] [--model=…] [--speed=1.15]
+ *                                 [--timings=auto|whisper|estimate] [--cta=3] [--force] [--offline] [--json]
+ *                                 TTS voice instead of a take. sentence (default; tts_mode: in script.md, the mode this
+ *                                 video used last time, or reelsmith.config.json tts.mode) = pipeline/tts.js, one call per
+ *                                 line; performance = pipeline/performance.js, the whole script in one call.
+ *                                 --offline: never call the TTS API (fails if the audio isn't cached)
  *   node pipeline/cli.js jev                                   (verify the Jev slug on OpenRouter)
  * `splice` is accepted as an alias of `rerecord`. <name> alone resolves to videos/<name>.
  * --json prints the machine-readable result on stdout (logs go to stderr).
@@ -54,6 +59,7 @@ function statusTable(take) {
 
 async function main() {
   loadEnv();
+  require('../core/env').ensureOnPath();                     // ffmpeg/ffprobe found even from a thin PATH (core/env.js)
   const [cmd, ...rest] = process.argv.slice(2);
   const { pos, flags } = parseArgs(rest);
   const json = Boolean(flags.json);
@@ -95,10 +101,32 @@ async function main() {
     }
     case 'tts': {
       const dir = resolveVideoDir(pos[0]);
-      const r = await require('./tts').synthesize(dir, {
-        model: flags.model, voice: flags.voice, speed: flags.speed, timings: flags.timings, whisperModel: flags['whisper-model'],
-        ctaSec: flags.cta, force: Boolean(flags.force),
-      });
+      const tts = require('./tts');
+      const flag = v => (v === true ? undefined : v);        // a bare --flag counts as unset
+      const opts = {
+        mode: flag(flags.mode), provider: flag(flags.provider), model: flag(flags.model), voice: flag(flags.voice), speed: flag(flags.speed),
+        timings: flag(flags.timings), whisperModel: flag(flags['whisper-model']), ctaSec: flag(flags.cta),
+        force: Boolean(flags.force), offline: Boolean(flags.offline),
+      };
+      if (opts.mode && !tts.MODES.includes(opts.mode)) {
+        console.error(`error: --mode must be one of ${tts.MODES.join(', ')} (got ${opts.mode})`);
+        process.exitCode = 2;
+        break;
+      }
+      const mode = tts.resolveMode(dir, opts);
+      if (mode === 'performance') {
+        const r = await require('./performance').synthesize(dir, opts);
+        if (json) console.log(JSON.stringify(r));
+        else {
+          for (const s of r.scenes) log(`  scene ${s.idx}: ${s.dur.toFixed(2)}s  ${s.words.length} words  ${s.file}`);
+          log(`performance mode: ${r.provider} ${r.model} / voice ${r.voice} / ${r.speed}x — ${r.cached ? 'audio cached, 0 API calls' : `${r.apiCalls} API call`}`);
+          log(`alignment: ${r.matched}/${r.sentences} sentences matched${r.unmatched.length ? ` (not found: ${r.unmatched.map(s => s.id).join(', ')})` : ''}; word timings: ${r.timings}`);
+          log(`voiceover.mp3 ${r.totalSec}s, scenes.json written (${r.scenes.length} scenes)`);
+        }
+        break;
+      }
+      if (opts.offline) throw new Error('--offline is only supported with --mode=performance');
+      const r = await tts.synthesize(dir, opts);
       if (json) console.log(JSON.stringify(r));
       else {
         for (const s of r.scenes) log(`  scene ${s.idx}: ${s.dur.toFixed(2)}s  ${s.words.length} words  ${s.file}`);

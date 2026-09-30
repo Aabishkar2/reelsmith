@@ -118,11 +118,12 @@ function transcribe(wavPath, opts = {}) {
     if (wc.threads) args.push(`--threads=${wc.threads}`);
   }
   if (!opts.quiet) console.error(`  whisper (${model}, ${mode}${chunkInfo ? `: ${chunkInfo.chunks.length} chunks` : ''}, ${path.relative(ROOT, script)}) → ${path.basename(wavPath)}`);
-  const r = childProcess.spawnSync('python3.11', args, {
+  const py = require('../core/env').pythonWithWhisper() || require('../core/env').python() || 'python3';   // core/env.js resolves it (no hard-coded python3.11)
+  const r = childProcess.spawnSync(py, args, {
     encoding: 'utf8', maxBuffer: 256 * 1024 * 1024, stdio: ['ignore', 'pipe', opts.quiet ? 'pipe' : 'inherit'],
   });
   if (tmp) fs.rmSync(tmp, { force: true });
-  if (r.error) throw new Error(`whisper could not start (python3.11): ${r.error.message}`);
+  if (r.error) throw new Error(`whisper could not start (${py}): ${r.error.message}`);
   if (r.status !== 0) throw new Error(`whisper failed (exit ${r.status}) ${r.stderr || ''}`.trim());
   const out = String(r.stdout).trim();
   const at = out.lastIndexOf('\n[');
