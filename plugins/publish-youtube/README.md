@@ -3,25 +3,27 @@
 Uploads a finished video to YouTube with the Data API v3 (resumable upload, retried and resumed on network errors). A vertical video of 3 minutes or less becomes a Short. Full setup: `docs/publishing.md`.
 
 ```bash
-reelsmith publish --to=youtube --auth                        # one-time Google sign-in (again every 7 days in Testing mode)
-reelsmith publish --to=youtube --auth --check                # verify the stored token (refresh + channels.list)
-reelsmith publish videos/my-video --to=youtube --dry-run     # build + print the request, send nothing
+reelsmith publish videos/my-video --to=youtube --auth           # one-time Google sign-in (again every 7 days in Testing mode)
+reelsmith publish videos/my-video --to=youtube --auth --check   # verify the stored token (refresh + channels.list)
+reelsmith publish videos/my-video --to=youtube --dry-run        # build + print the request, send nothing
 reelsmith publish videos/my-video --to=youtube [--privacy=unlisted] [--file=output.mp4] [--force]
 ```
+
+`--auth` takes a video argument like every `publish` command; any video of the project works.
 
 ## Setup
 
 1. Google Cloud Console: create a project, enable **YouTube Data API v3**, configure the OAuth consent screen (External, add yourself as a test user), create an **OAuth client ID** of type **Desktop app**, download the JSON.
 2. Save it as `~/.config/reelsmith/youtube-client.json` (`chmod 600`). `REELSMITH_CONFIG_DIR` moves the whole folder; `YOUTUBE_CLIENT_FILE` points at the client JSON alone.
-3. `reelsmith publish --to=youtube --auth`: a loopback sign-in on `127.0.0.1` with PKCE. You pick the account and channel and click Allow. The refresh token lands in `~/.config/reelsmith/yt-token.json` (mode 0600).
+3. `reelsmith publish <video> --to=youtube --auth`: a loopback sign-in on `127.0.0.1` with PKCE. You pick the account and channel and click Allow. The refresh token lands in `~/.config/reelsmith/yt-token.json` (mode 0600).
 
-**Migrating from video-gen-v2:** when `REELSMITH_CONFIG_DIR` is unset and a file is missing from `~/.config/reelsmith/`, the plugin reads it from the old `~/.config/video-gen-v2/` and says so (`check()`, the dry run). Move the files: `mkdir -p ~/.config/reelsmith && mv ~/.config/video-gen-v2/{youtube-client.json,yt-token.json} ~/.config/reelsmith/`. New tokens are always written to the new folder.
+**Older installs:** when `REELSMITH_CONFIG_DIR` is unset and a file is missing from `~/.config/reelsmith/`, the plugin also looks in the config folder of the pipeline Reelsmith grew out of, uses the file from there and says so (`check()`, the dry run), with the command that moves it. New tokens are always written to `~/.config/reelsmith/`.
 
 ## Metadata
 
 From `videos/<name>/publish.md` (`core/publishNotes.js`): `## Title` (1–100 characters), `## Description` (≤ 5000 bytes), `## Tags` (≤ 500 characters in total, a tag with a space counts 2 more). `<` and `>` are rejected anywhere. Optional frontmatter: `privacy`, `categoryId` (default 22), `madeForKids` (default false), `file`.
 
-Precedence: `--privacy` / `--file` > publish.md frontmatter > a legacy `youtube.json` in the video folder (its `title`, `description`, `tags`, `categoryId`, `privacy`, `madeForKids`, `file`) > `publish.targets.youtube` in `reelsmith.config.json` > defaults (private, `output.mp4`). With no publish.md title, the script.md title is used and the dry run says so.
+Precedence: `--privacy` / `--file` (relative to the video folder) > publish.md frontmatter > a legacy `youtube.json` in the video folder (its `title`, `description`, `tags`, `categoryId`, `privacy`, `madeForKids`, `file`) > `publish.targets.youtube` in `reelsmith.config.json` > defaults (private, `output.mp4`). With no publish.md title, the script.md title is used and the dry run says so.
 
 ## Results and re-runs
 

@@ -7,7 +7,7 @@ description: Make a short video end to end with the Reelsmith CLI. Use first whe
 
 This is the map. Each step names the command or the skill that does it, the files it writes, and whether a human has to approve before you continue. The other skills hold the detailed rules for their step.
 
-Run everything from the project root (any folder inside the project works). `<name>` is the folder under `videos/`; every command also accepts `videos/<name>` or an absolute path.
+Run everything from the project root (any folder inside the project works). `<name>` is the folder under `videos/`; every command also accepts `videos/<name>` or a path. The commands are written `reelsmith <command>`: in a project made by `init` run `npx reelsmith <command>`, in a clone of the framework repo `node bin/reelsmith.js <command>`. `reelsmith <command> --help` lists every flag.
 
 ## Before the first video
 
@@ -58,7 +58,7 @@ teleprompter-prep skill ► script.md (delivery) [optional for TTS]
                                                  ▼
                           scenes.json + voiceover.mp3
                                                  │
-reelsmith mix <name> --track=music/<file>.mp3 ───► voiceover-mix.mp3   (optional bed)
+reelsmith mix <name> [--track=music/<file>.mp3] ─► voiceover-mix.mp3   (optional bed)
       │
 html-animation skill ───► index.html
 reelsmith lint <name>     must exit 0
@@ -116,9 +116,9 @@ reelsmith tts videos/<name> --voice=<v> --force               # regenerate every
 ```
 
 - **Sentence mode:** one TTS call per line, each clip cached by a hash of provider, model, voice and text, so changing one line re-generates only that line. Clips are trimmed, joined with short gaps and sped up with ffmpeg (a speed change never re-calls the API). Word timings come from Whisper on the final voice.
-- **Performance mode** (`--mode=performance` or `tts_mode: performance`): one call for the whole script. The prompt is PERFORMANCE (from `config/voice/performance.md`, or the file in `tts_performance:`), CONTEXT (the script's `## Voice direction`) and TRANSCRIPT (the spoken lines). Natural pauses are kept. Whisper transcribes the result and the script is aligned to it to split scenes. If the prompt is unchanged, the cached audio is reused and no API call is made.
+- **Performance mode** (`--mode=performance` or `tts_mode: performance`): one call for the whole script. The prompt is PERFORMANCE (from `config/voice/performance.md`, or the file in `tts_performance:`), CONTEXT (the script's `## Voice direction`) and TRANSCRIPT (the spoken lines). Natural pauses are kept. Whisper transcribes the result and the script is aligned to it to split scenes. The cached audio is reused (no API call) while the prompt is unchanged, and also when only the PERFORMANCE direction text changed: the run then says `cached (direction text changed …; --force re-voices)`. A changed line, title or `## Voice direction` calls the provider again. Use `--force` to re-voice on purpose; `--offline` refuses any API call.
 
-Writes `voiceover/sN.mp3`, `voiceover.mp3`, `scenes.json` and `voiceover/tts/meta.json` (provider, model, voice, speed, mode). Re-runs reuse the recorded voice.
+Writes `voiceover/sN.mp3`, `voiceover.mp3`, `scenes.json` and `voiceover/tts/meta.json` (provider, model, voice, speed, mode). Re-runs reuse the recorded voice. Other flags: `--provider`, `--model`, `--timings=auto|whisper|estimate`, `--whisper-model`, `--cta=<S>` (a silent end card).
 
 A 401 or 403 means the TTS key in `.env` is wrong (for the built-in provider, `OPENROUTER_API_KEY`).
 
@@ -130,7 +130,7 @@ reelsmith status videos/<name>       # summary of the analyzed take
 reelsmith cut videos/<name>          # after the take is clear
 ```
 
-The app analyzes the take itself. The take-review skill explains the flags and runs the re-record loop (the human presses R in the review view). `reelsmith cut` writes `voiceover/sN.mp3`, `voiceover.mp3` and `scenes.json`, the same contract as TTS.
+The app analyzes the take itself (`reelsmith analyze videos/<name>` does it from the terminal). The take-review skill explains the flags and runs the re-record loop (the human presses R in the review view; `reelsmith rerecord` splices a clip from the terminal and exits 1 when it rejects it). `reelsmith cut` writes `voiceover/sN.mp3`, `voiceover.mp3` and `scenes.json`, the same contract as TTS.
 
 ### 6. Music bed (optional)
 
@@ -138,7 +138,9 @@ The app analyzes the take itself. The take-review skill explains the flags and r
 reelsmith mix videos/<name> --track=music/<file>.mp3
 ```
 
-Writes `voiceover-mix.mp3`: voice at −16 LUFS, bed 6 dB under it, gentle ducking, a short music tail. Pick the track by mood from `config/music.md`. Use `--under=4` only when the creator asks for a louder bed. Never ask the creator for a level.
+Writes `voiceover-mix.mp3` and `voiceover-mix.json`: voice at −16 LUFS, bed 6 dB under it, gentle ducking, a 2.5 s music tail. Pick the track by mood from `config/music.md`. Without `--track` it uses `music.defaultTrack` from `reelsmith.config.json`; with neither it exits 2 and lists the tracks in `music/`. Use `--under=4` only when the creator asks for a louder bed. Never ask the creator for a level.
+
+`draft` and `render` pick `voiceover-mix.mp3` by themselves. If the voice was redone after the mix, they fall back to `voiceover.mp3` and print why: run `mix` again.
 
 ### 7. Animation (html-animation skill)
 
@@ -154,7 +156,7 @@ reelsmith preview videos/<name>      # optional live playback with the voice (--
 
 ```bash
 reelsmith sheet videos/<name> --stills
-reelsmith draft videos/<name>        # draft.mp4, about 30 s, with voiceover-mix.mp3 else voiceover.mp3
+reelsmith draft videos/<name>        # draft.mp4, about 30 s, with voiceover-mix.mp3 (if current) else voiceover.mp3
 reelsmith clip videos/<name> --from=12 --to=24   # check one fixed range after feedback
 ```
 
@@ -169,7 +171,7 @@ reelsmith approve videos/<name> --by="<who>"
 reelsmith render videos/<name>
 ```
 
-`approve` fingerprints index.html, scenes.json, the runtime, the style kit and the images into `preview-approved.json`. `render` refuses with exit code 3 without a current approval, so any edit after approval needs a new draft and a new approval. Writes `output.mp4`.
+`approve` fingerprints index.html, scenes.json, the runtime, every local script index.html loads (the style kit) and the images into `preview-approved.json`; it refuses (exit 2) without `--by`. `render` refuses with exit code 3 without a current approval, so any edit after approval needs a new draft and a new approval. `reelsmith approve videos/<name> --check` tells you whether the approval is still current (exit 0) or not (exit 1). Writes `output.mp4`.
 
 ### 10. Publish (publish skill)
 
@@ -179,15 +181,16 @@ reelsmith publish videos/<name> --to=youtube --dry-run         # prints what wou
 reelsmith publish videos/<name> --to=youtube                   # only when the user says post
 ```
 
-**Gates:** the user approves publish.md, and the user explicitly says to post. YouTube privacy defaults to private. Results land in `videos/<name>/publish/<target>.json`; a second run refuses without `--force`.
+**Gates:** the user approves publish.md, and the user explicitly says to post. YouTube privacy defaults to private. Results land in `videos/<name>/publish/<target>.json`; a second run refuses without `--force`. The one-time YouTube sign-in is the human's: `reelsmith publish videos/<name> --to=youtube --auth`.
 
 ## Shortcut for iterations
 
 ```bash
 reelsmith run videos/<name> --voice=<v>
+reelsmith run videos/<name> --until=lint      # stop after a step: tts, mix, lint, sheet or draft
 ```
 
-Chains tts, mix, lint, sheet and draft for a video that already has an approved script and an index.html (for example after a script edit). It stops at the draft: it never approves and never runs the final render.
+Chains tts, mix, lint, sheet (with `--stills`) and draft for a video that already has an approved script and an index.html (for example after a script edit). tts is skipped for an own-voice video (a `take.json`); mix uses `music.defaultTrack`, else the track the video was mixed with before, else it is skipped. It stops at the first failing step (a lint failure exits 1) and after the draft: it never approves and never runs the final render.
 
 ## The gates, in one list
 
@@ -205,4 +208,4 @@ Chains tts, mix, lint, sheet and draft for a video that already has an approved 
 
 ## Escape hatch
 
-Every command wraps a script: `pipeline/cli.js` (tts, analyze, rerecord, cut, status), `tools/*.js` (mix, lint, sheet, preview, approve), `renderer/render.js` (draft, clip, render), `app/server.js` (record). If the CLI itself fails, run the script with `node`; `docs/cli.md` has the mapping. If a bare `node` fails in a non-interactive shell (an nvm profile issue), call node by its full path.
+Every command wraps a module or a script: `pipeline/*.js` (tts, analyze, rerecord, cut, status; `node pipeline/cli.js <command> videos/<name>` is the old entry point with the same flags), `tools/*.js` (mix, lint, sheet, preview, approve), `renderer/render.js` (draft, clip, render), `app/server.js` (record). If the CLI itself fails, run the script with `node`; `docs/cli.md` has the mapping. If a bare `node` fails in a non-interactive shell (an nvm profile issue), call node by its full path.

@@ -146,10 +146,10 @@ Entries are named (`slideUp`, `rise`, `pop`, `wipe`, `fromLeft`, `fromRight`, `b
 Start from the pack closest to what you want:
 
 ```bash
-cp -r styles/motion styles/acme
+cp -RL styles/motion styles/acme
 ```
 
-Then edit, in this order:
+`-L` copies the files behind a symlink, which matters in package mode, where `styles/motion` is a link into `node_modules` (GNU `cp -r` would copy the link itself). Then edit, in this order:
 
 1. **`STYLE.md` frontmatter:** `name: acme` and a one-line `description`.
 2. **Palette table:** token names, values and what each is for. The agent uses the names as constants in `index.html`.
@@ -174,6 +174,6 @@ Check that it is found with `reelsmith styles`.
 The framework's packs are in `styles/`. A project's `index.html` loads a kit by relative path (`../../styles/<name>/kit.jsx`), so a pack must sit in the `styles/` folder at the project root.
 
 - **Clone mode:** `styles/` is a normal folder. Add packs there.
-- **Package mode:** `reelsmith init` makes `styles` a symlink into the installed framework, so a pack copied there lives inside `node_modules` and is lost on reinstall. Keep your pack in your own repository and copy it into `styles/` after installing, or work in clone mode while you develop it.
+- **Package mode:** `styles/` is a real folder in your project. `reelsmith init` puts one symlink per built-in pack in it (`styles/reflective`, `styles/tech-news`, `styles/motion` → `node_modules/reelsmith/styles/<pack>`) plus `styles/design.md`, and lists those links in `.gitignore`. Your own pack is a normal folder beside them (`styles/acme/`), so it is yours to commit and survives a reinstall. Start one with `cp -RL styles/motion styles/acme` (above). Do not edit inside a linked pack: that edits the installed framework.
 
 The plugin contract for `style` is in [Plugins](plugins.md#style).

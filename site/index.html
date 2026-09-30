@@ -268,7 +268,7 @@
   <div class="wrap">
     <p class="kicker">Tutorial series</p>
     <h2>Ten shorts, made with Reelsmith itself.</h2>
-    <p class="section-lede">From install to a published short, one command at a time. Each links to its folder, with the script and the animation.</p>
+    <p class="section-lede">From install to a published short, one command at a time. Each links to its folder, with the script and the animation. <a href="docs/tutorials.html">The episode guide</a> has what each one teaches and the commands it shows.</p>
     <div class="tuts">
       <a class="tut" href="https://github.com/Aabishkar2/reelsmith/tree/main/videos/tut-01-what-is-reelsmith">
         <div class="poster"><span class="ep">01</span><span class="play" aria-hidden="true"></span><img src="assets/tut-01.jpg" alt="" loading="lazy" onerror="this.remove()"></div>
@@ -308,7 +308,7 @@
       <a class="tut" href="https://github.com/Aabishkar2/reelsmith/tree/main/videos/tut-08-plugins">
         <div class="poster"><span class="ep">08</span><span class="play" aria-hidden="true"></span><img src="assets/tut-08.jpg" alt="" loading="lazy" onerror="this.remove()"></div>
         <h3>Plugins, bring your own everything</h3>
-        <p>Four plugin kinds and a two-function contract.</p>
+        <p>Four plugin kinds and one small contract.</p>
       </a>
       <a class="tut" href="https://github.com/Aabishkar2/reelsmith/tree/main/videos/tut-09-quality-gates">
         <div class="poster"><span class="ep">09</span><span class="play" aria-hidden="true"></span><img src="assets/tut-09.jpg" alt="" loading="lazy" onerror="this.remove()"></div>
@@ -333,7 +333,7 @@
       <p>macOS or Linux. <code>reelsmith doctor</code> checks all of it and tells you what is missing.</p>
     </div>
     <ul class="reqs">
-      <li><strong>Node.js 22</strong><span>18 is the minimum</span></li>
+      <li><strong>Node.js 22</strong><span>20 is the minimum</span></li>
       <li><strong>ffmpeg</strong><span>audio, mixing, encoding</span></li>
       <li><strong>Python 3.11 + Whisper</strong><span>word timings</span></li>
       <li><strong>Playwright Chromium</strong><span>contact sheets and renders</span></li>
@@ -341,10 +341,10 @@
     </ul>
   </div>
   <div class="wrap">
-<pre class="install"><span class="p">$</span> npx reelsmith init my-channel
+<pre class="install"><span class="p">$</span> npx github:Aabishkar2/reelsmith init my-channel
 <span class="p">$</span> cd my-channel
 <span class="p">$</span> npx reelsmith doctor</pre>
-    <p class="center small">Not on npm yet? <code>npx github:Aabishkar2/reelsmith init my-channel</code></p>
+    <p class="center small">Once the package is on npm, <code>npx reelsmith init my-channel</code> does the same. From a clone: <code>node bin/reelsmith.js init ../my-channel</code></p>
     <div class="cta center-cta">
       <a class="btn btn-primary" href="docs/getting-started.html">Get started</a>
       <a class="btn btn-ghost" href="docs/index.html">Read the docs</a>

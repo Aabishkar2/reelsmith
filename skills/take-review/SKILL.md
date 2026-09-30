@@ -9,7 +9,7 @@ This skill turns the pipeline's analysis of a recorded take into plain guidance:
 
 It does no audio analysis itself. `reelsmith analyze` (run automatically by the recording app) already wrote `videos/<name>/take.json`. This skill interprets it and runs the workflow. The full schema and flag rules are in `docs/spec.md` §4 and §6.
 
-The commands below are the `reelsmith` CLI. The escape hatch for all of them is `node pipeline/cli.js <command> videos/<name>`.
+The commands below are the `reelsmith` CLI (`npx reelsmith` in a project made by `init`, `node bin/reelsmith.js` in a clone of the framework). The escape hatch for all of them is `node pipeline/cli.js <command> videos/<name>`, the old entry point with the same flags.
 
 ---
 
@@ -93,6 +93,8 @@ A clip that already exists on disk can be spliced from the terminal:
 reelsmith rerecord videos/<name> --sentence=s2.1 --clip=takes/rr-s2.1-1
 ```
 
+A clip that is bad, misses the sentence or is silent is rejected: the take stays as it was and the command exits 1 (the old `node pipeline/cli.js rerecord` exits 2). An accepted clip becomes another attempt; if the take's own attempt still scores higher, the take is kept and the command says so.
+
 ---
 
 ## Cut
@@ -111,7 +113,7 @@ This is the same as **Finalize** in the review view. It writes:
 
 **Confirm both `scenes.json` and `voiceover.mp3` exist** (`ls videos/<name>/`) before saying the voice is ready. The exit code alone is not proof.
 
-Optional music bed: `reelsmith mix videos/<name> --track=music/<file>.mp3` (see `config/music.md`).
+Optional music bed: `reelsmith mix videos/<name> --track=music/<file>.mp3` (see `config/music.md`; without `--track` it uses `music.defaultTrack` from `reelsmith.config.json`).
 
 ---
 

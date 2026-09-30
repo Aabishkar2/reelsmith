@@ -1,8 +1,8 @@
 # Pipeline internals (take analysis, alignment, cut)
 
-> **Note:** this document describes the internals of the recording, analysis, alignment, cut and TTS pipeline that Reelsmith inherited from its predecessor. The contract for the framework as a whole (CLI, config, plugins, styles, skills) is [framework-spec.md](framework-spec.md). Paths below that start with `scripts/` now live in `tools/`, and `node pipeline/cli.js …` commands are available as `reelsmith …`.
+> **Note:** this document describes the internals of the recording, analysis, alignment, cut and TTS pipeline that Reelsmith inherited from its predecessor. The contract for the framework as a whole (CLI, config, plugins, styles, skills) is [framework-spec.md](framework-spec.md). The helper scripts it names live in `tools/`, and `node pipeline/cli.js …` commands are available as `reelsmith …`.
 
-Successor to `../video-gen` (v1). v1 pipeline: `video.md` → Gemini TTS → Whisper → `scenes.json` → Claude writes React HTML → Playwright frames → FFmpeg MP4.
+Successor to the v1 pipeline: `video.md` → Gemini TTS → Whisper → `scenes.json` → Claude writes React HTML → Playwright frames → FFmpeg MP4.
 
 **v2 change: the creator's own voice replaces TTS.** A local teleprompter web app records one long take, Whisper transcribes it, the pipeline aligns transcript to script, flags anything that would make the video look bad, lets the creator re-record flagged sentences, then cuts fillers/silence and emits the exact same `scenes.json` + `voiceover.mp3` contract v1's renderer already consumes. Everything downstream (HTML animation, subtitles, render) is reused unchanged.
 
@@ -23,7 +23,7 @@ Decisions locked (from owner):
 ## 1. Repo layout & ownership
 
 ```
-video-gen-v2/
+reelsmith/
   CLAUDE.md                     [skills-agent]  agent entry point
   BIDS.MD                       [scaffold]      copy from v1
   package.json                  [scaffold]      NO new runtime deps beyond v1's (playwright, dotenv). Backend uses Node built-ins only.
@@ -34,7 +34,7 @@ video-gen-v2/
     fillers.json                [pipeline]      filler word list + thresholds (§6)
   runtime/animations.jsx        [scaffold] copy from v1
   renderer/render.js            [fast-render] sharded renderer: JPEG frames via CDP piped into per-shard ffmpeg, concat; --draft / --from / --to; docs/fast-render.md
-  scripts/                      [scaffold] copy check-sync.js validate-sync.js preview.js search-images.js download-image.js from v1
+  tools/                        [scaffold] copy check-sync.js validate-sync.js preview.js search-images.js download-image.js from v1
   whisper_timestamps.py         [scaffold] copy from v1 (python3.11 shebang)
   pipeline/                     [pipeline-agent]
     whisper.js                  run whisper_timestamps.py on a wav → words[]
@@ -57,7 +57,7 @@ video-gen-v2/
   .claude/skills/               [skills-agent] (§9)
 ```
 
-Agents must only write files they own. Node binary on this machine: `~/.nvm/versions/node/v22.17.0/bin/node` (shell profile breaks non-interactive `node`; scripts should not rely on PATH — use `process.execPath` when spawning child node). Python: always `python3.11` (never `python3`). FFmpeg: `/opt/homebrew/bin/ffmpeg` (on PATH).
+Agents must only write files they own. Node: if a non-interactive shell cannot run a bare `node` (an nvm profile that only loads interactively), call it by its full path; scripts should not rely on PATH — use `process.execPath` when spawning child node. Python: the one that has `openai-whisper` (`core/env.js` finds it; `REELSMITH_PYTHON` forces one). FFmpeg: resolved by `core/env.js` (`FFMPEG_PATH`, `PATH`, the usual install dirs).
 
 ## 2. Per-video working directory
 
@@ -227,7 +227,7 @@ Aligner post-passes added with attempts (`align.js` header): **pass C** also re-
 
 ## 7b. VAD-chunked transcription (`pipeline/whisper.js` + `whisper_words.py`)
 
-Whisper over a whole take hears a repeated phrase once and stretches one word over the hidden repeat (devotion take-02: "how" 25.52–28.04 covered a second "Success seems to depend…"), so the aligner never sees the second attempt. `whisper.mode: 'chunked'` (default):
+Whisper over a whole take hears a repeated phrase once and stretches one word over the hidden repeat (in one real take, "how" 25.52–28.04 covered a second "Success seems to depend…"), so the aligner never sees the second attempt. `whisper.mode: 'chunked'` (default):
 
 1. `audio.energyVad` splits the take at pauses ≥ `whisper.chunk.minSilenceSec` (0.25 s) whose 20 ms frame RMS is below floor + `vadFrac`·(speech − floor) (floor/speech = 10th/70th percentile of the take's frame dB — silencedetect's sample-peak test misses pauses under room noise). Chunks < `minChunkSec` merge into a neighbour; each is padded ≤ `padSec` into its pauses.
 2. One python process transcribes the chunks packed into windows of ≤ `packSec` (24 s) with `sepSec` (1 s) of silence between chunks, **interleaved** (window p gets chunks p, p+P, …) so neighbouring chunks — a line and its retake — never share a whisper window. `condition_on_previous_text=False`; the disfluent prompt is kept. Words are mapped back to take time; words inside separators (silence hallucinations) are dropped. The encoder output is reused for the word-alignment pass (≈ one encoder pass per window, so runtime ≈ whole-file mode).
@@ -265,7 +265,7 @@ Both must be optional: if no API key or call fails, fall back to rules and mark 
 - `teleprompter-prep/SKILL.md` — replaces v1 `tts` skill: final pass on `script.md` for spoken delivery (breath points, number spelling in cues, tongue-twister rewrites).
 - `take-review/SKILL.md` — how Claude reads `take.json`, explains flags to the user, runs re-record loop guidance, then `finalize`.
 - `html-animation/SKILL.md` — copy v1, unchanged.
-- `publish/SKILL.md` — writes `publish.md` (title ≤60 chars, description, tags, hashtags) from script + market.md. YouTube upload = documented stub (`scripts/upload-youtube.js` not implemented).
+- `publish/SKILL.md` — writes `publish.md` (title ≤60 chars, description, tags, hashtags) from script + market.md. YouTube upload = documented stub at the time (now `plugins/publish-youtube`).
 
 ## 10. Pipeline CLI
 
@@ -284,11 +284,11 @@ Webcam, live STT, YouTube API research, upload, multi-language, Electron.
 
 ## 12. TTS voice path (`pipeline/tts.js`)
 
-An alternative to RECORD → analyze → take-review → cut, and the default from `videos/devotion-tts/` on. It writes the same contract as `cut` (`voiceover/sN.mp3`, `voiceover.mp3`, `scenes.json`), so everything downstream is unchanged.
+An alternative to RECORD → analyze → take-review → cut, and the default from the first TTS video on. It writes the same contract as `cut` (`voiceover/sN.mp3`, `voiceover.mp3`, `scenes.json`), so everything downstream is unchanged.
 
 ```
 node pipeline/cli.js tts videos/<name> --voice=<name> [--model=…] [--speed=1.15] [--timings=auto|whisper|estimate] [--cta=N] [--force] [--json]
-node scripts/mix-music.js videos/<name> --track=music/clean-soul.mp3      # → voiceover-mix.mp3, bed 6 dB under
+node tools/mix-music.js videos/<name> --track=music/clean-soul.mp3        # → voiceover-mix.mp3, bed 6 dB under
 ```
 
 - **Synthesis:** one `POST https://openrouter.ai/api/v1/audio/speech` per `script.md` sentence (`{ model, voice, input, response_format: "mp3" }`, `Authorization: Bearer $OPENROUTER_API_KEY`). A 401/403 fails at once with "OPENROUTER_API_KEY rejected — put a working key in .env". 429/5xx are retried twice. Raw PCM responses (`audio/L16`, `audio/pcm`) are decoded too.

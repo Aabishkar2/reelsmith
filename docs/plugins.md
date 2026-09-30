@@ -40,16 +40,15 @@ module.exports = {
 | `configSchema` | no | `reelsmith doctor` and docs: `{ key: { type, required, env, description } }` |
 | `check(ctx)` | no | `reelsmith doctor`: returns `{ ok, message }`. Keep it cheap: check that keys and binaries exist |
 
-`ctx` is:
+`ctx` (what `check()` receives) is:
 
 ```js
 {
   root,                               // project root
   config,                             // the resolved reelsmith.config.json
   env,                                // process.env after .env is loaded
-  log,                                // logger: log.info(), log.warn(), log.error()
-  paths: { ffmpeg, python, node },    // resolved binaries
-  video,                              // when a command runs on a video: { name, dir, script, scenes }
+  log,                                // a function: log('message') (stderr for check())
+  paths: { ffmpeg, ffprobe, python, pythonWhisper, node },   // resolved binaries (core/env.js)
 }
 ```
 
@@ -312,23 +311,28 @@ Without it, the registry builds the entry from the `name` and `description` in t
 ## `publish`
 
 ```js
-async publish({ video, dryRun, notes, config, env, log })
+async publish({ video, dryRun, force, privacy, file, publicUrl, channel, targetConfig, root, config, env, log, paths })
   // → { ok, dryRun, target, id?, url?, sent?: {...}, skipped?: reason }
 
 async check(ctx)
   // → { ok, message }     credentials present, size limits
+
+async auth({ check, targetConfig, root, config, env, log, paths })   // optional
+  // → { ok, message }     `reelsmith publish <video> --to=<target> --auth [--check]`
 ```
 
 | Argument | Meaning |
 |---|---|
-| `video` | `{ name, dir, script, scenes }` of the video being published |
+| `video` | `{ name, dir, script, scenes }` of the video being published (`script` is the parsed `script.md`, `scenes` the `scenes.json` array, either may be `null`) |
 | `dryRun` | `true` for `--dry-run` |
-| `notes` | the parsed `publish.md`: title, description, tags, hashtags |
-| `config` | the resolved project config (targets live under `publish.targets.<target>`) |
+| `force` | `true` for `--force` |
+| `privacy`, `file`, `publicUrl`, `channel` | `--privacy`, `--file`, `--public-url`, `--channel`, or `undefined` |
+| `targetConfig` | `publish.targets.<target>` from `reelsmith.config.json` (`{}` when absent) |
+| `config` | the resolved project config |
 | `env` | the environment after `.env` is loaded |
-| `log` | the logger |
+| `log` | a function: `log('message')` |
 
-The built-in targets also receive options such as `force`, `file` and target-specific flags (for example `publicUrl` for Meta).
+The CLI does not pass the publish notes: read `videos/<name>/publish.md` yourself with `core/publishNotes.js` (`load(video.dir)` → `{ title, description, tags, hashtags, meta, … }`), as the built-in targets do. In a project made by `init` that is `require('reelsmith/core/publishNotes')`.
 
 Rules every publish plugin follows:
 
@@ -358,15 +362,17 @@ module.exports = {
       : { ok: false, message: 'SLACK_WEBHOOK_URL missing in .env' };
   },
 
-  async publish({ video, dryRun, notes, config, env, log }) {
+  async publish({ video, dryRun, targetConfig, env, log }) {
     const target = 'slack';
     const hook = env.SLACK_WEBHOOK_URL;
     if (!hook) throw new Error('SLACK_WEBHOOK_URL missing in .env');
-    const link = (config.publish?.targets?.slack?.linkBase || '') + `${video.name}/output.mp4`;
-    const body = { text: `*${notes.title}*\n${notes.description.split('\n')[0]}\n${link}` };
+    // publish.md (the title falls back to script.md). In clone mode: require('../../core/publishNotes')
+    const notes = require('reelsmith/core/publishNotes').load(video.dir);
+    const link = (targetConfig.linkBase || '') + `${video.name}/output.mp4`;
+    const body = { text: `*${notes.title}*\n${(notes.description || '').split('\n')[0]}\n${link}` };
 
     if (dryRun) {
-      log.info(`[slack] would POST ${JSON.stringify(body)}`);
+      log(`[slack] would POST ${JSON.stringify(body)}`);
       return { ok: true, dryRun: true, target, sent: body };
     }
     const res = await fetch(hook, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });

@@ -1,7 +1,7 @@
 # Fast render + fast feedback loop
 
-Design + build contract for `feat/fast-render`. Written 2026-09-29 after profiling the
-devotion-tts render (98 s, 2943 frames, 720×1280@30).
+Design + build contract for the fast renderer. Written 2026-09-29 after profiling the
+render of a 98 s TTS short (2943 frames, 720×1280@30).
 
 ## Why the old renderer was slow (measured)
 
@@ -49,13 +49,14 @@ node renderer/render.js <index.html> [output.mp4]
    [--draft]             fast low-res preview render (see below)
    [--from=S --to=S]     render only this time range (seconds; either may be omitted)
    [--gpu]               opt-in: full chromium (channel 'chromium') + metal/GPU raster flags
+   [--keep-segments]     keep the segment cache after a successful render
    [--no-preview-gate]   fixtures/tests only (unchanged)
    [--frames-dir=dir]    REMOVED. Print a one-line notice pointing to the segment cache.
 ```
 
 **Shards default:** `min(4, os.cpus().length - 1, floor(os.freemem() / 400 MB))`, never
-below 1. `--shards=N` overrides but is still capped by cores (never more shards than
-cores). Print the chosen count and why.
+below 1. `--shards=N` overrides but is still capped at cores − 1. Print the chosen count
+and why.
 
 **Draft mode (`--draft`):** fps 15, width/height ×0.75 (540×960 for a 720×1280 video),
 quality 80, encoder auto with the draft bitrate, output default `<videoDir>/draft.mp4`.
@@ -64,12 +65,17 @@ Any explicit `--fps/--width/--height/--quality` still wins over the draft defaul
 
 **Range mode (`--from/--to`):** clamps to `[0, duration]`, renders frames whose time
 is in `[from, to)`, output default `<videoDir>/clip-<from>s-<to>s.mp4` (e.g.
-`clip-12s-24s.mp4`), audio is trimmed with `-ss from -to to` before muxing. Skips the
+`clip-12s-24s.mp4`; `clip-12s-24s-draft.mp4` with `--draft`), audio is trimmed with `-ss from -to to` before muxing. Skips the
 preview gate. A full-range render (no --from/--to, no --draft) keeps the gate exactly
-as before via `scripts/approve-preview.js checkApproval`.
+as before via `tools/approve-preview.js checkApproval`.
 
 **Frame count:** exactly `ceil(duration·fps)` frames (the old loop rendered one extra
 frame; drop it). Frame i is captured at `t = i / fps`.
+
+**Music tail:** without `--duration`, the length is Σ `scenes.json` `dur`, unless `--audio`
+is 0.1 to 6 s longer (the tail `tools/mix-music.js` adds, 2.5 s). Then the video runs to the
+end of the audio and every frame past Σdur is captured at Σdur, so the tail holds the closing
+frame instead of an empty stage. Audio more than 6 s longer is cut at Σdur.
 
 **Per-frame capture:** `page.evaluate(t => window.__stage.setTime(t), t)`, then ONE
 `requestAnimationFrame` wait, then CDP `Page.captureScreenshot({format:'jpeg', quality,
@@ -99,7 +105,7 @@ without `--audio` the concat has no audio args at all.)
 **Segment cache / crash resume:** segments live in
 `<videoDir>/frames/render-cache/<key>/seg-<k>-<a>-<b>.mp4` where `key` = first 12 hex
 of sha256(preview fingerprint of the video dir + JSON of {fps,width,height,quality,
-encoderArgs,from,to}). Use `fingerprint()` from `scripts/approve-preview.js`. A
+encoderArgs,from,to}). Use `fingerprint()` from `tools/approve-preview.js`. A
 segment whose file exists, has size > 0, and whose ffprobe frame count equals `b − a`
 is reused (print "reusing seg-k"). Other `<key>` dirs under `render-cache/` are deleted
 at the start of a render (stale). The cache dir for the current key is deleted after a
@@ -122,7 +128,7 @@ wall time, capture fps, encoder used, output size.
 **Exports for tests:** when `require`d as a module (not `require.main`), export
 `{ planShards(totalFrames, shards), pickShards({cpus, freeMem, requested}), encoderArgs({encoder, draft, available}), resolveMode(args) }` and do not run.
 
-## `scripts/preview.js` + runtime — live preview with voice, on the phone
+## `tools/preview.js` + runtime — live preview with voice, on the phone
 
 Today's preview is silent (no `<audio>` anywhere in `runtime/animations.jsx`).
 
@@ -144,7 +150,7 @@ Today's preview is silent (no `<audio>` anywhere in `runtime/animations.jsx`).
 - Nothing changes in render mode; `?render=1` output must be byte-identical before/after
   (this is checked by the render test's fixture md5).
 
-**`scripts/preview.js`:**
+**`tools/preview.js`:**
 - `--lan`: listen on `0.0.0.0` instead of `127.0.0.1`; print every non-internal IPv4 URL
   from `os.networkInterfaces()` plus a `/qr` link.
 - `GET /qr?u=<url>` (any mode): serve a tiny inline HTML page (no new npm deps; load a QR
@@ -160,7 +166,7 @@ Today's preview is silent (no `<audio>` anywhere in `runtime/animations.jsx`).
 
 - `CLAUDE.md`: pipeline diagram (draft step), commands block (draft, range, --lan),
   preview-gate paragraph (draft.mp4 replaces/accompanies stills).
-- `.claude/skills/html-animation/SKILL.md` Rule 6 + checklist: after the contact-sheet
+- `skills/html-animation/SKILL.md` Rule 6 + checklist: after the contact-sheet
   loop, run `--draft`, send `draft.mp4` to the user together with the stills, approve,
   then final render.
 - `docs/spec.md` line for `renderer/render.js`.
@@ -197,5 +203,5 @@ a `--from=1 --to=3 --shards=1` clip has `ceil(2·30)` frames. Register both in
 | Encode h264_videotoolbox q65 | 6.3 ms/frame (file size ≈ x264 crf18) |
 | Encode h264_videotoolbox 12M | 8.0 ms/frame (9× larger file, no point) |
 
-Projection for devotion-tts (2943 frames): old ≈ 20 min → new ≈ 1.5 min final, ≈ 30 s draft.
+Projection for that 98 s short (2943 frames): old ≈ 20 min → new ≈ 1.5 min final, ≈ 30 s draft.
 Every encoder is faster than one shard's capture, so encoding is fully hidden.

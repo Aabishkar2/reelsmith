@@ -51,18 +51,11 @@ function scrub(text) {
 }
 
 // ── tools ───────────────────────────────────────────────────────────────────
-function findTool(name, paths, env) {
+// ctx.paths (the CLI's core/env paths), else core/env.bin(): $FFMPEG_PATH / $FFPROBE_PATH, PATH, the
+// fallback dirs, and the bare name last (so a missing tool fails with its own "not found" error).
+function findTool(name, paths) {
   if (paths && paths[name]) return paths[name];
-  try {
-    const p = require('../../core/env')[name]();
-    if (p) return p;
-  } catch (_) { /* core/env unavailable: resolve here */ }
-  const override = env[name === 'ffmpeg' ? 'FFMPEG_PATH' : 'FFPROBE_PATH'];
-  const dirs = [...String(env.PATH || '').split(path.delimiter), '/opt/homebrew/bin', '/usr/local/bin'].filter(Boolean);
-  for (const c of [override, ...dirs.map((d) => path.join(d, name))].filter(Boolean)) {
-    try { fs.accessSync(c, fs.constants.X_OK); return c; } catch (_) { /* next */ }
-  }
-  return name;
+  return require('../../core/env').bin(name);
 }
 
 function run(bin, args) {
@@ -215,7 +208,7 @@ module.exports = {
         say(`  reusing ${path.basename(out)} (${fmtMB(transcoded.bytes)}, newer than the source)`);
       } else {
         say(`  ${path.basename(src)} is ${fmtMB(bytes)}, over the ${fmtMB(s.limit)} limit`);
-        transcoded = transcode({ ffmpeg: findTool('ffmpeg', paths, env), ffprobe: findTool('ffprobe', paths, env), src, out,
+        transcoded = transcode({ ffmpeg: findTool('ffmpeg', paths), ffprobe: findTool('ffprobe', paths), src, out,
           targetBytes: s.targetBytes, limitBytes: s.limit, say });
         say(`  ✓ ${path.basename(out)}: ${fmtMB(transcoded.bytes)}`);
       }

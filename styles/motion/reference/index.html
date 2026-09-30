@@ -1,0 +1,594 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Reelsmith in 60 seconds</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@600;700;800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+  <script type="text/babel" src="../../runtime/animations.jsx"></script>
+  <script type="text/babel" src="../../styles/motion/kit.jsx"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { width: 100%; height: 100%; background: #0B0F19; overflow: hidden; }
+    #root { width: 100%; height: 100vh; position: relative; }
+  </style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+// Reelsmith tutorials · Episode 01 · "Reelsmith in 60 seconds"
+// Style: motion (styles/motion/STYLE.md + kit.jsx). This file is the reference
+// implementation for the pack: every reveal is bound to a word cue, every
+// scene is one kit-led composition, and the few local components below only
+// add what the kit does not have (word dots, phone focus rings, a teleprompter,
+// a synced word row, a card deck, a syllabus grid, and Lift for re-staging).
+//
+// Scene map (cue words come from scenes.json; times are window-local seconds):
+//   1 hook       Counter "150" + "words" → shrinks left, PhoneFrame + MiniReel rises, StatusRows
+//   2 name       Logo + Wordmark, Title per-word, PromptBox + "Claude Code" chip
+//   3 pipeline   FlowDiagram (5 nodes) + render ProgressBar
+//   4 voice      SplitCard (Waveform | teleprompter) + synced word row + Stamp
+//   5 files      FileTree + a deck of CodeCards (script.md, index.html, config/audio.md)
+//   6 plugins    empty sockets + PluginDock (swap tts, add style, add publish) + Callout
+//   7 close      Syllabus grid + Terminal `npx reelsmith init my-channel` + "Let's build."
+
+// ── Local helpers ────────────────────────────────────────────────────────────
+// Spring that is 0 before its start and 1 once settled (never NaN for an
+// Infinity cue), same contract as the kit's internal helper.
+function springAt(dt, k = 320, d = 30) {
+  return !(dt > 0) ? 0 : dt > 8 ? 1 : spring(dt, k, d);
+}
+const ease3 = (p) => Easing.easeOutCubic(clamp(p, 0, 1));
+
+// Holds a group of absolutely placed kit components `from` px lower (centred
+// in the frame while they are alone), then springs them up to their place at
+// `at`, making room for what arrives next. Enter-only: nothing leaves.
+function Lift({ at, from, children }) {
+  const { localTime } = useSprite();
+  const dy = from * (1 - springAt(localTime - at, 170, 24));
+  return <div style={{ position: 'absolute', inset: 0, transform: `translateY(${dy}px)` }}>{children}</div>;
+}
+
+// ── Scene 1 pieces ───────────────────────────────────────────────────────────
+// 150 dots, one per word, lighting in step with the Counter (same easing and
+// clock), so "150 words" is something you can see fill up.
+function WordDots({ at, dur, count = 150, cols = 15, gap = 25, size = 10 }) {
+  const { localTime } = useSprite();
+  const n = count * ease3((localTime - at) / Math.max(0.01, dur));
+  const rows = Math.ceil(count / cols);
+  return (
+    <div style={{ position: 'relative', width: (cols - 1) * gap + size, height: (rows - 1) * gap + size,
+      ...enter.fadeIn(localTime - at, 0.3) }}>
+      {Array.from({ length: count }, (_, i) => {
+        const on = i < Math.round(n);
+        const c = mix(VIOLET, CYAN, (i % cols) / (cols - 1));
+        return (
+          <div key={i} style={{ position: 'absolute', left: (i % cols) * gap, top: Math.floor(i / cols) * gap, width: size,
+            height: size, borderRadius: '50%', background: on ? c : 'rgba(255,255,255,0.09)',
+            boxShadow: on ? `0 0 8px ${alpha(c, 0.55)}` : 'none' }} />
+        );
+      })}
+    </div>
+  );
+}
+
+// Phone overlays below use the PhoneFrame's 360 × 640 virtual screen coordinates.
+// A cyan outline that punches onto a feature of the fake short, with a halo.
+function FocusRing({ at, left, top, width, height, radius = 16, color = CYAN }) {
+  const { localTime } = useSprite();
+  const dt = localTime - at;
+  if (!(dt >= 0)) return null;
+  const s = springAt(dt, 200, 14);
+  const halo = ease3(dt / 0.7);
+  return (
+    <React.Fragment>
+      <div style={{ position: 'absolute', left, top, width, height, borderRadius: radius,
+        border: `3px solid ${color}`, boxShadow: `0 0 22px ${alpha(color, 0.55)}, inset 0 0 14px ${alpha(color, 0.25)}`,
+        opacity: clamp(dt / 0.12, 0, 1), transform: `scale(${1.16 - 0.16 * s})` }} />
+      {halo < 1 && (
+        <div style={{ position: 'absolute', left: left - 8, top: top - 8, width: width + 16, height: height + 16,
+          borderRadius: radius + 8, border: `2px solid ${color}`, opacity: 0.8 * (1 - halo),
+          transform: `scale(${1 + 0.22 * halo})` }} />
+      )}
+    </React.Fragment>
+  );
+}
+
+// "Now speaking" pill at the top of the fake short: a live waveform + clock.
+function VoicePill({ at }) {
+  const { localTime } = useSprite();
+  const secs = Math.max(0, localTime - at);
+  return (
+    <div style={{ position: 'absolute', left: 30, top: 62, height: 40, padding: '0 14px 0 10px', borderRadius: 20,
+      display: 'flex', alignItems: 'center', gap: 10, background: 'rgba(255,255,255,0.08)',
+      border: '1px solid rgba(255,255,255,0.14)', ...enter.fadeIn(localTime - at) }}>
+      <Icon name="mic" size={20} color={CYAN} />
+      <Waveform width={70} height={24} bars={11} gap={3} seed={4} at={at} active={[at, Infinity]} />
+      <span style={{ fontFamily: MONO, fontSize: 16, color: MUTED }}>{`0:${String(Math.floor(secs) + 3).padStart(2, '0')}`}</span>
+    </div>
+  );
+}
+
+// ── Scene 4 pieces ───────────────────────────────────────────────────────────
+// The built-in teleprompter: script lines scroll past a reading guide, REC blinks.
+const PROMPTER_LINES = ['You write one', 'hundred and fifty', 'words. You get a', 'finished vertical',
+  'video, with a voice,', 'live subtitles and', 'motion graphics.'];
+function Teleprompter({ at, width = 253, height = 160 }) {
+  const { localTime } = useSprite();
+  const lh = 32;
+  const head = 34;
+  const viewH = height - head;
+  const scroll = Math.max(0, localTime - at) * 26;
+  const blink = Math.floor(localTime * 2) % 2 === 0;
+  const secs = Math.floor(Math.max(0, localTime - at));
+  return (
+    <div style={{ position: 'relative', width, height, borderRadius: 16, overflow: 'hidden', background: '#0A0E18',
+      border: '1px solid rgba(255,255,255,0.10)' }}>
+      <div style={{ position: 'absolute', left: 0, right: 0, top: 0, height: head, display: 'flex', alignItems: 'center',
+        justifyContent: 'space-between', padding: '0 12px', background: 'rgba(255,255,255,0.03)',
+        borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+          <div style={{ width: 11, height: 11, borderRadius: '50%', background: DANGER, opacity: blink ? 1 : 0.35,
+            boxShadow: blink ? `0 0 10px ${alpha(DANGER, 0.8)}` : 'none' }} />
+          <span style={{ fontFamily: MONO, fontWeight: 600, fontSize: 15, color: DANGER, letterSpacing: '0.08em' }}>REC</span>
+        </div>
+        <span style={{ fontFamily: MONO, fontSize: 15, color: MUTED }}>{`00:${String(secs).padStart(2, '0')}`}</span>
+      </div>
+      <div style={{ position: 'absolute', left: 0, right: 0, top: head, bottom: 0, overflow: 'hidden' }}>
+        <div style={{ position: 'absolute', left: 0, right: 0, top: viewH / 2 - lh / 2, height: lh, background: alpha(CYAN, 0.10),
+          borderTop: `1px solid ${alpha(CYAN, 0.35)}`, borderBottom: `1px solid ${alpha(CYAN, 0.35)}` }} />
+        {PROMPTER_LINES.map((ln, i) => {
+          const cy = viewH / 2 + i * lh - scroll;
+          const d = Math.abs(cy - viewH / 2) / lh;
+          const on = d < 0.5;
+          return (
+            <div key={i} style={{ position: 'absolute', left: 14, right: 8, top: cy - lh / 2, height: lh, display: 'flex',
+              alignItems: 'center', fontFamily: SANS, fontWeight: on ? 600 : 500, fontSize: 21, whiteSpace: 'nowrap',
+              color: on ? TEXT : 'rgba(245,247,255,0.45)' }}>{ln}</div>
+          );
+        })}
+        <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none',
+          background: 'linear-gradient(180deg, #0A0E18 0%, rgba(10,14,24,0) 32%, rgba(10,14,24,0) 68%, #0A0E18 100%)' }} />
+      </div>
+    </div>
+  );
+}
+
+// "every word on screen is synced": each word lights on its real cue, with its
+// scenes.json start time under it and a playhead that springs word to word.
+function SyncWords({ words, cues, stamps, colW = 84 }) {
+  const { localTime } = useSprite();
+  let cur = -1;
+  cues.forEach((c, i) => { if (localTime >= c) cur = i; });
+  const px = track(localTime, [[0, colW / 2], ...cues.slice(1).map((c, i) => [c, (i + 1) * colW + colW / 2])], 260, 24);
+  const headIn = ease3((localTime - cues[0]) / 0.25);
+  return (
+    <div style={{ position: 'relative', width: colW * words.length }}>
+      <div style={{ display: 'grid', gridTemplateColumns: `repeat(${words.length}, ${colW}px)` }}>
+        {words.map((w, i) => {
+          const hot = i === cur;
+          const pop = hot ? 1 + 0.08 * (1 - springAt(localTime - cues[i], 200, 14)) : 1;
+          return (
+            <div key={i} style={{ textAlign: 'center' }}>
+              <div style={{ fontFamily: SANS, fontWeight: 600, fontSize: 28, lineHeight: 1.2, whiteSpace: 'nowrap',
+                color: hot ? CYAN : i < cur ? TEXT : 'rgba(245,247,255,0.34)', transform: `scale(${hot ? 1.06 * pop : 1})`,
+                textShadow: hot ? `0 0 18px ${alpha(CYAN, 0.55)}` : 'none' }}>{w}</div>
+              <div style={{ marginTop: 10, fontFamily: MONO, fontSize: 18, fontVariantNumeric: 'tabular-nums',
+                color: i <= cur ? alpha(CYAN, 0.9) : 'rgba(245,247,255,0.28)' }}>{stamps[i]}</div>
+            </div>
+          );
+        })}
+      </div>
+      <div style={{ position: 'relative', height: 26, marginTop: 12 }}>
+        <div style={{ position: 'absolute', left: 0, right: 0, top: 11, height: 4, borderRadius: 2, background: 'rgba(255,255,255,0.08)' }} />
+        <div style={{ position: 'absolute', left: 0, width: Math.max(0, px) * headIn, top: 11, height: 4, borderRadius: 2, background: GRAD }} />
+        {headIn > 0 && (
+          <div style={{ position: 'absolute', left: px - 9, top: 4, width: 18, height: 18, borderRadius: '50%', background: CYAN,
+            boxShadow: `0 0 16px ${alpha(CYAN, 0.9)}`, opacity: headIn }} />
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ── Scene 5 piece: a card deck. Each later card that lands pushes this one back.
+function DeckLayer({ top, laterAts = [], children }) {
+  const { localTime } = useSprite();
+  const depth = laterAts.reduce((s, a) => s + springAt(localTime - a, 260, 26), 0);
+  return (
+    <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', transformOrigin: `360px ${top}px`,
+      transform: `translateY(${-10 * depth}px) scale(${1 - 0.05 * depth})`, filter: depth > 0.01 ? `brightness(${1 - 0.22 * depth})` : 'none' }}>
+      {children}
+    </div>
+  );
+}
+
+// ── Scene 6 piece: the dock's empty sockets (one per plugin kind), drawn under
+// the PluginDock so each tile snaps onto its outline. Geometry mirrors the kit's
+// PluginDock (620 wide, tiles 156 × 96, 227 px / 165 px from the core centre).
+function DockSockets({ at, top, height = 480 }) {
+  const { localTime } = useSprite();
+  const cx = 360;
+  const cy = top + height / 2;
+  const slots = [
+    { kind: 'tts', x: cx - 227, y: cy }, { kind: 'style', x: cx, y: cy - 165 },
+    { kind: 'publish', x: cx + 227, y: cy }, { kind: 'stt', x: cx, y: cy + 165 },
+  ];
+  return slots.map((sl, i) => (
+    <div key={sl.kind} style={{ position: 'absolute', left: sl.x - 78, top: sl.y - 48, width: 156, height: 96, borderRadius: 20,
+      border: '2px dashed rgba(255,255,255,0.18)', background: 'rgba(255,255,255,0.02)', display: 'flex',
+      alignItems: 'center', justifyContent: 'center', gap: 8, fontFamily: MONO, fontSize: 22, color: 'rgba(245,247,255,0.36)',
+      ...enter.pop(localTime - at - i * 0.08, 0.8) }}>
+      <Icon name="plus" size={20} color={FAINT} />
+      <span>{sl.kind}</span>
+    </div>
+  ));
+}
+
+// ── Scene 7 piece: the series syllabus. 01 is lit ("now"); on "install" 02
+// lights, then the rest sweep in order and 10 lands on "published".
+const EPISODES = ['what is it', 'install', 'first video', 'script.md', 'voice', 'animation', 'styles', 'plugins',
+  'quality gates', 'publish'];
+function Syllabus({ y, showAt, installAt, publishAt }) {
+  const { localTime } = useSprite();
+  const colW = 256;
+  const gapX = 28;
+  const rowH = 46;
+  const gapY = 10;
+  const W = 2 * colW + gapX;
+  return (
+    <div style={{ position: 'absolute', left: (720 - W) / 2, top: y, width: W, height: 5 * rowH + 4 * gapY }}>
+      {EPISODES.map((name, i) => {
+        const col = Math.floor(i / 5);
+        const row = i % 5;
+        const litAt = i === 0 ? showAt : installAt + (publishAt - installAt) * ((i - 1) / (EPISODES.length - 2));
+        const lit = localTime >= litAt;
+        const pulse = springAt(localTime - litAt, 200, 14);
+        const c = i === 0 ? CYAN : i === EPISODES.length - 1 ? OK : VIOLET;
+        return (
+          <div key={i} style={{ position: 'absolute', left: col * (colW + gapX), top: row * (rowH + gapY), width: colW,
+            height: rowH, ...enter.push(localTime - showAt - i * 0.05, col ? 'right' : 'left', 70) }}>
+            <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', gap: 12, padding: '0 10px 0 6px',
+              borderRadius: 14, background: lit ? alpha(c, 0.13) : 'rgba(255,255,255,0.03)',
+              border: `1.5px solid ${lit ? alpha(c, 0.6) : 'rgba(255,255,255,0.09)'}`,
+              boxShadow: lit ? `0 0 ${8 + 22 * (1 - pulse)}px ${alpha(c, 0.35)}` : 'none',
+              transform: `scale(${lit ? 0.94 + 0.06 * pulse : 1})` }}>
+              <div style={{ width: 34, height: 34, borderRadius: '50%', flexShrink: 0, display: 'flex', alignItems: 'center',
+                justifyContent: 'center', fontFamily: MONO, fontWeight: 600, fontSize: 16,
+                background: lit ? mix(c, INK, 0.5) : CODE_BG, border: `1.5px solid ${lit ? c : 'rgba(255,255,255,0.14)'}`,
+                color: lit ? TEXT : FAINT }}>{String(i + 1).padStart(2, '0')}</div>
+              <span style={{ fontFamily: SANS, fontWeight: 600, fontSize: 24, whiteSpace: 'nowrap',
+                color: lit ? TEXT : 'rgba(245,247,255,0.42)' }}>{name}</span>
+              {i === 0 && <span style={{ marginLeft: 'auto' }}><Badge variant="cyan" size={16} at={showAt + 0.3}>now</Badge></span>}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+// ── Scene 1 · hook: 150 words in, a finished short out ───────────────────────
+function Scene1() {
+  const win = useSceneWindow(1);
+  const cueYou = useWordCue(1, "you write");           // 0.00  script.md chip + count-up starts
+  const cueWords = useWordCue(1, "words");             // 1.36  "words" snaps in
+  const cueGet = useWordCue(1, "you get");             // 2.05  hero shrinks into the left column
+  const cueFinished = useWordCue(1, "finished");       // 2.64  phone rises, the short plays
+  const cueVertical = useWordCue(1, "vertical video"); // 3.01  row: vertical 9:16
+  const cueVoice = useWordCue(1, "voice");             // 4.26  row + ring on the voice pill
+  const cueSubs = useWordCue(1, "live subtitles");     // 4.75  row + ring on the karaoke line
+  const cueMotion = useWordCue(1, "motion graphics");  // 5.86  row + ring on the card
+  return (
+    <Sprite {...win}>
+      {({ localTime }) => {
+        const m = springAt(localTime - cueGet, 150, 21);
+        return (
+          <SceneRoot idx={1} pattern="dots">
+            <Glow x={360 - 174 * m} y={590 - 300 * m} r={340 - 120 * m} opacity={0.3} breathe={0.04} />
+            <Glow x={507} y={600} r={300} color={CYAN} opacity={0.2} at={cueFinished} />
+
+            {/* hero: script.md · 150 (one dot per word) · words, then it slides into the left column */}
+            <div style={{ position: 'absolute', left: 0, right: 0, top: 250, display: 'flex', flexDirection: 'column',
+              alignItems: 'center', transformOrigin: '360px 0px',
+              transform: `translate(${-174 * m}px, ${-110 * m}px) scale(${1 - 0.56 * m})` }}>
+              <Chip at={cueYou} mono icon="file" color="cyan" variant="outline" size={28}>script.md</Chip>
+              <Counter value={150} at={cueYou} dur={1.3} size={250} gradient style={{ marginTop: 22 }} />
+              <div style={{ marginTop: 6, fontFamily: DISPLAY, fontWeight: 800, fontSize: 92, lineHeight: 1,
+                letterSpacing: '-0.03em', color: TEXT, textShadow: TS, ...enter.pop(localTime - cueWords) }}>words</div>
+              <div style={{ marginTop: 30 }}><WordDots at={cueYou} dur={1.3} /></div>
+            </div>
+
+            {/* what you get: a checklist that ticks as each feature is named */}
+            <StatusRows x={56} y={486} width={282} fontSize={27} card={false} rows={[
+              { label: 'vertical 9:16', state: 'ok', at: cueVertical },
+              { label: 'voice', state: 'ok', at: cueVoice },
+              { label: 'live subtitles', state: 'ok', at: cueSubs },
+              { label: 'motion graphics', state: 'ok', at: cueMotion },
+            ]} />
+
+            <PhoneFrame x={342} y={318} width={330} at={cueFinished}>
+              <MiniReel at={cueFinished} kicker="DEV SHORTS" title="Prompt caching, explained"
+                words={'the same prompt prefix is read from cache on the next call'.split(' ')} />
+              <VoicePill at={cueFinished} />
+              <FocusRing at={cueVoice} left={22} top={54} width={176} height={56} radius={26} />
+              <FocusRing at={cueSubs} left={14} top={500} width={332} height={56} />
+              <FocusRing at={cueMotion} left={24} top={320} width={312} height={140} radius={22} color={VIOLET} />
+            </PhoneFrame>
+
+            <SubtitleRail sceneIdx={1} bottom={150} fontSize={28} variant="clean" accentColor={CYAN} fontFamily="Inter" />
+          </SceneRoot>
+        );
+      }}
+    </Sprite>
+  );
+}
+
+// ── Scene 2 · name reveal: That is Reelsmith ─────────────────────────────────
+function Scene2() {
+  const win = useSceneWindow(2);
+  const cueThat = useWordCue(2, "that is");             // 0.66  logo pops just ahead of it (scene-open flourish)
+  const cueName = useWordCue(2, "is reelsmith");        // 1.14  wordmark assembles
+  const cueAn = useWordCue(2, "an open");               // 2.47  headline, word by word
+  const cueOpen = useWordCue(2, "open framework");      // 2.57
+  const cueFramework = useWordCue(2, "framework");      // 2.90
+  const cueFor = useWordCue(2, "for making");           // 3.27
+  const cueShort = useWordCue(2, "short videos");       // 3.75
+  const cueVideos = useWordCue(2, "videos");            // 4.08
+  const cueWith = useWordCue(2, "with a coding");       // 4.38  name block lifts, agent prompt box opens
+  const cueAgent = useWordCue(2, "coding agent");       // 4.73  prompt types
+  const cueClaude = useWordCue(2, "claude code");       // 5.56  "Claude Code" chip
+  const cueCode = useWordCue(2, "code");                // 5.83  prompt is sent
+  return (
+    <Sprite {...win}>
+      {({ localTime }) => (
+        <SceneRoot idx={2} enter="iris" pattern="none">
+          <Glow x={360} y={420} r={360} opacity={0.34} breathe={0.04} at={cueThat - 0.35} />
+          <Lift at={cueWith} from={130}>
+            <Logo y={170} size={104} at={cueThat - 0.35} />
+            <Wordmark y={312} size={76} at={cueName} />
+            <Title y={478} size={52} text="An *open* framework|for *short* *videos*."
+              ats={[cueAn, cueOpen, cueFramework, cueFor, cueShort, cueVideos]} />
+          </Lift>
+          <PromptBox y={690} width={560} label="coding agent" text="make me a short about prompt caching"
+            showAt={cueWith} at={cueAgent} speed={30} sendAt={cueCode + 0.12} />
+          <Chip x={404} y={664} z={3} at={cueClaude} icon="sparkle" color="violet" variant="outline" size={24}
+            style={{ background: '#161B2E' }}>Claude Code</Chip>
+          <SubtitleRail sceneIdx={2} bottom={150} fontSize={28} variant="clean" accentColor={CYAN} fontFamily="Inter" />
+        </SceneRoot>
+      )}
+    </Sprite>
+  );
+}
+
+// ── Scene 3 · the pipeline, five beats ───────────────────────────────────────
+function Scene3() {
+  const win = useSceneWindow(3);
+  const cueHere = useWordCue(3, "here is");             // 0.65  kicker; the dim five-node skeleton opens with the scene
+  const cueScript = useWordCue(3, "script becomes");    // 2.58  01 script.md
+  const cueVoice = useWordCue(3, "voice the");          // 3.22  02 voiceover.mp3
+  const cueTimings = useWordCue(3, "word timings");     // 4.37  03 scenes.json
+  const cueDrive = useWordCue(3, "drive");              // 6.07  04 index.html ("drive an animation")
+  const cueRenderer = useWordCue(3, "renderer");        // 7.46  05 output.mp4
+  const cueTurns = useWordCue(3, "turns");              // 7.83  render bar fills…
+  const cueMp4 = useWordCue(3, "mp4");                  // 9.01  …to 100 % on "MP4"
+  return (
+    <Sprite {...win}>
+      {() => (
+        <SceneRoot idx={3} enter="wipe" pattern="grid">
+          <Glow x={360} y={480} r={360} opacity={0.22} breathe={0.03} />
+          <Kicker y={120} at={cueHere}>The whole pipeline</Kicker>
+          <FlowDiagram y={184} at={cueHere - 0.35} nodeW={480} nodeH={100} gap={38} nodes={[
+            { label: 'script.md', sub: 'you write it', icon: 'file', at: cueScript },
+            { label: 'voiceover.mp3', sub: 'TTS or your own take', icon: 'mic', at: cueVoice },
+            { label: 'scenes.json', sub: 'Whisper word timings', icon: 'words', at: cueTimings, color: 'cyan' },
+            { label: 'index.html', sub: 'the animation', icon: 'code', at: cueDrive },
+            { label: 'output.mp4', sub: 'the renderer', icon: 'film', at: cueRenderer, color: 'ok' },
+          ]} />
+          <ProgressBar y={880} width={480} at={cueTurns} until={cueMp4} label="rendering · 30 fps" color="ok" />
+          <SubtitleRail sceneIdx={3} bottom={150} fontSize={28} variant="clean" accentColor={CYAN} fontFamily="Inter" />
+        </SceneRoot>
+      )}
+    </Sprite>
+  );
+}
+
+// ── Scene 4 · two voice paths, one sync ──────────────────────────────────────
+function Scene4() {
+  const win = useSceneWindow(4);
+  const cueThe = useWordCue(4, "the voice");            // 0.57  kicker
+  const cueText = useWordCue(4, "text to speech");      // 1.54  TTS panel
+  const cueSpeech = useWordCue(4, "speech");            // 1.89  waveform speaks, `reelsmith tts`
+  const cueOr = useWordCue(4, "or your");               // 2.24  "or" medallion
+  const cueOwn = useWordCue(4, "your own");             // 2.45  your-take panel
+  const cueBuilt = useWordCue(4, "built in");           // 3.54  teleprompter scrolls
+  const cueTele = useWordCue(4, "teleprompter");        // 3.89  `reelsmith record`
+  const cueEither = useWordCue(4, "either way");        // 5.11  split card lifts, scenes.json word row
+  const cueEvery = useWordCue(4, "every word");         // 6.10  words light on their own cue
+  const cueWordOn = useWordCue(4, "word on");           // 6.26
+  const cueOn = useWordCue(4, "on screen");             // 6.52
+  const cueScreen = useWordCue(4, "screen is");         // 6.66
+  const cueIs = useWordCue(4, "is synced");             // 6.90
+  const cueSynced = useWordCue(4, "synced");            // 7.13
+  const cueExact = useWordCue(4, "exact moment");       // 7.68  IN SYNC stamp
+  const cueSpoken = useWordCue(4, "spoken");            // 8.64  waveform settles
+  const rowCues = [cueEvery, cueWordOn, cueOn, cueScreen, cueIs, cueSynced];
+  // Scene-local start times as stored in scenes.json (window cue minus the 0.5 s scene overlap).
+  const stamps = rowCues.map((c) => (isFinite(c) ? `${(c - 0.5).toFixed(2)}` : ''));
+  return (
+    <Sprite {...win}>
+      {() => (
+        <SceneRoot idx={4} enter="push" pattern="dots">
+          <Lift at={cueEither} from={160}>
+          <Glow x={200} y={330} r={260} opacity={0.24} />
+          <Glow x={540} y={330} r={260} color={CYAN} opacity={0.16} />
+          <Kicker y={104} at={cueThe}>Two ways to a voice</Kicker>
+          <SplitCard y={160} height={352} divider="or" dividerAt={cueOr}
+            left={{ title: 'TTS', sub: 'text to speech', icon: 'wave', at: cueText, children: (
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 22 }}>
+                <Waveform width={250} height={116} bars={22} gap={5} seed={9} at={cueText} active={[cueSpeech, cueSpoken]} />
+                <Chip at={cueSpeech} mono size={22} color="violet" variant="outline">reelsmith tts</Chip>
+              </div>
+            ) }}
+            right={{ title: 'Your take', sub: 'teleprompter', icon: 'mic', at: cueOwn, children: (
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 14 }}>
+                <Teleprompter at={cueBuilt} />
+                <Chip at={cueTele} mono size={22} color="cyan" variant="outline">reelsmith record</Chip>
+              </div>
+            ) }} />
+          </Lift>
+          <Card y={566} width={568} at={cueEither} title="scenes.json · words" titleMono icon="words" color={CYAN}
+            glowAt={cueExact} enter="rise" padding="24px 30px 18px">
+            <SyncWords words={['every', 'word', 'on', 'screen', 'is', 'synced']} cues={rowCues} stamps={stamps} />
+          </Card>
+          <Stamp y={846} at={cueExact} color="ok" rotate={-7} size={46}>in sync</Stamp>
+          <SubtitleRail sceneIdx={4} bottom={150} fontSize={28} variant="clean" accentColor={CYAN} fontFamily="Inter" />
+        </SceneRoot>
+      )}
+    </Sprite>
+  );
+}
+
+// ── Scene 5 · everything is a plain file ─────────────────────────────────────
+function Scene5() {
+  const win = useSceneWindow(5);
+  const cueEverything = useWordCue(5, "everything");    // 0.76  headline, word by word (tree card opens just ahead)
+  const cueIs = useWordCue(5, "is a");                  // 1.28
+  const cueA = useWordCue(5, "a plain");                // 1.61
+  const cuePlain = useWordCue(5, "plain file");         // 1.72  the project tree fills in
+  const cueFile = useWordCue(5, "file");                // 2.01
+  const cueScript = useWordCue(5, "script is");         // 2.87  script.md lights
+  const cueMarkdown = useWordCue(5, "markdown the");    // 3.39  markdown badge + script.md card
+  const cueAnim = useWordCue(5, "animation is");        // 4.31  index.html lights
+  const cueHtml = useWordCue(5, "html file");           // 5.26  html badge + index.html card
+  const cueConfig = useWordCue(5, "config");            // 6.85  config/ and its .md files light
+  const cueAgent = useWordCue(5, "agent reads");        // 7.96  "agent reads" badge + config card
+  return (
+    <Sprite {...win}>
+      {() => (
+        <SceneRoot idx={5} enter="up" pattern="grid">
+          <Glow x={360} y={420} r={340} opacity={0.22} breathe={0.03} />
+          <Title y={96} size={56} text="Everything is a|*plain* *file*." ats={[cueEverything, cueIs, cueA, cuePlain, cueFile]} />
+          <FileTree y={250} width={540} title="my-channel/" at={cueEverything - 0.45} rows={[
+            { name: 'videos/', depth: 0, at: cuePlain },
+            { name: 'my-video/', depth: 1, at: cuePlain + 0.12 },
+            { name: 'script.md', depth: 2, at: cuePlain + 0.24, hotAt: cueScript, badge: 'markdown', badgeAt: cueMarkdown },
+            { name: 'index.html', depth: 2, at: cuePlain + 0.36, hotAt: cueAnim, badge: 'one file', badgeVariant: 'violet', badgeAt: cueHtml },
+            { name: 'config/', depth: 0, at: cuePlain + 0.48, hotAt: cueConfig, badge: 'agent reads', badgeVariant: 'ok', badgeAt: cueAgent },
+            { name: 'audio.md', depth: 1, at: cuePlain + 0.6, hotAt: cueConfig + 0.15 },
+            { name: 'music.md', depth: 1, at: cuePlain + 0.72, hotAt: cueConfig + 0.3 },
+          ]} />
+          <DeckLayer top={658} laterAts={[cueHtml, cueAgent]}>
+            <CodeCard y={658} width={600} fontSize={22} title="script.md" at={cueMarkdown} enter="fromBottom"
+              highlight={[{ line: 1, at: cueMarkdown + 0.4 }]} lines={['### Scene 2', 'That is Reelsmith.']} />
+          </DeckLayer>
+          <DeckLayer top={704} laterAts={[cueAgent]}>
+            <CodeCard y={704} width={600} fontSize={22} title="index.html" at={cueHtml} enter="fromBottom"
+              lines={['<Stage scenesSrc="scenes.json">', '  <Scene1 /> <Scene2 />', '</Stage>']} />
+          </DeckLayer>
+          <DeckLayer top={750}>
+            <CodeCard y={750} width={600} fontSize={22} title="config/audio.md" at={cueAgent} enter="fromBottom"
+              lines={['# Audio defaults', '- TTS speed: **1.15×**', '- Music bed: **6 dB under**']} />
+          </DeckLayer>
+          <SubtitleRail sceneIdx={5} bottom={150} fontSize={28} variant="clean" accentColor={CYAN} fontFamily="Inter" />
+        </SceneRoot>
+      )}
+    </Sprite>
+  );
+}
+
+// ── Scene 6 · everything is a plugin ─────────────────────────────────────────
+function Scene6() {
+  const win = useSceneWindow(6);
+  const cueAnd = useWordCue(6, "and everything");       // 0.64  core pops just ahead of it, empty sockets follow
+  const cueEverything = useWordCue(6, "everything");    // 1.16  headline, word by word
+  const cueIs = useWordCue(6, "is a");                  // 1.61
+  const cueA = useWordCue(6, "a plugin");               // 1.91
+  const cuePlugin = useWordCue(6, "plugin");            // 2.03  tts + stt dock
+  const cueSwap = useWordCue(6, "swap");                // 2.59  tts/openrouter flies out…
+  const cueProvider = useWordCue(6, "provider");        // 3.44  …tts/my-tts docks
+  const cueStyle = useWordCue(6, "style");              // 4.46  style/motion docks
+  const cuePublish = useWordCue(6, "publish target");   // 5.75  publish/youtube docks
+  const cueWithout = useWordCue(6, "without touching"); // 6.43  "core untouched" callout
+  return (
+    <Sprite {...win}>
+      {() => (
+        <SceneRoot idx={6} enter="zoom" pattern="dots">
+          <Glow x={360} y={500} r={340} opacity={0.3} breathe={0.05} at={cueAnd - 0.3} />
+          <Title y={96} size={58} text="Everything is|a *plugin*." ats={[cueEverything, cueIs, cueA, cuePlugin]} />
+          <DockSockets at={cueAnd} top={268} />
+          <PluginDock y={268} height={480} at={cueAnd - 0.3} core={{ label: 'reelsmith', sub: 'core', icon: 'cog' }} tiles={[
+            { label: 'tts', sub: 'openrouter', icon: 'wave', at: cuePlugin, slot: 'left', outAt: cueSwap },
+            { label: 'stt', sub: 'whisper', icon: 'words', at: cuePlugin + 0.15, slot: 'bottom', color: 'cyan' },
+            { label: 'tts', sub: 'my-tts', icon: 'wave', at: cueProvider, slot: 'left', color: 'ok' },
+            { label: 'style', sub: 'motion', icon: 'palette', at: cueStyle, slot: 'top', color: 'cyan' },
+            { label: 'publish', sub: 'youtube', icon: 'send', at: cuePublish, slot: 'right', color: 'warn' },
+          ]} />
+          <Callout y={790} at={cueWithout} icon="lock" color="ok" title="Core untouched">
+            <span style={{ fontFamily: MONO, fontSize: 22, color: CODE.str }}>plugins/my-tts/plugin.js</span>
+          </Callout>
+          <SubtitleRail sceneIdx={6} bottom={150} fontSize={28} variant="clean" accentColor={CYAN} fontFamily="Inter" />
+        </SceneRoot>
+      )}
+    </Sprite>
+  );
+}
+
+// ── Scene 7 · close: one command at a time ───────────────────────────────────
+const INIT_CMD = 'npx reelsmith init my-channel';
+function Scene7() {
+  const win = useSceneWindow(7);
+  const cueIn = useWordCue(7, "in this series");        // 0.60  kicker
+  const cueSeries = useWordCue(7, "series");            // 1.20  syllabus fills in, 01 "now"
+  const cueInstall = useWordCue(7, "install");          // 2.26  02 install lights, 03–09 sweep
+  const cuePublished = useWordCue(7, "published short");// 3.06  10 publish lights
+  const cueOne = useWordCue(7, "one command");          // 3.72  syllabus lifts, terminal opens, init types
+  const cueLets = useWordCue(7, "lets build");          // 5.07  "Let's…
+  const cueBuild = useWordCue(7, "build");              // 5.49  …build."
+  const cueDone = cueOne + typeDuration(INIT_CMD);      // typing ends; output rows follow it
+  return (
+    <Sprite {...win}>
+      {() => (
+        <SceneRoot idx={7} enter="wipe" pattern="grid">
+          <Glow x={360} y={460} r={340} opacity={0.22} breathe={0.04} at={cueSeries} />
+          <Glow x={360} y={880} r={320} opacity={0.3} breathe={0.05} at={cueLets} />
+          <Lift at={cueOne - 0.4} from={230}>
+            <Kicker y={104} at={cueIn}>The series · 10 episodes</Kicker>
+            <Syllabus y={160} showAt={cueSeries} installAt={cueInstall} publishAt={cuePublished} />
+          </Lift>
+          <Terminal y={466} title="~/code" command={INIT_CMD} at={cueOne} finalPrompt rows={[
+            { text: 'my-channel/', status: 'ok', right: 'created', at: cueDone + 0.12 },
+            { text: 'CLAUDE.md + .claude/skills/', status: 'ok', at: cueDone + 0.3 },
+            { text: 'playwright chromium', status: 'ok', right: 'ready', at: cueDone + 0.48 },
+          ]} />
+          <Title y={796} size={86} lineHeight={1.0} enter="pop" text="Let's|*build*." ats={[cueLets, cueBuild]} />
+          <SubtitleRail sceneIdx={7} bottom={150} fontSize={28} variant="clean" accentColor={CYAN} fontFamily="Inter" />
+        </SceneRoot>
+      )}
+    </Sprite>
+  );
+}
+
+function App() {
+  return (
+    <Stage width={720} height={1280} scenesSrc="scenes.json" background={INK} loop={false} autoplay={true}
+      persistKey="tut-01-what-is-reelsmith">
+      <Scene1 />
+      <Scene2 />
+      <Scene3 />
+      <Scene4 />
+      <Scene5 />
+      <Scene6 />
+      <Scene7 />
+    </Stage>
+  );
+}
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>

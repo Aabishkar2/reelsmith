@@ -6,14 +6,15 @@ How the pieces fit, what each file holds, and the data contracts between steps. 
 
 ```
 reelsmith/
-  bin/reelsmith.js          CLI entry: argument parsing, command dispatch, exit codes
+  bin/reelsmith.js          CLI entry (package.json "bin"): calls core/cli.js
   core/
+    cli.js                  argument parsing, every command, help texts, exit codes
     config.js               loads reelsmith.config.json, .env and the built-in defaults
     plugins.js              plugin registry: discover, validate, list, get(kind, name)
     project.js              project root discovery, resolves videos/<name>
     env.js                  finds node, ffmpeg/ffprobe and the Python with Whisper
-    log.js                  the logger
-    publishNotes.js         parses publish.md
+    serve.js                the local HTTP server tools load pages from (project root)
+    publishNotes.js         parses publish.md, reads and writes publish/<target>.json
   pipeline/
     tts.js                  TTS sentence mode
     performance.js          TTS performance mode
@@ -27,7 +28,9 @@ reelsmith/
     denoise.js              background-noise removal for the cut
     audio.js                ffmpeg helpers
     jev.js                  optional Jev AI decisions via OpenRouter
-    cli.js                  the pipeline commands (analyze, rerecord, cut, status, tts)
+    config.js               the take pipeline's settings (config/fillers.json over built-in defaults)
+    cli.js                  old entry point: node pipeline/cli.js analyze|rerecord|cut|status|tts, an alias onto core/cli.js
+    whisper_words.py        Whisper word timestamps (VAD-chunked windows)
     test/                   the test suite (node pipeline/test/run-tests.js)
   renderer/render.js        sharded renderer: Chromium frames → ffmpeg → MP4
   runtime/animations.jsx    the browser runtime every index.html loads
@@ -64,9 +67,9 @@ videos/<name>/
   index.html             the animation
   images/                photos and CREDITS.md (photo-led styles)
   frames/                contact sheet, stills, render cache (gitignored)
-  preview-approved.json  the preview approval
+  preview-approved.json  the preview approval (reelsmith approve)
   draft.mp4              preview render
-  clip-<a>s-<b>s.mp4     range render
+  clip-<a>s-<b>s.mp4     range render (clip-<a>s-<b>s-draft.mp4 with --draft)
   output.mp4             final render
   publish.md             publish notes
   publish/<target>.json  publish results (gitignored)
@@ -128,18 +131,19 @@ The full schema and the flag rules are in [spec.md](spec.md) §4 and §6.
 ### `preview-approved.json`
 
 ```json
-{ "v": 2, "fingerprint": "<sha256>", "by": "you", "at": "2026-09-30T18:02:11.000Z" }
+{ "v": 3, "fingerprint": "<sha256>", "by": "you", "at": "2026-09-30T18:02:11.000Z" }
 ```
 
-The fingerprint is a SHA-256 over `index.html`, `scenes.json`, the runtime, the style kit the page loads (if any), and every image in the video folder and `images/**`. `reelsmith render` recomputes it and refuses (exit 3) when it differs or the file is missing.
+The fingerprint (version 3) is a SHA-256 over `index.html`, `scenes.json`, the runtime, every local script `index.html` loads (each `<script src>` that is not http(s), `data:` or protocol-relative: the style kits), and every image in the video folder and `images/**`. Paths are named relative to the project root, so clone mode and package mode give the same fingerprint for the same files. `reelsmith render` recomputes it and refuses (exit 3) when it differs, the file is missing, or the approval is from an older fingerprint version. `reelsmith approve <video> --check` runs the same check (exit 0 or 1).
 
 ### `voiceover-mix.json`
 
 ```json
-{ "durationSec": 61.1, "tailSec": 2.5, "track": "music/clean-soul.mp3", "underDb": 6 }
+{ "durationSec": 53.417, "voiceSec": 50.957, "tailSec": 2.5, "track": "music/digital-lemonade.mp3", "underDb": 6,
+  "voiceLufs": -16, "musicLufs": -14.1, "bedGainDb": -7.9, "at": "2026-09-30T22:16:03.804Z" }
 ```
 
-Written by `reelsmith mix`. The renderer uses the mix's duration (up to 6 s longer than Σ `dur`) so the music tail plays over the held last frame.
+Written by `reelsmith mix` next to `voiceover-mix.mp3`. `draft`, `clip` and `render` pick `voiceover-mix.mp3` unless its `voiceSec` differs from the current `voiceover.mp3` (the voice was redone after the mix); then they use `voiceover.mp3` and print why. When the audio is 0.1 to 6 s longer than Σ `dur`, the renderer runs to the end of the audio and holds the closing frame through the music tail; longer audio is cut at Σ `dur`. `reelsmith run` reuses `track` and `underDb` when `music.defaultTrack` is not set.
 
 ### `publish/<target>.json`
 
@@ -163,7 +167,7 @@ render.js
 ```
 
 - No frames touch the disk, and encoding overlaps capture.
-- Shards default to `min(4, cores − 1, free memory / 400 MB)`.
+- Shards default to `min(4, cores − 1, free memory / 400 MB)`; `--shards=N` is still capped at cores − 1.
 - The encoder is VideoToolbox when ffmpeg has it, else x264.
 - Segments are cached in `frames/render-cache/<key>/`, so a crashed render resumes.
 - `--draft` renders at 15 fps and 0.75× size; `--from/--to` renders one range. Neither checks the approval.
@@ -172,7 +176,7 @@ A 98 s video renders in about 1.5 minutes, a draft in about 30 s. Measurements a
 
 ## How a page is served
 
-`index.html` loads `../../runtime/animations.jsx` and style kits from `../../styles/<name>/`. Every tool that opens a page (preview, contact sheet, renderer, approval) serves the **project root** over a local HTTP server, because `file://` blocks those loads. In package mode the project root has `runtime` and `styles` symlinks into the installed framework, so the same relative paths work. The page waits for `window.__stage`; tools use `waitUntil: 'load'` (never `networkidle`, because fonts and CDN scripts keep the network busy).
+`index.html` loads `../../runtime/animations.jsx` and style kits from `../../styles/<name>/`. Every tool that opens a page (preview, contact sheet, renderer) serves the **project root** over a local HTTP server (`core/serve.js`), because `file://` blocks those loads. In package mode `runtime` is a symlink into `node_modules/reelsmith`, and `styles/` is a real folder with one symlink per built-in pack (plus `design.md`) beside your own packs, so the same relative paths work; the server follows those links and nothing else outside the project. The page waits for `window.__stage`; tools use `waitUntil: 'load'` (never `networkidle`, because fonts and CDN scripts keep the network busy).
 
 ## Plugins and precedence
 

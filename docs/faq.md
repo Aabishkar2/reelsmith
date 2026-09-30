@@ -4,7 +4,7 @@
 
 ### What does a video cost?
 
-With the built-in TTS provider (Gemini TTS through OpenRouter), about $0.01 per minute of voice. Sentence mode caches every clip, so re-runs only pay for changed lines; performance mode caches by prompt, so a re-run with the same script is free. Your own voice costs nothing. Whisper, the renderer and all the tools run locally.
+With the built-in TTS provider (Gemini TTS through OpenRouter), about $0.01 per minute of voice. Sentence mode caches every clip, so re-runs only pay for changed lines; performance mode caches by prompt, so a re-run with the same script is free (also after you only edit the PERFORMANCE direction; `--force` re-voices). Your own voice costs nothing. Whisper, the renderer and all the tools run locally.
 
 ### What leaves my machine?
 
@@ -18,7 +18,11 @@ In `.env` in the project root (gitignored) and, for YouTube, in `~/.config/reels
 
 ### `reelsmith: command not found`
 
-In clone mode, run `npm link` in the repo, or use `node bin/reelsmith.js`. In a project made by `init`, use `npx reelsmith`.
+In clone mode, use `node bin/reelsmith.js <command>` from the repo (or run `npm link` once to get a `reelsmith` command). In a project made by `init`, use `npx reelsmith <command>`. To create a project, run `npx github:Aabishkar2/reelsmith init my-channel`: `npx reelsmith init` only works once the package is on npm.
+
+### Which Node version?
+
+22 is recommended and 20 is the minimum: Playwright, which draws every frame, needs Node 20 or newer. `reelsmith doctor` shows the version it runs on.
 
 ### A bare `node` fails in a script or a non-interactive shell
 
@@ -26,11 +30,11 @@ Some nvm setups only load in interactive shells. Call node by its full path (for
 
 ### Whisper is not found, or the wrong Python is used
 
-Reelsmith looks for `REELSMITH_PYTHON`, then `python3.11`, `python3.12`, `python3`. `reelsmith doctor` shows which one it picked and whether it can import `whisper`. Set `REELSMITH_PYTHON` to the Python where you ran `pip install openai-whisper`.
+Reelsmith looks for `REELSMITH_PYTHON`, then `python3.11`, `python3.12`, `python3.13`, `python3` (on `PATH`, then `/opt/homebrew/bin`, `/usr/local/bin`, `~/.local/bin`). `reelsmith doctor` shows which one it picked and whether it can import `whisper`. Set `REELSMITH_PYTHON` to the Python where you ran `pip install openai-whisper`.
 
 ### ffmpeg is not found
 
-Install it (`brew install ffmpeg`, `apt install ffmpeg`) or set `FFMPEG_PATH`.
+Install it (`brew install ffmpeg`, `apt install ffmpeg`) or set `FFMPEG_PATH` (and `FFPROBE_PATH`). Besides `PATH`, Reelsmith also looks in `/opt/homebrew/bin`, `/usr/local/bin` and `~/.local/bin`.
 
 ### The renderer or contact sheet cannot start a browser
 
@@ -48,7 +52,7 @@ The key in `.env` is wrong or has no credit. For the built-in provider, check `O
 
 ### Performance mode fails with "sentences not found"
 
-The voice skipped or rephrased more than 20 % of the lines. Simplify the lines it missed, or run again with `--force` for a new take.
+The voice skipped or rephrased more than 20 % of the lines. Simplify the lines it missed, or run again with `--force` for a new take (without `--force` the same cached audio is used again).
 
 ### Can I change the speed without paying again?
 
@@ -74,11 +78,19 @@ It uses a CSS transition or animation. Render mode turns them off. Compute the m
 
 ### `reelsmith render` exits with code 3
 
-There is no approval, or something changed after it. Make a new draft, get it approved, run `reelsmith approve`, then render.
+There is no approval, something changed after it, or the approval is from an older fingerprint version. `reelsmith approve <video> --check` says which. Make a new draft, get it approved, run `reelsmith approve <video> --by=<who>`, then render.
+
+### `reelsmith mix` exits with code 2
+
+It has no track: pass `--track=music/<file>.mp3`, or set `music.defaultTrack` in `reelsmith.config.json`. The error lists the tracks in `music/`; `bash music/download.sh` fetches the defaults.
+
+### The draft has no music although I ran `mix`
+
+The voice changed after the mix (`voiceover-mix.json` `voiceSec` no longer matches `voiceover.mp3`), so `draft` and `render` fall back to `voiceover.mp3` and print why. Run `reelsmith mix` again.
 
 ### How long does a render take?
 
-About 90 seconds for a 90 second short on a recent laptop (4 parallel browsers). A draft takes about 30 seconds. A crashed render resumes from its cached segments.
+About 90 seconds for a 90 second short on a recent laptop (4 parallel browsers, the most the automatic shard count picks). A draft takes about 30 seconds. A crashed render resumes from its cached segments.
 
 ### Can I render on Linux or in CI?
 
@@ -88,11 +100,11 @@ Yes, with ffmpeg and Playwright Chromium installed. The encoder falls back to x2
 
 ### Does publishing post publicly?
 
-YouTube uploads are private unless you ask for public. Every target supports `--dry-run`, and the agent only posts when you tell it to.
+YouTube uploads are private unless you ask for public (`--privacy`, `privacy:` in `publish.md`, or `publish.targets.youtube.privacy`). Every target supports `--dry-run`, and the agent only posts when you tell it to.
 
 ### My YouTube upload says "refresh token expired"
 
-Google projects in Testing mode issue tokens that expire after 7 days. Sign in again, or publish the consent screen. See [Publishing](publishing.md#limits).
+Google projects in Testing mode issue tokens that expire after 7 days. Sign in again with `reelsmith publish <video> --to=youtube --auth`, or publish the consent screen. See [Publishing](publishing.md#limits).
 
 ### My Short is blocked in some or all countries
 

@@ -2,7 +2,7 @@
 /**
  * pipeline/test/publish.test.js — core/publishNotes + the publish-youtube / publish-meta /
  * publish-discord plugins with a stubbed global fetch (no network, no real credentials).
- *   ~/.nvm/versions/node/v22.17.0/bin/node pipeline/test/publish.test.js
+ *   node pipeline/test/publish.test.js
  * Asserts: dry runs make no fetch call; youtube refuses a re-upload without --force; meta skips
  * Instagram without a public URL; discord transcodes a file over the limit (a tiny ffmpeg-made mp4
  * with a small fake limit) and posts multipart. Needs ffmpeg/ffprobe for the transcode case.

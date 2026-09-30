@@ -21,7 +21,7 @@ reelsmith publish videos/<name> --to=youtube,discord             # 4. send
 
 ### `publish.md`
 
-Every target reads its metadata from `videos/<name>/publish.md`: title, description, tags and hashtags. `--notes` writes the skeleton and sends nothing. Keep the section names it writes.
+Every target reads its metadata from `videos/<name>/publish.md`: title, description, tags and hashtags. `--notes` writes the skeleton (the title from `script.md`, empty sections) and sends nothing; it never overwrites an existing `publish.md` unless you add `--force`. Keep the section names it writes.
 
 - Title: 60 characters at most (45 or fewer reads best on a phone). No `<` or `>`.
 - Description: line 1 is the takeaway, line 2 the main source link, then the music credit line if the video has a bed (copy it from `music/CREDITS.md`), then the hashtags.
@@ -31,6 +31,8 @@ Every target reads its metadata from `videos/<name>/publish.md`: title, descript
 ### Dry run everywhere
 
 `--dry-run` does everything except the network write: it reads the credentials, checks the file and its size, builds the request and prints it. Always run it first and read the output.
+
+Other flags: `--file=<file.mp4>` sends another file (relative to the video folder, default `output.mp4`), `--privacy` sets the YouTube privacy, `--public-url` gives Meta a public URL, `--channel` picks the Discord channel. The command exits 1 when any target fails. Every flag is in the [CLI reference](cli.md#ship).
 
 ### Results
 
@@ -66,10 +68,10 @@ Never commit either. Tools never print tokens, client secrets or upload-session 
 5. **Sign in once:**
 
    ```bash
-   reelsmith publish --to=youtube --auth
+   reelsmith publish <video> --to=youtube --auth
    ```
 
-   It opens a Google consent page in the browser (a local loopback flow with PKCE; nothing is pre-selected). Pick the account and the channel and click Allow. The refresh token is saved as `~/.config/reelsmith/yt-token.json` (mode 0600).
+   The command takes a video argument like every `publish`; any video of the project works. It opens a Google consent page in the browser (a local loopback flow with PKCE; nothing is pre-selected). Pick the account and the channel and click Allow. The refresh token is saved as `~/.config/reelsmith/yt-token.json` (mode 0600). `reelsmith publish <video> --to=youtube --auth --check` verifies the stored token without a new sign-in.
 
 ### Metadata and privacy
 
@@ -85,15 +87,15 @@ file: output.mp4         # relative to the video folder
 # Publish — my-video
 ```
 
-`publish.targets.youtube.categoryId` in `reelsmith.config.json` sets a project-wide category.
+`publish.targets.youtube.categoryId` in `reelsmith.config.json` sets a project-wide category, and `publish.targets.youtube.privacy` a project-wide privacy.
 
-- Uploads are **private by default**. Make a video public only when you mean it; usually you review it in YouTube Studio and flip it there.
+- Uploads are **private by default**. The privacy is the first one set of: `--privacy=<private|unlisted|public>`, `privacy:` in the `publish.md` frontmatter, a legacy `youtube.json` in the video folder, `publish.targets.youtube.privacy`, then `private`. The dry run prints which one it used. Make a video public only when you mean it; usually you review it in YouTube Studio and flip it there.
 - Google documents that uploads from unaudited API projects can be locked to private. It may not happen, or may happen later. Always read the **actual** privacy in the result, not the one you asked for. If uploads do get locked, submit the [YouTube API Services audit form](https://support.google.com/youtube/contact/yt_api_form) and describe the project as an internal tool uploading your own videos to your own channel.
 - Metadata YouTube rejects: a title over 100 characters, `<` or `>` anywhere, a description over 5000 bytes, tags over 500 characters in total. The dry run checks these.
 
 ### Limits
 
-- **The refresh token expires 7 days after it is issued** while the consent screen is in Testing. When a publish fails with an expired or revoked token, sign in again with `reelsmith publish --to=youtube --auth`. To remove the expiry, publish the consent screen: add a home page and a privacy policy page and your domain on the Branding page, then Audience → Publish app. It can stay unverified for your own channel (under 100 users); sign in once more afterwards.
+- **The refresh token expires 7 days after it is issued** while the consent screen is in Testing. When a publish fails with an expired or revoked token, sign in again with `reelsmith publish <video> --to=youtube --auth`. To remove the expiry, publish the consent screen: add a home page and a privacy policy page and your domain on the Branding page, then Audience → Publish app. It can stay unverified for your own channel (under 100 users); sign in once more afterwards.
 - **Quota:** 10,000 units per day by default. An upload has historically cost 1,600 units, so about 6 uploads a day. Check the Quotas page in the Cloud Console.
 - **Shorts:** a vertical video of 3 minutes or less is classified as a Short. No `#Shorts` tag is needed.
 
@@ -149,11 +151,11 @@ reelsmith publish videos/<name> --to=meta --public-url=https://cdn.example.com/m
    DISCORD_CHANNEL_ID=...
    ```
 
-To read the channel id from a different variable, name it in the config: `"publish": { "targets": { "discord": { "channelIdEnv": "MY_REVIEW_CHANNEL" } } }`.
+To read the channel id from a different variable, name it in the config: `"publish": { "targets": { "discord": { "channelIdEnv": "MY_REVIEW_CHANNEL" } } }`. `--channel=<id>` beats both.
 
 ### The 10 MB limit
 
-Bots can upload files up to 10 MB on servers without boosts. When `output.mp4` is larger, the plugin first transcodes `output-discord.mp4` (H.264, 720×1280, a two-pass bitrate computed from the duration so the file lands under the limit, 540×960 if it is still too big) and sends that. The transcode is reused while it is newer than the source. A server with a higher limit can raise it with `publish.targets.discord.limitBytes` or `DISCORD_MAX_BYTES`.
+Bots can upload files up to 10 MB on servers without boosts. When `output.mp4` is larger, the plugin first transcodes `output-discord.mp4` with ffmpeg (H.264, 720×1280, a two-pass bitrate computed from the duration so the file lands under the limit, 540×960 if it is still too big) and sends that. The transcode is reused while it is newer than the source. A server with a higher limit can raise it with `publish.targets.discord.limitBytes` or `DISCORD_MAX_BYTES`.
 
 The message is the `publish.md` title plus the first line of the description. The dry run prints the channel, the message, the file and its size, and runs the transcode if one is needed, so you can check the size. It never calls Discord.
 

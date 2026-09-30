@@ -8,7 +8,8 @@
 //   1. useWordCue phrase validation — every useWordCue(N, "phrase") call is
 //      tested against the actual scenes.json word tokens. If a phrase doesn't
 //      match (even via the first-word fallback) it will return Infinity at
-//      runtime and the overlay will never appear.
+//      runtime and the overlay will never appear. The phrase is read as a JS
+//      string literal ("let's build", 'say "hi"', escapes), like the runtime.
 //
 //   2. fade() on text overlays — ...fade( spread on a style object that
 //      contains text-style props (fontFamily / fontSize / fontWeight) causes
@@ -132,11 +133,44 @@ function isSyncOk(lineIdx) {
 
 const issues = []; // { type, severity, line, message }
 
-const cueRe = /useWordCue\(\s*(\d+)\s*,\s*["']([^"']+)["']/g;
+// Reads the JS string literal that starts at src[start] (a " or '). Returns its value, or null
+// when there is no literal there or it is unterminated on that line. A double-quoted string may
+// contain ' ("let's build") and a single-quoted one " ; \" \' \\ and the usual escapes work.
+const ESC = { n: '\n', t: '\t', r: '\r', b: '\b', f: '\f', v: '\v', 0: '\0' };
+function readStringLiteral(text, start) {
+  const q = text[start];
+  if (q !== '"' && q !== "'") return null;
+  let out = '';
+  for (let i = start + 1; i < text.length; i++) {
+    const c = text[i];
+    if (c === q) return out;
+    if (c === '\n') return null;
+    if (c === '\\') {
+      const e = text[++i];
+      if (e === undefined) return null;
+      if (e === '\n') continue;                    // line continuation
+      const hex = e === 'x' ? /^[0-9a-fA-F]{2}/.exec(text.slice(i + 1))
+        : e === 'u' ? /^(?:[0-9a-fA-F]{4}|\{[0-9a-fA-F]{1,6}\})/.exec(text.slice(i + 1)) : null;
+      const cp = hex ? parseInt(hex[0].replace(/[{}]/g, ''), 16) : -1;
+      if (hex && cp <= 0x10FFFF) {
+        out += String.fromCodePoint(cp);
+        i += hex[0].length;
+        continue;
+      }
+      out += Object.prototype.hasOwnProperty.call(ESC, e) ? ESC[e] : e;
+      continue;
+    }
+    out += c;
+  }
+  return null;
+}
+
+const cueRe = /useWordCue\(\s*(\d+)\s*,\s*(?=["'])/g;
 let m;
 while ((m = cueRe.exec(src)) !== null) {
   const sceneIdx = parseInt(m[1], 10);
-  const phrase   = m[2];
+  const phrase   = readStringLiteral(src, m.index + m[0].length);
+  if (phrase === null) continue;
   const lineNum  = lineOf(m.index);
   const lineIdx  = lineNum - 1;
 

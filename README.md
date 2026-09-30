@@ -38,38 +38,41 @@ git clone https://github.com/Aabishkar2/reelsmith.git
 cd reelsmith
 npm install
 npx playwright install chromium
-npm link                      # puts `reelsmith` on your PATH
 cp .env.example .env          # add OPENROUTER_API_KEY for TTS
-reelsmith doctor
+node bin/reelsmith.js doctor
 ```
+
+In a clone, the CLI is `node bin/reelsmith.js <command>` (run `npm link` once if you want a `reelsmith` command on your PATH).
 
 ### Option B: a new project with `init`
 
 ```bash
-npx reelsmith init my-channel
+npx github:Aabishkar2/reelsmith init my-channel
 cd my-channel
 cp .env.example .env          # add OPENROUTER_API_KEY for TTS
 npx reelsmith doctor
 ```
 
-Until the package is published on npm, run init straight from GitHub: `npx github:Aabishkar2/reelsmith init my-channel`. In a project made by init, the CLI is a local dependency, so commands run as `npx reelsmith <command>`.
+The package is not on npm yet, so `init` runs straight from GitHub; `npx reelsmith init my-channel` works once it is published. `init` adds `reelsmith` as a local dependency, so inside the project every command runs as `npx reelsmith <command>`.
 
-`reelsmith doctor` checks node, ffmpeg, the Python that has Whisper, Playwright Chromium, your keys and every plugin, and says exactly what is missing.
+`reelsmith doctor` checks node, ffmpeg, the Python that has Whisper, Playwright Chromium, the project, your keys and every plugin, and says exactly what is missing.
 
 ## Your first video in six commands
 
+These docs write `reelsmith <command>`: in a project that is `npx reelsmith <command>`, in a clone `node bin/reelsmith.js <command>`.
+
 ```bash
-reelsmith new prompt-caching                        # videos/prompt-caching/script.md
+reelsmith new prompt-caching                         # videos/prompt-caching/script.md
 # write the script, or ask your agent to (script-writing skill)
-reelsmith tts videos/prompt-caching --voice=Leda    # voice + word timings
+reelsmith tts prompt-caching --voice=Leda            # voice + word timings
 # the agent writes index.html (html-animation skill)
-reelsmith sheet videos/prompt-caching               # contact sheet
-reelsmith draft videos/prompt-caching               # low-res preview
-reelsmith approve videos/prompt-caching --by="you"  # after you watch the draft
-reelsmith render videos/prompt-caching              # output.mp4
+reelsmith sheet prompt-caching --stills              # contact sheet + full-size stills
+reelsmith draft prompt-caching                       # low-res preview
+reelsmith approve prompt-caching --by="you"          # after you watch the draft
+reelsmith render prompt-caching                      # output.mp4
 ```
 
-`reelsmith render` refuses to run (exit code 3) until the preview is approved, and the approval expires when the animation, the timings or the images change.
+`reelsmith render` refuses to run (exit code 3) until the preview is approved, and the approval expires when the animation, the timings, the runtime, the style kit or the images change. `reelsmith run prompt-caching --voice=Leda` chains tts, mix, lint, sheet and draft for the iterations in between.
 
 ## How the agent drives it
 
@@ -85,7 +88,7 @@ See [docs/agent-workflow.md](docs/agent-workflow.md).
 
 ## Tutorial series
 
-Ten shorts made with Reelsmith itself, in the `motion` style. Each folder has the `script.md` (and the `index.html` once built).
+Ten shorts made with Reelsmith itself, in the `motion` style. Each folder has the `script.md`, the `index.html` and the `scenes.json`. [docs/tutorials.md](docs/tutorials.md) has the length, a summary and the commands of each episode.
 
 | # | Episode | What it covers | Folder |
 |---|---|---|---|
@@ -127,7 +130,7 @@ Pick one per video with `style:` in `script.md`, or set a project default in `re
 
 | Tool | Version | Needed for |
 |---|---|---|
-| Node.js | 22 recommended (18 minimum) | everything |
+| Node.js | 22 recommended, 20 minimum | everything |
 | ffmpeg + ffprobe | any recent | audio, mixing, rendering |
 | Playwright Chromium | installed with `npx playwright install chromium` | contact sheets, drafts, renders |
 | Python + `openai-whisper` | Python 3.11 recommended | word timings (TTS performance mode, recorded takes, exact TTS cues) |
@@ -169,6 +172,8 @@ docs/  site/             documentation and the docs site
 | [Publishing](docs/publishing.md) | YouTube, Meta and Discord setup |
 | [Agent workflow](docs/agent-workflow.md) | how Claude Code drives the pipeline |
 | [Architecture](docs/architecture.md) | directory map and data contracts |
+| [Fast render](docs/fast-render.md) | the sharded renderer's design and numbers |
+| [Tutorials](docs/tutorials.md) | the ten tutorial episodes: what each teaches and the commands it shows |
 | [FAQ](docs/faq.md) | cost, privacy, troubleshooting |
 
 The same pages are published as a site from `site/` (built by `node tools/build-site.js`).
@@ -177,7 +182,7 @@ The same pages are published as a site from `site/` (built by `node tools/build-
 
 **What does a video cost?** With the built-in TTS provider (Gemini TTS through OpenRouter), about $0.01 per minute of voice. Your own voice is free. Whisper, the renderer and everything else run locally.
 
-**What leaves my machine?** Only the TTS request (your script text) and, when you publish, the video and its metadata to the targets you name. Recording, transcription, analysis and rendering are local.
+**What leaves my machine?** Only the TTS request (your script text), the optional Jev AI filler check on a recorded take (short word snippets, off with `--no-jev`), and, when you publish, the video and its metadata to the targets you name. Recording, transcription, analysis and rendering are local.
 
 **Do I need Claude Code?** No. Every step is a CLI command and a plain file. The agent makes the creative steps (script, animation) fast; you can write them by hand.
 

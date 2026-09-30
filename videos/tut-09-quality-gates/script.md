@@ -46,5 +46,5 @@ The narrator is laying out a review process for developers who care about qualit
 - Scene 2 (linters): Terminal `reelsmith lint`, two rows check-sync / validate-sync with green checks; one flash of a red failure example "setTimeout at line 212" then fixed. Primitive: Terminal
 - Scene 3 (sheet): A 4x3 contact sheet grid animates in with word labels under frames; score chips 6, 9, 8, 7... appear; the three lowest get red rings on "three worst". Primitive: Grid + ScoreChips
 - Scene 4 (draft): Terminal `reelsmith draft`, a phone frame plays a pixelated low-res draft with a "15 fps · 0.75×" tag; a "30 s" stopwatch. Primitive: Terminal + PhoneFrame
-- Scene 5 (approve): Terminal `reelsmith approve --by=aabishkar`, a fingerprint card `sha256 ... index.html scenes.json images/**`; edit one file and a red "expired" stamp hits. Primitive: Terminal + FingerprintCard
+- Scene 5 (approve): Terminal `reelsmith approve --by=you`, a fingerprint card `sha256 ... index.html scenes.json images/**`; edit one file and a red "expired" stamp hits. Primitive: Terminal + FingerprintCard
 - Scene 6 (render): Terminal `reelsmith render`; four shard bars fill in parallel and merge into one bar; timer reads "1:29"; output.mp4 badge lands. Primitive: ShardBars

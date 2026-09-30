@@ -9,7 +9,7 @@ Bright, fast, motion-graphic teaching videos: terminals, code cards, file trees,
 
 Read `styles/design.md` first (canvas, CDN scripts, safe area, banned defaults, animation principles). This file adds the palette, fonts, subtitle props, the kit (`styles/motion/kit.jsx`) and the layouts.
 
-**Reference:** `styles/motion/reference/` (see its README; the finished `videos/tut-01-what-is-reelsmith/index.html` is copied there once it's approved).
+**Reference:** `styles/motion/reference/index.html`, a copy of the approved `videos/tut-01-what-is-reelsmith/index.html` (code to read; its README has the scene map and why it doesn't play on its own).
 
 ## Setup: fonts, scripts, subtitles
 
@@ -52,7 +52,7 @@ Only use font weights the link loads: Sora 600/700/800, Inter 400/500/600, JetBr
 | `CODE_BG` | `#0F1524` | Windows (terminal, code, browser), tiles |
 | `GRAD` / `GRAD_DIAG` | violet → cyan, 90° / 135° | Gradient words, progress fills, underlines, logo |
 
-Also exported: fonts `DISPLAY` (Sora), `SANS` (Inter), `MONO` (JetBrains Mono); `SHADOW`, `TS` (text shadow); `SNAPPY` `{k:320,d:30}`, `PUNCH` `{k:200,d:14}`; `CODE` (syntax colours); helpers `alpha(color, a)`, `mix(a, b, p)`, `tone(name)` (`'violet' | 'cyan' | 'ok' | 'warn' | 'danger' | 'ghost'` → hex).
+Also exported: fonts `DISPLAY` (Sora), `SANS` (Inter), `MONO` (JetBrains Mono); `SHADOW`, `TS` (text shadow); `SNAPPY` `{k:320,d:30}`, `PUNCH` `{k:200,d:14}`; `CODE` (syntax colours); helpers `alpha(color, a)`, `mix(a, b, p)`, `tone(name)` (`'violet' | 'cyan' | 'ok' | 'warn' | 'danger' | 'ghost'` → hex), `springAt(dt, k, d)` (see below).
 
 **Background.** `SceneRoot` paints `INK` with two static glows (violet 20 % top-left, cyan 12 % bottom-right), a faint dot grid and a vignette. Keep it; add a `Glow` or `Watermark` behind a hero element when a scene needs depth.
 
@@ -75,6 +75,16 @@ Also exported: fonts `DISPLAY` (Sora), `SANS` (Inter), `MONO` (JetBrains Mono); 
 **Clock.** Every component reads the scene clock from `useSprite().localTime`, so it must render inside the scene's `<Sprite {...useSceneWindow(N)}>`. Every time prop — `at`, `rows[i].at`, `until`, `outAt`, `cutAt`, `sendAt`, `hotAt`, `ringAt` — is in seconds on that same clock. **Pass `useWordCue(N, "phrase")` results, never typed numbers.** Offsets from a cue (`cueX + 0.2`) are fine for staggering. A cue that isn't found returns `Infinity`, and the element stays hidden. Pass `t={…}` only to drive a component from a different clock.
 
 **Enter only.** Components enter at `at` and stay. The only things that leave are the ones with a prop for it (`outAt` on a dock tile, `cutAt` on a timeline clip, `until` on a code highlight). The next scene's transition replaces everything.
+
+**`at` defaults to 0 = scene start.** A component without `at` is on screen from the first frame of its scene, under the incoming transition. That includes the card of a `StatusRows`, `FileTree` or `CodeCard` whose rows/lines all have their own cues: the empty card shows at scene start and the rows fill in later. Pass the card an `at` (the first row's cue, or a word just before it) when it should arrive with its content.
+
+**Payoffs 0.6 s before the scene ends.** The next scene's 0.5 s transition runs over this scene's last ~0.5 s (the incoming `SceneRoot` covers it). Anything bound to one of the last words of a scene is barely seen. Bind a payoff (stamp, badge, counter landing, final highlight) to a word at least 0.6 s before the scene's end, and let the last words play over a settled frame.
+
+**Springs in your own elements.** `springAt(dt, k = 320, d = 30)` is the runtime `spring` guarded the way the kit uses it: exactly 0 for `dt ≤ 0` and for a non-finite `dt` (the bare `spring` returns `NaN` at `+Infinity`), 1 once long settled. Use it instead of a local copy:
+```jsx
+const s = springAt(localTime - cueX, PUNCH.k, PUNCH.d);   // 0 → 1 (overshoots with PUNCH)
+<div style={{ transform: `scale(${0.6 + 0.4 * s})`, opacity: s > 0 ? 1 : 0 }}>…</div>
+```
 
 **Placement.** Every component takes `x`, `y` (canvas px), `z` and `style`:
 - neither `x` nor `y` → normal flow (put it in your own flex row/column),
@@ -148,7 +158,7 @@ Props: `idx` (= scene number: sets `zIndex` so the incoming scene covers the out
 <Title y={450} at={cueWords} size={64} text="*Words* in,|video out." />
 <Title y={130} ats={[cueEvery, cueThing, cueIs, cuePlugin]} text="Everything is a *plugin*" />
 ```
-`text` (or children): `*word*` = accent, `|` or `\n` = line break. `at` + `stagger` (0.08) or `ats` (per-word cues; words past the end of `ats` follow the previous word by `stagger`), `size` (64), `weight` (800), `color`, `accent` (`'gradient'` or a colour), `align` (center), `width` (520), `lineHeight`, `enter` (`'mask'` default: words rise out of a mask; or any entry name), `font`.
+`text` (or children): `*word*` = accent, `|` or `\n` = line break. Accents are **per word**: `"A *dry* *run*"`, not `"A *dry run*"` (a `*` pair that spans a space is shown literally). `at` + `stagger` (0.08) or `ats` (per-word cues; words past the end of `ats` follow the previous word by `stagger`), `size` (64), `weight` (800), `color`, `accent` (`'gradient'` or a colour), `align` (center), `width` (520), `lineHeight`, `enter` (`'mask'` default: words rise out of a mask; or any entry name), `font`.
 
 ### Kicker — small uppercase label over a title
 ```jsx
@@ -162,7 +172,10 @@ Props: `idx` (= scene number: sets `zIndex` so the incoming scene covers the out
 <Counter value={41} suffix=" MB" at={cueSize} size={96} />
 <Counter value={89} at={cueRender} format={(n) => `${Math.floor(n / 60)}:${String(Math.round(n % 60)).padStart(2, '0')}`} />
 ```
-`value` (target), `from` (start value, 0), `at`, `dur` (1.2, easeOutCubic), `decimals`, `prefix`, `suffix`, `format(n)`, `size` (180), `weight`, `color`, `gradient`, `font`, `enter` (`'blur'`). Tabular numerals, so the width doesn't jitter.
+`value` (target), `from` (start value, 0), `at`, `dur` (1.2), `ease` (`'easeOutCubic'` default: fast then settling; `'linear'`: a steady stopwatch or render clock; any runtime `Easing` name; or a function `p → p` on 0..1), `decimals`, `prefix`, `suffix`, `format(n)`, `size` (180), `weight`, `color`, `gradient`, `font`, `enter` (`'blur'`). Tabular numerals, so the width doesn't jitter.
+```jsx
+<Counter value={89} at={cueRun} dur={cueDone - cueRun} ease="linear" format={(n) => `${Math.floor(n / 60)}:${String(Math.floor(n % 60)).padStart(2, '0')}`} />
+```
 
 ### Chip, Badge — pills and tags
 ```jsx
@@ -194,7 +207,7 @@ Names: `check x warn info file folder mic wave send lock play eye cog bolt palet
   { text: 'OPENROUTER_API_KEY', status: 'ok', right: 'set', at: cueKey },
 ]} />
 ```
-The window opens 0.4 s before `at` (or at `showAt`), then `command` types at `speed` (28 chars/s) with a block cursor (solid while typing, blinking after). `rows[i]`: `text`, `at` (default: 0.3 s after typing ends, 0.18 s apart), `status` (`ok | warn | err | info` → coloured icon), `right` (right-aligned detail), `color`, `dim`, `bold`. Rows grow in with a fade + slide. Props: `title` ('zsh'), `prompt` ('$'), `speed`, `width` (580), `fontSize` (24), `lineHeight` (1.5), `height` (fixed body height: content anchors to the bottom and scrolls up like a real terminal), `finalPrompt` (a fresh `$` line with a blinking cursor after the last step), `cursorColor`, `accent` (top gradient line), `enter` (`'rise'`).
+The window opens 0.4 s before `at` (or at `showAt`), then `command` types at `speed` (28 chars/s) with a block cursor (solid while typing, blinking after). `rows[i]`: `text`, `at` (default: 0.3 s after typing ends, 0.18 s apart), `status` (`ok | warn | err | info` → coloured icon), `right` (right-aligned detail), `color`, `dim`, `bold`. Rows grow in with a fade + slide. Props: `title` ('zsh'), `prompt` ('$'), `speed`, `width` (580), `fontSize` (24), `lineHeight` (1.5), `height` (fixed body height: content anchors to the bottom and scrolls up like a real terminal), `finalPrompt` (a fresh `$` line with a blinking cursor 0.35 s after the last step; from then on it has the only cursor), `cursorColor`, `accent` (top gradient line), `enter` (`'rise'`).
 
 Several commands in one window: `steps` instead of `command`/`rows`:
 ```jsx
@@ -205,7 +218,7 @@ Several commands in one window: `steps` instead of `command`/`rows`:
   { text: 'draft.mp4 · 15 fps · 0.75×', status: 'ok', at: cueDraftDone },
 ]} />
 ```
-Long commands wrap (monospace, `break-all`). At 24 px a line holds ~36 characters. `typeDuration(text, speed)` gives the typing time if you need to place something after a command finishes (`at={cueRun + typeDuration('reelsmith doctor')}`).
+Long commands wrap (monospace, `break-all`). At 24 px a line holds ~36 characters. Output rows grow in to an estimated height (text + status icon + `right`, at ~0.6 em per character); a React node in `rows[i].right` counts as 15 characters, so a long custom node on a long row may pop taller once the grow-in ends. `typeDuration(text, speed)` gives the typing time if you need to place something after a command finishes (`at={cueRun + typeDuration('reelsmith doctor')}`).
 
 ### PromptBox — an agent prompt being typed and sent
 ```jsx
@@ -232,7 +245,7 @@ Long commands wrap (monospace, `break-all`). At 24 px a line holds ~36 character
 ]} />
 <CodeCard y={560} title=".env" lines={[{ text: 'OPENROUTER_API_KEY=sk-or-v1-••••', type: true, at: cueKey }]} />
 ```
-The window enters at `at` (`enter` `'fromRight'`); line *i* shows at `at + 0.25 + i * stagger` (0.12) unless the line has its own `at`. `lines[i]`: a string or `{ text, at, type (typewriter at speed), dim, color (plain colour, no highlighting), segs ([{ s, c }] custom colouring), label (a small badge at the line end), labelTone, labelAt }`. `highlight`: line indexes (0-based; lit once shown) or `{ line, at, until, color }` (move it down the file on cues). `lang` is taken from the file name (`md json js jsx html sh env yaml py …`; override with `lang`); the highlighter knows keywords, strings, numbers, JSX tags, keys, flags, comments, markdown headings/quotes/frontmatter. Props: `numbers` (true), `start` (1), `fontSize` (24; 22 for dense code), `width` (600), `speed` (30), `badge` (replaces the lang badge), `accent`.
+The window enters at `at` (`enter` `'fromRight'`); line *i* shows at `at + 0.25 + i * stagger` (0.12) unless the line has its own `at`. `lines[i]`: a string or `{ text, at, type (typewriter at speed), dim, color (plain colour, no highlighting), segs ([{ s, c }] custom colouring), label (a small badge at the line end), labelTone, labelAt }`. `highlight`: line indexes (0-based; lit once shown) or `{ line, at, until, color }` (move it down the file on cues). `lang` is taken from the file name (`md json js jsx html sh env yaml py …`; override with `lang`); the highlighter knows keywords, strings, numbers, JSX tags, keys, flags, comments, markdown headings/quotes/frontmatter. Props: `numbers` (true), `start` (1), `fontSize` (24; 22 for dense code), `width` (600), `speed` (30), `badge` (replaces the lang badge), `accent`, `grow` (false; true = a line whose `at` hasn't passed takes no space, so the card grows line by line instead of reserving the whole file's height; line numbers and `highlight` indexes stay those of the full `lines` array). The window itself shows at the card's `at` (default 0, scene start); see "`at` defaults to 0" above.
 
 > **Showing code that contains `useWordCue(…)`:** validate-sync scans the whole file for `useWordCue(N, "…")`, including inside strings you display, and fails when the phrase isn't in that scene. Put `// sync-ok` at the end of that line (or on the line above), e.g. `'const cue = useWordCue(2, "bill");', // sync-ok (on-screen code)`.
 
@@ -246,7 +259,9 @@ The window enters at `at` (`enter` `'fromRight'`); line *i* shows at `at + 0.25 
   { name: 'reelsmith.config.json', depth: 0, at: cueConfig },
 ]} />
 ```
-`rows[i]`: `name` (a trailing `/` makes it a folder), `depth`, `kind` (`'dir' | 'file'`), `at` (default `at + 0.2 + i * stagger`), `badge` (+ `badgeVariant`, `badgeAt`), `note` (right-aligned), `hotAt` (row lights cyan), `color` (icon colour; files are tinted by extension). Props: `title` (mono, on a glass card), `card` (true), `width` (540), `fontSize` (24), `stagger` (0.14), `enter` (`'fromLeft'`, per row).
+`rows[i]`: `name` (a trailing `/` makes it a folder), `depth`, `kind` (`'dir' | 'file'`), `at` (default `at + 0.2 + i * stagger`), `badge` (+ `badgeVariant`, `badgeAt`), `note` (right-aligned), `hotAt` (row lights cyan), `color` (icon colour; files are tinted by extension). Props: `title` (mono, on a glass card), `card` (true), `width` (540), `fontSize` (24), `stagger` (0.14), `enter` (`'fromLeft'`, per row), `grow` (false; true = a row whose `at` hasn't passed takes no space and the guide lines end at the last shown row, so the tree grows as rows arrive). The card shows at the tree's `at` (default 0, scene start).
+
+The file/folder icon is exported as `FileGlyph` for your own rows: `<FileGlyph name="scenes.json" size={26} />` (tinted by extension), `<FileGlyph kind="dir" color={CYAN} />`. Props: `kind` (`'dir'`, else a file), `name` (picks the tint), `color`, `size` (26).
 
 ### StatusRows — checklists with state icons
 ```jsx
@@ -256,7 +271,7 @@ The window enters at `at` (`enter` `'fromRight'`); line *i* shows at `at + 0.25 
   { label: 'render', state: 'ok', detail: '1:29', at: cueRender, doneAt: cueDone },
 ]} />
 ```
-`rows[i]`: `label`, `state` (`ok | warn | bad | pending`), `at`, `detail` (mono, right; coloured for warn/bad), `doneAt` (a spinner from `at` until `doneAt`, then the state pops). Props: `title`, `card` (true), `width` (560), `fontSize` (26), `mono` (labels in mono), `stagger` (0.2), `enter` (`'fromLeft'`).
+`rows[i]`: `label`, `state` (`ok | warn | bad | pending`), `at`, `detail` (mono, right; coloured for warn/bad), `doneAt` (a spinner from `at` until `doneAt`, then the state pops). Props: `title`, `card` (true), `width` (560), `fontSize` (26), `mono` (labels in mono), `stagger` (0.2), `enter` (`'fromLeft'`). The card shows at the list's `at` (default 0, scene start), not at the first row's.
 
 ### FlowDiagram — nodes that light up with an animated connector
 ```jsx
@@ -268,7 +283,7 @@ The window enters at `at` (`enter` `'fromRight'`); line *i* shows at `at + 0.25 
 ]} />
 <FlowDiagram y={800} direction="horizontal" width={560} nodes={[{ label: 'take', icon: 'mic', at: cueA }, …]} />
 ```
-All nodes show dim from `at` (default 0.6 s before the first node's cue), each lights up (tint, border, glow, spring punch) at its own `at`, and the connector into it draws during the 0.4 s before (`drawDur`), then dots keep flowing along it. `nodes[i]`: `label`, `sub`, `icon` (else the step number), `color`, `at`, `id`. Props: `direction` (`'vertical'` default, 4–6 nodes; `'horizontal'` for ≤ 3 short labels), `nodeW` (420 vertical), `nodeH` (86 / 150), `gap` (44), `width` (horizontal total, 600), `color`, `mono` (labels in mono, true), `steps` (01…05 on the right), `drawDur`.
+All nodes and their dashed connectors show dim from `at` (default 0.6 s before the first node's cue; nothing is drawn before it), each lights up (tint, border, glow, spring punch) at its own `at`, and the connector into it draws during the 0.4 s before (`drawDur`), then dots keep flowing along it. `nodes[i]`: `label`, `sub`, `icon` (else the step number), `color`, `at`, `id`. Props: `direction` (`'vertical'` default, 4–6 nodes; `'horizontal'` for ≤ 3 short labels), `nodeW` (420 vertical), `nodeH` (86 / 150), `gap` (44), `width` (horizontal total, 600), `color`, `mono` (labels in mono, true), `steps` (01…05 on the right), `drawDur`.
 
 ### PluginDock — a core block with tiles snapping in
 ```jsx
@@ -316,7 +331,7 @@ Tiles fly in from outside their slot with the punch spring, dock (socket lights,
   { label: '0.3s', score: 9, scoreAt: cueScore }, { label: '1.0s', score: 6, scoreAt: cueScore, ringAt: cueWorst }, …
 ]} />
 ```
-`cells[i]`: `label`, `color`, `at` (default `at + i * stagger`), `score` (chip coloured ≥8 ok, 7 warn, else danger; `scoreAt`), `ringAt` (+ `ringColor`) to circle a cell, `dim`. Or `count` for auto cells. Props: `cols` (3), `width` (520), `gap` (14), `aspect` (16/9: portrait frames), `stagger` (0.06), `seed`, `labels`.
+`cells[i]`: `label`, `color` (default cycles violet, cyan, ok, warn and the violet → cyan midpoint), `at` (default `at + i * stagger`), `score` (chip coloured ≥8 ok, 7 warn, else danger; `scoreAt`), `ringAt` (+ `ringColor`) to circle a cell, `dim`. Or `count` for auto cells. Props: `cols` (3), `width` (520), `gap` (14), `aspect` (16/9: portrait frames), `stagger` (0.06), `seed`, `labels`.
 
 ### SplitCard — two panels with a medallion
 ```jsx
@@ -346,7 +361,7 @@ Tiles fly in from outside their slot with the punch spring, dock (socket lights,
 <Stamp y={620} at={cueNotSpoken} rotate={-10}>not spoken</Stamp>
 <Stamp y={700} at={cueExpired} color="danger">expired</Stamp>
 ```
-`children`/`label`, `at`, `color` (DANGER; `'ok'` for APPROVED), `rotate` (−12), `size` (44). Scales from 2.3× with the punch spring and throws a ring.
+`children`/`label`, `at`, `color` (DANGER; `'ok'` for APPROVED), `rotate` (−12), `size` (44), `from` (1.6: the scale it slams down from). Scales from `from`× to 1× with the punch spring and throws a ring. The first frames are `from`× as wide, so keep `from × stamp width` within the 520 px safe area: raise it (up to ~2.3) only for a short word, lower it (1.3–1.45) for a wide one.
 
 ### Arrow, Cursor — canvas-space pointers (direct children of SceneRoot)
 ```jsx

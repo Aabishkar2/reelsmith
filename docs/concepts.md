@@ -13,9 +13,9 @@ script.md ─► voice ─► words ─► index.html ─► gates ─► output
 | Script | `reelsmith new`, script-writing skill | `research.md` | `script.md` |
 | Voice (TTS) | `reelsmith tts` | `script.md` | `voiceover/sN.mp3`, `voiceover.mp3`, `scenes.json` |
 | Voice (own take) | `reelsmith record`, `analyze`, `cut` | `script.md`, `takes/` | `take.json`, then the same three files |
-| Music | `reelsmith mix` | `voiceover.mp3`, a track | `voiceover-mix.mp3` |
+| Music | `reelsmith mix` | `voiceover.mp3`, a track | `voiceover-mix.mp3`, `voiceover-mix.json` |
 | Animation | html-animation skill | `scenes.json`, `script.md`, a style pack | `index.html` |
-| Gates | `reelsmith lint`, `sheet`, `draft`, `approve` | `index.html`, `scenes.json` | contact sheet, `draft.mp4`, `preview-approved.json` |
+| Gates | `reelsmith lint`, `sheet --stills`, `draft`, `approve` | `index.html`, `scenes.json` | contact sheet and stills, `draft.mp4`, `preview-approved.json` |
 | Render | `reelsmith render` | `index.html`, `scenes.json`, audio | `output.mp4` |
 | Publish | `reelsmith publish` | `output.mp4`, `publish.md` | `publish/<target>.json` |
 
@@ -23,7 +23,7 @@ script.md ─► voice ─► words ─► index.html ─► gates ─► output
 
 A **project** is a folder with `reelsmith.config.json` at its root (in clone mode, the repo itself). Every command finds the project root by walking up from the current folder, so you can run them from anywhere inside it.
 
-A **video** is a folder under `videos/`. Everything about one video lives in its folder: the script, the voice, the animation, the render, the publish results. Commands take the video as `<name>`, `videos/<name>` or an absolute path.
+A **video** is a folder under `videos/`. Everything about one video lives in its folder: the script, the voice, the animation, the render, the publish results. Commands take the video as `<name>`, `videos/<name>` or a path.
 
 ## The central contract: `scenes.json`
 
@@ -94,9 +94,9 @@ Reelsmith separates what an agent may decide from what a human must approve.
 | Gate | Tool | Passes when |
 |---|---|---|
 | 1. Linters | `reelsmith lint` | check-sync and validate-sync both exit 0 |
-| 2. Contact sheet | `reelsmith sheet` | the agent scored every criterion 8 or higher on its own frames |
+| 2. Contact sheet | `reelsmith sheet` (`--stills` for the review) | the agent scored every criterion 8 or higher on its own frames |
 | 3. Draft | `reelsmith draft` | the user watched `draft.mp4` and the stills and said "approved" |
-| 4. Approval | `reelsmith approve` | `preview-approved.json` matches the current fingerprint; `reelsmith render` checks it and exits 3 otherwise |
+| 4. Approval | `reelsmith approve --by=<who>` | `preview-approved.json` matches the current fingerprint (index.html, scenes.json, the runtime, every local script the page loads, the images); `reelsmith render` checks it and exits 3 otherwise |
 
 **Publish gates:** the user approves `publish.md`, and posting only happens when the user says so, after a `--dry-run`.
 
@@ -108,7 +108,7 @@ Settings come from several places. For each setting, the first one that is set w
 
 1. CLI flag (`--voice=Leda`)
 2. `script.md` frontmatter (`tts_voice: Leda`)
-3. What the video used last time (`voiceover/tts/meta.json`, for the voice)
+3. What the video used last time (`voiceover/tts/meta.json`: the TTS provider, mode, model and voice)
 4. Environment (`TTS_VOICE`, …, usually from `.env`)
 5. `reelsmith.config.json`
 6. Built-in defaults

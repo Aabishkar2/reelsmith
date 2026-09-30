@@ -24,6 +24,9 @@
  * The page is served over HTTP from the video's PROJECT ROOT (core/project.rootFor, core/serve.js),
  * so ../../runtime/animations.jsx and ../../styles/<pack>/kit.jsx load in clone and package mode.
  *
+ * Page errors (uncaught exceptions) and console errors are collected and printed at the end
+ * as `PAGE ERROR: …` lines (repeats counted once). They do not change the exit code.
+ *
  * Requires: playwright (npm install && npx playwright install chromium)
  */
 
@@ -146,6 +149,25 @@ function findTightText({ W, margin, maxLine }) {
   return out;
 }
 
+// Browser-side errors worth surfacing: uncaught exceptions + console.error, minus Babel's
+// "You are using the in-browser Babel transformer" notice (expected: there is no build step).
+const pageErrors = new Map(); // message → count
+const IGNORED = [/in-browser Babel transformer/i];
+function notePageError(msg) {
+  const text = String(msg == null ? '' : msg).trim();
+  if (!text || IGNORED.some(re => re.test(text))) return;
+  pageErrors.set(text, (pageErrors.get(text) || 0) + 1);
+}
+function printPageErrors() {
+  if (!pageErrors.size) return;
+  console.log(`\n${pageErrors.size} page error(s) (uncaught exceptions / console.error in ${path.relative(process.cwd(), htmlPath)}):`);
+  for (const [text, n] of pageErrors) {
+    const lines = text.split('\n').map((l, i) => (i ? l.trim() : l));
+    const head = lines.slice(0, 6).join('\n    ') + (lines.length > 6 ? '\n    …' : '');
+    console.log(`PAGE ERROR: ${head}${n > 1 ? `  (×${n})` : ''}`);
+  }
+}
+
 (async () => {
   const { server, url: urlOf } = await serve.start(PROJECT_ROOT);
   const url = `${urlOf(htmlPath)}?render=1`;
@@ -153,6 +175,8 @@ function findTightText({ W, margin, maxLine }) {
 
   try {
     const page = await browser.newPage();
+    page.on('pageerror', (err) => notePageError(err && err.stack ? err.stack : err && err.message ? err.message : err));
+    page.on('console', (msg) => { if (msg.type() === 'error') notePageError(msg.text()); });
     await page.setViewportSize({ width: WIDTH, height: HEIGHT });
     await page.goto(url, { waitUntil: 'load', timeout: 30000 });
     await page.waitForFunction(() => typeof window.__stage !== 'undefined', { timeout: 30000 });
@@ -212,6 +236,7 @@ function findTightText({ W, margin, maxLine }) {
     console.log(`\nNow LOOK at it and score 1–10 (see .claude/skills/html-animation/SKILL.md, "Self-critique loop"):`);
     console.log(`  hook · phone readability · breathing room · motion quality · variety · brand accuracy · sync`);
   } finally {
+    printPageErrors();
     await browser.close();
     server.close();
   }

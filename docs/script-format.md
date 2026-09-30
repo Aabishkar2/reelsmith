@@ -49,6 +49,7 @@ The block between the two `---` lines. Flat `key: value` lines only. A trailing 
 | `style` | no | style pack name; else `style` in `reelsmith.config.json`, default `reflective` |
 | `tts_voice` | TTS only | the voice the creator picked. There is no default |
 | `tts_mode` | no | `sentence` (default) or `performance` |
+| `tts_provider` | no | the tts plugin for this video only (default `openrouter`) |
 | `tts_model` | no | provider model for this video only |
 | `tts_speed` | no | tempo for this video only (default 1.15) |
 | `tts_performance` | no | path to a PERFORMANCE file for this video, instead of `config/voice/performance.md` |

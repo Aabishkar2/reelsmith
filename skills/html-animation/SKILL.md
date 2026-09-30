@@ -9,7 +9,7 @@ Use this skill whenever you write or edit `videos/<name>/index.html`.
 
 The rules below fix the most common bugs (text that appears before it is said, wall-clock motion, missing subtitles) and the generic "AI video" look. They are not optional.
 
-Every `reelsmith` command here wraps a script in `tools/` or `renderer/`. If the CLI is unavailable, the escape hatch is to run the script directly, for example `node tools/check-sync.js videos/<name>/index.html`. See `docs/cli.md` for the full mapping.
+Every `reelsmith` command here wraps a script in `tools/` or `renderer/`. In a project made by `init` run them as `npx reelsmith <command>`, in a clone of the framework as `node bin/reelsmith.js <command>`. If the CLI is unavailable, the escape hatch is to run the script directly, for example `node tools/check-sync.js videos/<name>/index.html`. See `docs/cli.md` for the full mapping.
 
 ## Rule 0: load the style first
 
@@ -157,14 +157,14 @@ Report the final scores at the preview gate (Rule 6).
 The user signs off before the final render. Never start `reelsmith render` without it, not even when the user said "make the video" earlier.
 
 1. `reelsmith sheet videos/<name> --stills` writes the contact sheet plus full-size `frames/stills/*.jpg` (hook frames and every scene, subtitles included).
-2. `reelsmith draft videos/<name>` writes `videos/<name>/draft.mp4` in about 30 s: 0.75x size, 15 fps, with the voice. It picks `voiceover-mix.mp3` when it exists, else `voiceover.mp3`. This is what the user actually watches.
+2. `reelsmith draft videos/<name>` writes `videos/<name>/draft.mp4` in about 30 s: 0.75x size, 15 fps, with the voice. It picks `voiceover-mix.mp3` when it exists and was mixed over the current voice, else `voiceover.mp3` (it prints which and why; after a re-voice, run `reelsmith mix` again). A music tail runs on over the closing frame. This is what the user actually watches.
 3. Send the user `draft.mp4` (the file, not just its name), the contact sheet and a selection of stills (hook frames and at least one per scene), with your Rule 5 scores. Ask for permission to render.
 4. On feedback: change `index.html`, run `reelsmith lint`, check the fix with a range render (`reelsmith clip videos/<name> --from=12 --to=24` writes `clip-12s-24s.mp4`), then redo steps 1 to 3 and ask again.
 5. Only on an explicit approval: `reelsmith approve videos/<name> --by="<who>"`, then `reelsmith render videos/<name>` writes `videos/<name>/output.mp4`.
 
-Draft and clip renders never need an approval. `reelsmith render` exits with code 3 when there is no approval or the video changed since it was given (a fingerprint of index.html, scenes.json, the runtime, the style kit and the images, including `images/**`). How the renderer works (shards, JPEG frames piped into ffmpeg, segment cache for crash resume) is in `docs/fast-render.md`.
+Draft and clip renders never need an approval. `reelsmith render` exits with code 3 when there is no approval or the video changed since it was given (a fingerprint of index.html, scenes.json, the runtime, every local script index.html loads such as the style kit, and the images, including `images/**`). `reelsmith approve videos/<name> --check` tells you whether an approval is still current without touching it. How the renderer works (shards, JPEG frames piped into ffmpeg, segment cache for crash resume) is in `docs/fast-render.md`.
 
-Optional: `reelsmith preview videos/<name>` plays the page live in a browser with the voice. `--lan` prints a `/qr` link so the creator can watch it on a phone on the same Wi-Fi.
+Optional: `reelsmith preview videos/<name>` plays the page live in a browser with the voice. `--lan` prints a `/qr` link so the creator can watch it on a phone on the same Wi-Fi; `--port=<N>` and `--no-open` are there when you need them.
 
 ## Permitted exceptions (raw delays of 0.6 s or less)
 

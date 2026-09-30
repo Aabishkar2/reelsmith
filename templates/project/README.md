@@ -12,9 +12,10 @@ npx reelsmith doctor        # checks node, ffmpeg, Python + Whisper, Chromium, k
 `doctor` tells you what is missing. Typical fixes on macOS:
 
 ```bash
-brew install node ffmpeg python@3.11
+brew install node ffmpeg python@3.11      # Node 22 recommended, 20 minimum
 python3.11 -m pip install openai-whisper
 npx playwright install chromium
+bash music/download.sh                    # the default music tracks
 ```
 
 ## Make a video
@@ -26,22 +27,23 @@ By hand, the shortest path is six commands:
 ```bash
 npx reelsmith new my-first-video
 # write videos/my-first-video/script.md (or ask the agent to)
-npx reelsmith tts videos/my-first-video --voice=<voice>
+npx reelsmith tts my-first-video --voice=<voice>
 # the agent writes videos/my-first-video/index.html
-npx reelsmith sheet videos/my-first-video
-npx reelsmith draft videos/my-first-video
-npx reelsmith approve videos/my-first-video --by="<you>"
-npx reelsmith render videos/my-first-video
+npx reelsmith sheet my-first-video --stills
+npx reelsmith draft my-first-video
+npx reelsmith approve my-first-video --by="<you>"
+npx reelsmith render my-first-video
 ```
 
-The result is `videos/my-first-video/output.mp4`.
+The result is `videos/my-first-video/output.mp4`. `npx reelsmith --help` lists every command, `npx reelsmith <command> --help` its flags.
 
 ## Layout
 
 ```
 videos/<name>/         one folder per video
 config/                agent-facing defaults (audio, music, voice direction)
-styles/  runtime/      symlinks into the installed framework
+runtime                a symlink into node_modules/reelsmith
+styles/                the built-in packs (symlinks) and your own packs
 plugins/               your own plugins
 music/                 background tracks + CREDITS.md
 reelsmith.config.json  project settings

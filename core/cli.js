@@ -534,8 +534,8 @@ async function doctorChecks() {
 
   // System
   const [major] = process.versions.node.split('.').map(Number);
-  add('System', 'node', 'node', major >= 22 ? 'ok' : major >= 18 ? 'warn' : 'fail',
-    major >= 22 ? `v${process.versions.node} (${process.execPath})` : major >= 18 ? `v${process.versions.node} — works, 22 recommended` : `v${process.versions.node} — Reelsmith needs Node 18 or newer (22 recommended)`,
+  add('System', 'node', 'node', major >= 22 ? 'ok' : major >= 20 ? 'warn' : 'fail',
+    major >= 22 ? `v${process.versions.node} (${process.execPath})` : major >= 20 ? `v${process.versions.node} — works, 22 recommended` : `v${process.versions.node} — Reelsmith needs Node 20 or newer (22 recommended; Playwright requires 20)`,
     { required: true, path: process.execPath, version: process.versions.node });
   const desc = env.describe();
   for (const t of ['ffmpeg', 'ffprobe']) {
@@ -947,7 +947,7 @@ const COMMANDS = {
   doctor: {
     group: 'Project', usage: '[--json]', max: 0, run: cmdDoctor, json: true,
     summary: 'check node, ffmpeg, python + whisper, Chromium, keys, plugins',
-    about: 'Checks node (≥ 18, 22 recommended), ffmpeg + ffprobe, python and openai-whisper (optional: word timings and own-voice takes), Playwright\'s Chromium, the project (root, mode, reelsmith.config.json, runtime, style packs, videos/), the keys in .env and every plugin\'s check(). ✓ ok · ⚠ needs attention (optional items say so) · ✗ required and failing. Exits 1 only when a required item fails.',
+    about: 'Checks node (≥ 20, 22 recommended), ffmpeg + ffprobe, python and openai-whisper (optional: word timings and own-voice takes), Playwright\'s Chromium, the project (root, mode, reelsmith.config.json, runtime, style packs, videos/), the keys in .env and every plugin\'s check(). ✓ ok · ⚠ needs attention (optional items say so) · ✗ required and failing. Exits 1 only when a required item fails.',
     flags: {}, wraps: 'core/env.js, core/plugins.js',
   },
   new: {
@@ -1020,7 +1020,7 @@ const COMMANDS = {
   mix: {
     group: 'Voice', usage: '<video> [--track=music/<file>.mp3] [--under=6]', min: 1, max: 1, run: cmdMix, json: true,
     summary: 'music bed → voiceover-mix.mp3',
-    about: 'Lays a music bed under voiceover.mp3: the voice loudnormed to −16 LUFS, the track measured and set --under dB below it (default 6), a gentle duck, fades and a 2.5 s tail. Writes voiceover-mix.mp3 and voiceover-mix.json; draft and render pick it up by themselves. Without --track: reelsmith.config.json music.defaultTrack, else an error listing music/*.mp3. Pick the track by mood (config/music.md).',
+    about: 'Lays a music bed under voiceover.mp3: the voice loudnormed to −16 LUFS, the track measured and set --under dB below it (default 6), a gentle duck, fades and a 2.5 s tail. Writes voiceover-mix.mp3 and voiceover-mix.json; draft and render pick it up by themselves. Without --track: reelsmith.config.json music.defaultTrack, else an error listing the tracks in music/ (mp3, wav, m4a). Pick the track by mood (config/music.md).',
     flags: {
       track: { type: 'string', value: 'music/<file>.mp3', desc: 'the music track (default music.defaultTrack)' },
       under: { type: 'number', value: 'dB', desc: 'bed level under the voice (default 6; 4 only when the creator asks)' },

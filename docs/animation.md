@@ -244,9 +244,12 @@ To allow a deliberate exception, put `// sync-ok` on the line or the line above.
 ## Previewing
 
 ```bash
-reelsmith preview videos/<name>          # live playback with the voice
-reelsmith preview videos/<name> --lan    # also reachable from a phone on the same Wi-Fi
+reelsmith preview videos/<name>              # live playback with the voice
+reelsmith preview videos/<name> --lan        # also reachable from a phone on the same Wi-Fi
+reelsmith preview videos/<name> --port=3001 --no-open   # another port, no browser tab
 ```
+
+The port defaults to 3000, or a free one when 3000 is taken.
 
 The preview has a playback bar. Keys: Space plays and pauses, the arrow keys step 0.1 s (1 s with Shift), `0` or Home goes to the start. With `--lan`, open the printed `/qr` page on your computer and scan it with the phone.
 
@@ -256,7 +259,9 @@ The preview has a playback bar. Keys: Space plays and pauses, the arrow keys ste
 reelsmith sheet videos/<name>            # frames/contact-sheet.png
 reelsmith sheet videos/<name> --stills   # plus full-size frames/stills/*.jpg
 reelsmith draft videos/<name>            # draft.mp4, 15 fps, 0.75× size, with the voice
-reelsmith clip videos/<name> --from=12 --to=24   # clip-12s-24s.mp4
+reelsmith clip videos/<name> --from=12 --to=24   # clip-12s-24s.mp4 (add --draft for draft quality)
 ```
+
+`sheet` also takes `--per-scene=<N>` (default 3), `--cols=<N>` (default 4), `--times=<a,b,c>` for extra frames and `--out=<file.png>`.
 
 The contact sheet samples the hook (0.3, 1 and 2 s) and three frames per scene, and labels each with the words being spoken, so sync can be judged from the sheet alone. The html-animation skill scores it on hook, phone readability, breathing room, motion, variety, style accuracy and sync, and iterates until every score is 8 or higher.

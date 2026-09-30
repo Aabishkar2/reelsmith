@@ -43,7 +43,7 @@ teleprompter-prep skill ────────► script.md (delivery pass)   
                         ▼
           voiceover/sN.mp3 + voiceover.mp3 + scenes.json
                         │
-reelsmith mix <name> --track=music/<file>.mp3 ─► voiceover-mix.mp3 (optional)
+reelsmith mix <name> [--track=music/<file>.mp3] ─► voiceover-mix.mp3 (optional)
       │
 html-animation skill ───────────► index.html
 reelsmith lint <name>             must exit 0
@@ -69,63 +69,65 @@ Each `[approve]` is a human gate. Do not skip one, and do not move on until the 
 - **Voice:** there is no default TTS voice. Ask the creator which voice, then write `tts_voice:` or pass `--voice=`. Never pick one yourself.
 - **Linters:** `reelsmith lint` exits 0 before any preview.
 - **Contact sheet:** every criterion scored 8 or higher (html-animation Rule 5).
-- **Preview:** never start `reelsmith render` on your own judgment. Send the user `draft.mp4`, the contact sheet and stills, and ask. Only after an explicit "approved", run `reelsmith approve`, then `reelsmith render`. Any edit after approval invalidates it (the fingerprint covers index.html, scenes.json, the runtime, the style kit and the images). Draft and clip renders skip the gate.
-- **Publish:** the user approves `publish.md`; posting happens only when the user explicitly says so, always after a `--dry-run`. YouTube privacy defaults to private.
+- **Preview:** never start `reelsmith render` on your own judgment. Send the user `draft.mp4`, the contact sheet and stills, and ask. Only after an explicit "approved", run `reelsmith approve --by="<who>"`, then `reelsmith render`. Any edit after approval invalidates it (the fingerprint covers index.html, scenes.json, the runtime, every local script index.html loads, such as the style kit, and the images). `reelsmith approve <video> --check` says whether the approval is still current. Draft and clip renders skip the gate.
+- **Publish:** the user approves `publish.md`; posting happens only when the user explicitly says so, always after a `--dry-run`. YouTube privacy defaults to private (`--privacy`, else `privacy:` in publish.md, else `publish.targets.youtube.privacy`, else private).
 
 ## Setup
 
 ```bash
-# 1. System tools: Node 22+ (18 minimum), ffmpeg, Python 3.11 with Whisper
+# 1. System tools: Node 22 recommended (20 minimum), ffmpeg, Python 3.11 with Whisper
 brew install node ffmpeg python@3.11          # macOS; Ubuntu: apt install ffmpeg python3.11
 python3.11 -m pip install openai-whisper
 
 # 2. Node deps and the headless browser
 npm install
 npx playwright install chromium               # Linux: sudo npx playwright install-deps chromium
-npm link                                      # optional: puts `reelsmith` on your PATH (clone mode)
 
 # 3. Keys
 cp .env.example .env                          # OPENROUTER_API_KEY for TTS; publish tokens later
 
 # 4. Check
-reelsmith doctor
+node bin/reelsmith.js doctor
 ```
 
-Without `npm link`, run the CLI as `node bin/reelsmith.js <command>`. In a project made by `reelsmith init`, run it as `npx reelsmith <command>`.
+In this repo (clone mode) run the CLI as `node bin/reelsmith.js <command>`; `npm link` once puts `reelsmith` on your PATH. In a project made by `init`, run it as `npx reelsmith <command>`. A new project: `npx github:Aabishkar2/reelsmith init <dir>` (`npx reelsmith init` works once the package is on npm), or `node bin/reelsmith.js init <dir> --link` from this checkout. Below, `reelsmith` stands for whichever form applies.
 
 **Effort** (Claude Code `/model`): high or max when writing a new `index.html` or script, medium for small fixes and re-renders.
 
 ## Commands
 
-`<video>` accepts `videos/<name>`, `<name>` or an absolute path. Commands work from any folder inside the project. Every command takes `--help`; structured ones take `--json`. Exit codes: 0 ok, 1 error, 2 usage, 3 gate refused.
+`<video>` accepts `videos/<name>`, `<name>` or a path. Commands work from any folder inside the project. Every command takes `--help` (also `reelsmith help <command>`); structured ones take `--json`. `reelsmith --version` prints the version. Exit codes: 0 ok, 1 error, 2 usage, 3 gate refused.
 
 | Command | Does |
 |---|---|
-| `reelsmith init [dir] [--link] [--style=reflective] [--no-install]` | scaffold a new project |
-| `reelsmith doctor [--json]` | check node, ffmpeg, python + whisper, Playwright Chromium, keys, every plugin |
-| `reelsmith new <name> [--style=…] [--voice=…]` | create `videos/<name>/script.md` from the template |
-| `reelsmith tts <video> --voice=<v> [--mode=sentence\|performance] [--model=…] [--speed=…] [--force]` | script → voice + word timings → `scenes.json` |
+| `reelsmith init [dir] [--link] [--style=reflective] [--no-install] [--force]` | scaffold a new project (`--link`: depend on this checkout via `file:`, linked without `npm link`) |
+| `reelsmith doctor [--json]` | check node, ffmpeg, python + whisper, Playwright Chromium, the project, keys, every plugin |
+| `reelsmith new <name> [--style=…] [--voice=…] [--force]` | create `videos/<name>/script.md` from the template |
+| `reelsmith tts <video> --voice=<v> [--mode=sentence\|performance] [--provider=…] [--model=…] [--speed=…] [--timings=auto\|whisper\|estimate] [--whisper-model=…] [--cta=S] [--force] [--offline]` | script → voice + word timings → `scenes.json` |
 | `reelsmith record [--port=…]` | start the teleprompter app (default port 4310) |
-| `reelsmith analyze <video> [--take=takes/take-01] [--no-jev]` | recorded take → `take.json` |
-| `reelsmith rerecord <video> --sentence=s2.1 --clip=takes/rr-s2.1-1` | splice a re-recorded line into the take |
-| `reelsmith cut <video>` | finalize the take → `scenes.json` + `voiceover.mp3` |
+| `reelsmith analyze <video> [--take=takes/take-01] [--no-jev] [--whisper-model=…] [--force-whisper]` | recorded take → `take.json` |
+| `reelsmith rerecord <video> --sentence=s2.1 --clip=takes/rr-s2.1-1` | splice a re-recorded line into the take; a rejected clip exits 1 (alias `splice`) |
+| `reelsmith cut <video>` | finalize the take → `scenes.json` + `voiceover.mp3` (alias `finalize`) |
 | `reelsmith status <video>` | print the `take.json` summary |
-| `reelsmith mix <video> [--track=music/<file>.mp3] [--under=6]` | music bed → `voiceover-mix.mp3` |
+| `reelsmith mix <video> [--track=music/<file>.mp3] [--under=6]` | music bed → `voiceover-mix.mp3` + `voiceover-mix.json`; no `--track` uses `music.defaultTrack`, else exits 2 listing `music/` |
 | `reelsmith lint <video>` | check-sync + validate-sync; non-zero exit on failure |
-| `reelsmith sheet <video> [--stills]` | contact sheet → `frames/contact-sheet.png` (+ `frames/stills/*.jpg`) |
-| `reelsmith preview <video> [--lan]` | live browser playback with the voice; `--lan` prints a `/qr` link for a phone |
+| `reelsmith sheet <video> [--stills] [--per-scene=3] [--cols=4] [--times=a,b] [--out=…]` | contact sheet → `frames/contact-sheet.png` (+ `frames/stills/*.jpg`) |
+| `reelsmith preview <video> [--lan] [--port=N] [--no-open]` | live browser playback with the voice; `--lan` prints a `/qr` link for a phone |
 | `reelsmith draft <video> [--audio=…]` | fast low-res render → `draft.mp4` (no gate) |
-| `reelsmith clip <video> --from=S --to=S` | render one range → `clip-<S>s-<S>s.mp4` (no gate) |
-| `reelsmith approve <video> --by=<who>` | record the preview approval fingerprint |
+| `reelsmith clip <video> --from=S --to=S [--draft]` | render one range → `clip-<S>s-<S>s.mp4` (no gate) |
+| `reelsmith approve <video> --by=<who> [--check]` | record the preview approval fingerprint; `--check` exits 0 when current, 1 when not |
 | `reelsmith render <video> [--fps=30] [--shards=N] [--encoder=auto\|videotoolbox\|x264] [--audio=…]` | final render → `output.mp4` (gate enforced, exit 3) |
-| `reelsmith publish <video> --to=<target>[,<target>] [--dry-run] [--notes]` | run publish plugins; `--notes` only writes the `publish.md` skeleton |
+| `reelsmith publish <video> --to=<target>[,<target>] [--dry-run] [--force] [--privacy=…] [--file=…] [--public-url=…] [--channel=…]` | run publish plugins |
+| `reelsmith publish <video> --notes` / `--to=youtube --auth [--check]` | write the `publish.md` skeleton / the YouTube sign-in (the human clicks Allow) |
 | `reelsmith plugins [--json]` | list loaded plugins with kind, version, source, status |
-| `reelsmith styles` | list style packs |
-| `reelsmith run <video> [--voice=…] [--until=…]` | tts → mix → lint → sheet → draft; never approves or renders |
+| `reelsmith styles [--json]` | list style packs |
+| `reelsmith run <video> [--voice=…] [--until=tts\|mix\|lint\|sheet\|draft]` | tts → mix → lint → sheet (`--stills`) → draft; never approves or renders |
 
-Escape hatch: each command wraps a script (`pipeline/cli.js`, `tools/*.js`, `renderer/render.js`, `app/server.js`). `docs/cli.md` has the mapping and every flag.
+`draft`, `clip` and `render` also take `--fps`, `--shards`, `--encoder`, `--gpu`, `--keep-segments` and `--duration`. Without `--audio` they use `voiceover-mix.mp3`, unless it was mixed over a different voice than today's `voiceover.mp3` (then `voiceover.mp3`, with the reason printed). A music tail of 0.1 to 6 s past Σ `dur` holds the last frame. `run` skips tts for an own-voice video (a `take.json`), and mixes with `music.defaultTrack`, else the video's last track, else skips the mix.
 
-**Audio defaults** are in `config/audio.md` (TTS 1.15x, voice −16 LUFS, bed 6 dB under). **Music:** `config/music.md`. The bed sits 6 dB under the voice, measured per track. Do not ask the creator for a level and never use a fixed dB offset. `--under=4` only when the creator asks. Pick the track by mood.
+Escape hatch: each command wraps a module or a script (`pipeline/*.js`, `tools/*.js`, `renderer/render.js`, `app/server.js`; `node pipeline/cli.js analyze|rerecord|cut|status|tts` is the old alias). `docs/cli.md` has the mapping and every flag.
+
+**Audio defaults** are in `config/audio.md` (TTS 1.15x, voice −16 LUFS, bed 6 dB under). **Music:** `config/music.md`. The bed sits 6 dB under the voice, measured per track. Do not ask the creator for a level and never use a fixed gain. `--under=4` only when the creator asks. Pick the track by mood.
 
 ## `script.md` format
 
@@ -164,8 +166,9 @@ Who is talking to whom, the tone, which lines to land (performance mode only).
 - `### Scene N` blocks, numbered from 1 with no gaps, one sentence per line. A line is the re-record unit, id `s<scene>.<line>`. Blank lines are ignored.
 - Lines starting with `>` are notes for a human reader (pronunciation, `[pause]`, `[breath]`). Never spoken, never aligned, never sent to TTS. A cue attaches to the sentence **below** it. A `>` line outside any scene is a file-level note.
 - Any heading other than `Scene N` ends the scene. Sections after `## Script` (`## Voice direction`, `## Scene Hints`, `## Score`, `## Delivery notes`, `## Blueprint`) are ignored by the parser. Never put a `Scene N` heading in them: the parser treats any `Scene N` heading as spoken.
-- Frontmatter: `title`, `topic`, `date`, optional `wpm`, `style`, `tts_voice`, `tts_mode`, `tts_model`, `tts_speed`, `tts_performance` (path to a PERFORMANCE file). `series` and `episode` are free metadata. Flat `key: value` lines only; a trailing `# comment` is stripped.
-- Precedence per setting: CLI flag > script.md frontmatter > the voice the video last used (`voiceover/tts/meta.json`) > env (`TTS_VOICE`, …) > `reelsmith.config.json` > built-in defaults.
+- Frontmatter: `title`, `topic`, `date`, optional `wpm`, `style`, `tts_voice`, `tts_mode`, `tts_provider`, `tts_model`, `tts_speed`, `tts_performance` (path to a PERFORMANCE file). `series` and `episode` are free metadata. Flat `key: value` lines only; a trailing `# comment` is stripped.
+- Precedence per setting: CLI flag > script.md frontmatter > what the video used last (`voiceover/tts/meta.json`: provider, mode, model, voice) > env (`TTS_VOICE`, …) > `reelsmith.config.json` > built-in defaults.
+- Performance mode reuses its cached audio while the prompt is unchanged, and also when only the PERFORMANCE direction text changed (logged as "cached (direction text changed …; --force re-voices)"). `--offline` never calls the API.
 - Word counts mean spoken words (digits and acronyms as read aloud). For TTS, write numbers and symbols the way they should be heard.
 
 ## HTML rules
@@ -195,6 +198,7 @@ Who is talking to whom, the tone, which lines to land (performance mode only).
 | Renderer | Playwright headless Chromium, sharded, JPEG frames piped into ffmpeg (H.264); `docs/fast-render.md` |
 | Plugins | kinds `tts`, `stt`, `style`, `publish`; `reelsmith plugins`; contract in `docs/plugins.md` |
 | Config | `reelsmith.config.json` (project), `.env` (keys), `config/*.md` (agent-facing defaults), `~/.config/reelsmith/` (publish credentials; `REELSMITH_CONFIG_DIR` overrides) |
+| Package mode | a project made by `init`: `runtime` is a symlink into `node_modules/reelsmith`; `styles/` is a real folder with one symlink per built-in pack plus `design.md`, and your own packs beside them |
 
 ## Working on the framework itself
 

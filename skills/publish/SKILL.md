@@ -122,16 +122,18 @@ reelsmith publish videos/<name> --to=youtube
 - Each target writes its result to `videos/<name>/publish/<target>.json` (id, URL, what was sent).
 - A second run refuses when that file already has an `id`, so nothing is uploaded twice. `--force` overrides it; use it only when the creator wants a second copy.
 - Report the URL and id from the result file to the creator.
+- The command exits 1 when any target failed; read each target's line.
 
 ### Privacy (YouTube)
 
-- **The default is `private`.** Only set `privacy: public` (in the `publish.md` frontmatter) when the creator explicitly says "public". The creator usually reviews the upload and flips it in YouTube Studio.
+- **The default is `private`.** Only set `privacy: public` (in the `publish.md` frontmatter, or `--privacy=public` for one run) when the creator explicitly says "public". The creator usually reviews the upload and flips it in YouTube Studio.
+- The first one set wins: `--privacy`, `privacy:` in `publish.md`, a legacy `youtube.json`, `publish.targets.youtube.privacy` in `reelsmith.config.json`, then `private`. The dry run prints which one it used.
 - `madeForKids` is a legal self-declaration (default `false`). Set it deliberately if the creator says otherwise.
 - The privacy YouTube applies can differ from the one requested (Google may force unaudited API projects to private). Report the **actual** privacy from the result, not the requested one.
 
 ### Things that go wrong
 
-- **No YouTube token, or it expired** (Google projects in Testing mode issue refresh tokens that die after 7 days): ask the human to run `reelsmith publish --to=youtube --auth` and click Allow in the browser. Never run the sign-in on your own; it needs the human.
+- **No YouTube token, or it expired** (Google projects in Testing mode issue refresh tokens that die after 7 days): ask the human to run `reelsmith publish videos/<name> --to=youtube --auth` (any video of the project works) and click Allow in the browser. Never run the sign-in on your own; it needs the human. `reelsmith publish videos/<name> --to=youtube --auth --check` only verifies the stored token and is safe for you to run.
 - **Content ID claims:** CC BY tracks (Kevin MacLeod) often get claimed on YouTube, and a claimed Short over 1 minute can be blocked. For YouTube versions prefer a YouTube Audio Library bed or none. See `docs/publishing.md`.
 - **Instagram skipped:** no public URL for the mp4. Facebook still uploads directly.
 - Never print, copy or commit tokens, client secrets or upload-session URLs.

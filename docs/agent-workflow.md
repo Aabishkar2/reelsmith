@@ -2,7 +2,7 @@
 
 Reelsmith is designed to be driven by a coding agent. The agent does the creative work (research, the script, the animation, reviewing its own frames). The CLI does the mechanical work. A human approves every artifact that matters.
 
-This page is written for Claude Code, which loads the skills automatically. Any agent that can read files and run commands can follow the same instructions.
+This page is written for Claude Code, which loads the skills automatically. Any agent that can read files and run commands can follow the same instructions. Commands are written `reelsmith <command>`: in a project made by `init` the agent runs `npx reelsmith <command>`, in a clone of the repo `node bin/reelsmith.js <command>`.
 
 ## What the agent reads
 
@@ -43,7 +43,7 @@ Config the agent needs is markdown on purpose: the agent can read it, and a huma
 5. The agent reads the style pack and writes `index.html`, runs `reelsmith lint` until it exits 0, then `reelsmith sheet` and scores its own contact sheet, fixing the three worst problems each round until every score is 8 or higher.
 6. `reelsmith sheet --stills` and `reelsmith draft`. It sends you `draft.mp4`, the contact sheet and stills with its scores. **It waits.**
 7. You give feedback. It fixes, checks the range with `reelsmith clip`, sends a new draft. You say "approved".
-8. `reelsmith approve videos/ci-slow --by="you"`, then `reelsmith render`. `output.mp4` is done.
+8. `reelsmith approve videos/ci-slow --by="you"`, then `reelsmith render videos/ci-slow`. `output.mp4` is done.
 9. You say "write the publish notes and post to YouTube". It writes `publish.md` (**waits** for approval), runs `--dry-run`, shows the output (**waits** for your go), then publishes and reports the URL and the actual privacy.
 
 ## The gates
@@ -58,7 +58,7 @@ The agent never crosses these on its own judgment:
 | Preview → render | your "approved" after watching `draft.mp4` and the stills; `reelsmith render` also checks the fingerprint and exits 3 without it |
 | Notes → posting | your approval of `publish.md` and an explicit instruction to post, after a dry run |
 
-Two gates are enforced by tools as well as by the skills: `reelsmith lint` must pass, and `reelsmith render` refuses without a current approval. Any change to `index.html`, `scenes.json`, the runtime, the style kit or the images after approval invalidates it.
+Two gates are enforced by tools as well as by the skills: `reelsmith lint` exits 1 on a problem (and `reelsmith run` stops there), and `reelsmith render` refuses (exit 3) without a current approval. Any change to `index.html`, `scenes.json`, the runtime, a local script the page loads (the style kit) or the images after approval invalidates it; `reelsmith approve <video> --check` tells whether the approval is still current.
 
 ## What the agent never does
 
@@ -73,7 +73,7 @@ Two gates are enforced by tools as well as by the skills: `reelsmith lint` must 
 ## Tips
 
 - **Effort:** use high effort (or max) when the agent writes a new `index.html` or a new script, medium for small fixes and re-renders.
-- **Iterating on a script:** after you edit a line, `reelsmith run videos/<name> --voice=<v>` redoes tts, mix, lint, sheet and draft in one go. In sentence mode only the changed line is re-synthesized.
-- **Checking one scene:** ask for a range render; `reelsmith clip --from=S --to=S` takes seconds.
+- **Iterating on a script:** after you edit a line, `reelsmith run videos/<name> --voice=<v>` redoes tts, mix, lint, sheet (with stills) and draft in one go; `--until=<step>` stops earlier. In sentence mode only the changed line is re-synthesized. The mix step uses `music.defaultTrack`, else the track the video was mixed with last time, else it is skipped; the tts step is skipped for a recorded take.
+- **Checking one scene:** ask for a range render; `reelsmith clip videos/<name> --from=S --to=S` takes seconds.
 - **On your phone:** `reelsmith preview videos/<name> --lan` and scan the `/qr` page.
 - **Something broke:** ask the agent to run `reelsmith doctor` first.

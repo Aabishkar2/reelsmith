@@ -25,7 +25,8 @@ Every request sends exactly `{ model, voice, input, response_format }` with
   the transcript. It asks for `response_format: "pcm"`: raw 24 kHz, 16-bit, mono. This
   endpoint answers `wav` with a 400, so don't ask for it. The audio is cached in
   `voiceover/source/performance.{pcm,wav}` and reused while the prompt, model and voice
-  are unchanged.
+  are unchanged, and also when only the PERFORMANCE direction text changed (`--force`
+  re-voices; `--offline` never calls the API).
 
 Speed is never sent to the API. The pipeline applies it locally with ffmpeg `atempo`, so
 changing it costs nothing.
@@ -53,7 +54,8 @@ never calls the network.
 | `TTS_SPEED` | `1.15` | Local tempo from 0.5 to 2 (`--speed` or `tts_speed:` win) |
 
 Precedence for every setting: CLI flag > `script.md` frontmatter > what the video used
-last time (`voiceover/tts/meta.json`) > env > `reelsmith.config.json` > built-in defaults.
+last time (`voiceover/tts/meta.json`: model and voice, while the provider is unchanged) >
+env > `reelsmith.config.json` > built-in defaults. The speed skips the "last time" step.
 
 ## Voices
 

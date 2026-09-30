@@ -108,8 +108,11 @@
   }
   const e3 = (p) => Easing.easeOutCubic(clamp(p, 0, 1));
   const eio = (p) => Easing.easeInOutCubic(clamp(p, 0, 1));
-  // spring that is exactly 0 before its start and 1 once long settled (no NaN at ∞)
-  const sp = (dt, k = SNAPPY.k, d = SNAPPY.d) => (!(dt > 0) ? 0 : dt > 8 ? 1 : spring(dt, k, d));
+  // springAt(dt, k, d): the runtime spring, guarded. Exactly 0 before its start (dt ≤ 0) and for a
+  // non-finite dt (a cue that was not found: no NaN), 1 once long settled. Exported.
+  const springAt = (dt, k = SNAPPY.k, d = SNAPPY.d) =>
+    (!(dt > 0) || !Number.isFinite(dt) ? 0 : dt > 8 ? 1 : spring(dt, k, d));
+  const sp = springAt;
   const num = (v, d) => (typeof v === 'number' && !Number.isNaN(v) ? v : d);
   // Seconds a typed string takes at `speed` characters per second.
   const typeDuration = (text, speed = 28) => String(text == null ? '' : text).length / speed;
@@ -548,13 +551,16 @@
   }
 
   // Rotated rubber stamp that punches in: "NOT SPOKEN", "EXPIRED", "NEVER".
-  function Stamp({ children, label, at = 0, color = DANGER, rotate = -12, size = 44, t, x, y, z, style }) {
+  // `from` = the scale it slams down from (1.6; up to ~2.3 only for short stamps: the first
+  // frames are `from`× as wide, and must still fit the 520 px safe area).
+  function Stamp({ children, label, at = 0, color = DANGER, rotate = -12, size = 44, from = 1.6, t, x, y, z, style }) {
     const lt = useLocalTime(t);
     const dt = lt - at;
     const c = tone(color);
     if (!(dt >= 0)) return <div style={{ ...place(x, y, z), opacity: 0 }} />;
     const s = sp(dt, PUNCH.k, PUNCH.d);
-    const scale = 2.3 - 1.3 * s;
+    const f0 = num(from, 1.6);
+    const scale = f0 - (f0 - 1) * s;
     const ring = e3((dt - 0.1) / 0.55);
     return (
       <div style={place(x, y, z)}>
@@ -588,10 +594,13 @@
   }
 
   // Count-up numeral: value (target), from (start value), at (start time), dur.
-  function Counter({ value = 100, from = 0, at = 0, dur = 1.2, decimals = 0, prefix = '', suffix = '', format,
-    size = 180, weight = 800, color = TEXT, gradient = false, font = DISPLAY, enter: en = 'blur', t, x, y, z, style }) {
+  // ease: 'easeOutCubic' (default) | 'linear' (a steady stopwatch) | any runtime Easing name | p → p.
+  function Counter({ value = 100, from = 0, at = 0, dur = 1.2, ease = 'easeOutCubic', decimals = 0, prefix = '', suffix = '',
+    format, size = 180, weight = 800, color = TEXT, gradient = false, font = DISPLAY, enter: en = 'blur', t, x, y, z, style }) {
     const lt = useLocalTime(t);
-    const n = from + (value - from) * e3((lt - at) / Math.max(0.01, dur));
+    const easeFn = typeof ease === 'function' ? ease
+      : Object.prototype.hasOwnProperty.call(Easing, ease) ? Easing[ease] : Easing.easeOutCubic;
+    const n = from + (value - from) * easeFn(clamp((lt - at) / Math.max(0.01, dur), 0, 1));
     const txt = format ? format(n) : `${prefix}${decimals ? n.toFixed(decimals) : Math.round(n)}${suffix}`;
     const look = gradient
       ? { backgroundImage: GRAD, WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent' }
@@ -763,6 +772,12 @@
       <span style={{ display: 'inline-block', width: '0.6em', height: '1.15em', verticalAlign: '-0.22em', marginLeft: 1,
         background: tone(cursorColor), opacity: on ? 0.95 : 0, borderRadius: 2 }} />
     );
+    // finalPrompt: a fresh `$` line after the last step. Once it exists it owns the only cursor.
+    let tailOn = false;
+    if (finalPrompt && lastStep && lastStep === list[list.length - 1]) {
+      const endAt = lastStep.at + (lastStep.cmd != null ? typeDuration(lastStep.cmd, speed) : 0) + 0.35;
+      tailOn = lt >= endAt;
+    }
     const lines = visible.map((s, i) => {
       const dt = lt - s.at;
       if (s.cmd != null) {
@@ -773,13 +788,15 @@
           <div key={i} style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-all', minHeight: lh }}>
             <span style={{ color: tone(s.promptColor || CYAN), fontWeight: 600 }}>{s.prompt != null ? s.prompt : prompt}</span>
             <span style={{ color: CODE.text }}>{' '}{s.cmd.slice(0, n)}</span>
-            {mine && cursor(typing || blink)}
+            {mine && cursor(!tailOn && (typing || blink))}
           </div>
         );
       }
       const st = STATUS[s.status];
       const text = String(s.out == null ? '' : s.out);
-      const chars = text.length + (st ? 2 : 0) + (s.right ? String(s.right).length + 2 : 0);
+      // wrap estimate for the grow-in height; a React node in `right` counts as 15 chars
+      const rightLen = s.right ? (React.isValidElement(s.right) ? 15 : String(s.right).length) + 2 : 0;
+      const chars = text.length + (st ? 2 : 0) + rightLen;
       const nLines = Math.max(1, Math.ceil(chars / cpl));
       const g = e3(dt / 0.22);
       const color = s.color ? tone(s.color) : s.dim ? FAINT : st ? TEXT : MUTED;
@@ -798,17 +815,11 @@
         </div>
       );
     });
-    let tail = null;
-    if (finalPrompt && lastStep) {
-      const endAt = lastStep.at + (lastStep.cmd != null ? typeDuration(lastStep.cmd, speed) : 0) + 0.35;
-      if (lt >= endAt && (lastStep !== list[list.length - 1] ? false : true)) {
-        tail = (
-          <div style={{ minHeight: lh }}>
-            <span style={{ color: CYAN, fontWeight: 600 }}>{prompt}</span>{' '}{cursor(blink)}
-          </div>
-        );
-      }
-    }
+    const tail = tailOn ? (
+      <div style={{ minHeight: lh }}>
+        <span style={{ color: CYAN, fontWeight: 600 }}>{prompt}</span>{' '}{cursor(blink)}
+      </div>
+    ) : null;
     const body = (
       <div style={{ fontFamily: MONO, fontSize, lineHeight: `${lh}px`, color: CODE.text, minHeight: lh }}>
         {lines}
@@ -953,8 +964,9 @@
 
   // Code / file card. lines: string | { text, at, type, dim, color, segs, label }.
   // highlight: [lineIndex, ...] (glows once shown) or [{ line, at, until, color }].
+  // grow: lines whose `at` has not passed take no space (the card grows as they arrive).
   function CodeCard({ title = 'index.html', lang, lines = [], at = 0, stagger = 0.12, highlight = [], numbers = true,
-    start = 1, fontSize = 24, lineHeight = 1.55, width = 600, speed = 30, badge, accent = true,
+    start = 1, fontSize = 24, lineHeight = 1.55, width = 600, speed = 30, badge, accent = true, grow = false,
     enter: en = 'fromRight', t, x, y, z, style }) {
     const lt = useLocalTime(t);
     const lg = lang != null ? lang : langOf(title);
@@ -965,6 +977,7 @@
       const la = L.at != null ? L.at : at + 0.25 + i * stagger;
       const dt = lt - la;
       const vis = dt >= 0;
+      if (grow && !vis) return null;
       let hl = 0;
       let hc = VIOLET;
       for (const h of hls) {
@@ -1047,23 +1060,28 @@
   }
 
   // rows: [{ name, depth, kind: 'dir'|'file', at, badge, badgeVariant, note, hotAt, color }]
-  function FileTree({ rows = [], at = 0, stagger = 0.14, title, width = 540, fontSize = 24, card = true,
+  // grow: rows whose `at` has not passed take no space (the card grows as they arrive).
+  function FileTree({ rows = [], at = 0, stagger = 0.14, title, width = 540, fontSize = 24, card = true, grow = false,
     enter: en = 'fromLeft', t, x, y, z, style }) {
     const lt = useLocalTime(t);
     const rowH = Math.round(fontSize * 1.8);
     const indent = 30;
-    const R = rows.map((r) => ({ ...r, depth: r.depth || 0, kind: r.kind || (/\/$/.test(r.name) ? 'dir' : 'file') }));
+    const R = rows.map((r, i) => ({ ...r, depth: r.depth || 0, kind: r.kind || (/\/$/.test(r.name) ? 'dir' : 'file'),
+      ra: r.at != null ? r.at : at + 0.2 + i * stagger }));
     // Is there a later sibling at `depth` below row i (before the tree climbs above it)?
+    // With `grow`, only rows already shown count, so the guide line ends at the last one.
     const continues = (i, depth) => {
       for (let j = i + 1; j < R.length; j++) {
+        if (grow && !(lt >= R[j].ra)) continue;
         if (R[j].depth < depth) return false;
         if (R[j].depth === depth) return true;
       }
       return false;
     };
     const items = R.map((r, i) => {
-      const ra = r.at != null ? r.at : at + 0.2 + i * stagger;
+      const ra = r.ra;
       const dt = lt - ra;
+      if (grow && !(dt >= 0)) return null;
       const hot = r.hotAt != null && lt >= r.hotAt ? e3((lt - r.hotAt) / 0.3) : 0;
       const guides = [];
       for (let d = 0; d < r.depth; d++) {
@@ -1152,7 +1170,8 @@
 
   // ── Flow diagram ────────────────────────────────────────────────────────────
   // nodes: [{ id, label, sub, at, icon, color }] — each lights up at its `at`; the
-  // connector into it draws during the 0.4 s before. `at` = when the dim skeleton shows.
+  // connector into it draws during the 0.4 s before. `at` = when the dim skeleton (nodes and
+  // dashed connectors) shows; default 0.6 s before the first node's `at`. Nothing shows before it.
   function FlowDiagram({ nodes = [], direction = 'vertical', at, nodeW, nodeH, gap = 44, width = 600, color = VIOLET,
     mono = true, steps = true, drawDur = 0.4, t, x, y, z, style }) {
     const lt = useLocalTime(t);
@@ -1168,6 +1187,9 @@
     const pos = (i) => (vert ? { left: 0, top: i * (NH + gap) } : { left: i * (NW + gap), top: 0 });
     const links = [];
     for (let i = 1; i < n; i++) {
+      // the connector into node i shows with node i (same skeleton clock), never before `show`
+      const vis = lt >= show ? e3((lt - show - i * 0.06) / 0.4) : 0;
+      if (!(vis > 0)) continue;
       const a = pos(i - 1);
       const b = pos(i);
       const x1 = vert ? NW / 2 : a.left + NW;
@@ -1180,7 +1202,7 @@
       const hy = y1 + (y2 - y1) * p;
       const c = tone(nodes[i].color || color);
       links.push(
-        <g key={i}>
+        <g key={i} opacity={vis < 1 ? vis : undefined}>
           <line x1={x1} y1={y1} x2={x2} y2={y2} stroke="rgba(255,255,255,0.14)" strokeWidth={3} strokeDasharray="2 8"
             strokeLinecap="round" />
           {p > 0 && <line x1={x1} y1={y1} x2={hx} y2={hy} stroke={`url(#${gid})`} strokeWidth={4} strokeLinecap="round" />}
@@ -1597,7 +1619,9 @@
     const list = cells || Array.from({ length: count }, (_, i) => ({ label: `${(i * 2.4 + 0.3).toFixed(1)}s` }));
     const cw = (width - gap * (cols - 1)) / cols;
     const ch = cw * aspect;
-    const pal = [VIOLET, CYAN, OK, WARN, '#F472B6'];
+    // motion palette only; the 5th tone is the violet → cyan midpoint (mix(VIOLET, CYAN, 0.5)) so the
+    // 5-step cycle, and every other cell's colour, stays as it was
+    const pal = [VIOLET, CYAN, OK, WARN, '#4F98F7'];
     const shapes = React.useMemo(() => {
       const r = seededRandom(seed);
       return list.map(() => ({ a: 0.5 + 0.35 * r(), b: 0.3 + 0.3 * r(), box: 0.3 + 0.25 * r() }));
@@ -1783,11 +1807,11 @@
     INK, VIOLET, CYAN, OK, WARN, DANGER, TEXT, MUTED, FAINT, CARD, CARD_BORDER, CODE_BG, GRAD, GRAD_DIAG,
     DISPLAY, SANS, MONO, SHADOW, TS, SNAPPY, PUNCH, CANVAS, CODE,
     // helpers
-    enter, entry, alpha, mix, tone, typeDuration, tokenize, useLocalTime,
+    enter, entry, alpha, mix, tone, typeDuration, tokenize, useLocalTime, springAt,
     // components
     SceneRoot, Glow, Watermark, Title, Kicker, Typed, Icon, Chip, Badge, Card, Callout, Tile, Stamp, Strike, Counter,
-    ProgressBar, Ring, Window, BrowserFrame, Terminal, PromptBox, CodeCard, FileTree, StatusRows, FlowDiagram,
+    ProgressBar, Ring, Window, BrowserFrame, Terminal, PromptBox, CodeCard, FileTree, FileGlyph, StatusRows, FlowDiagram,
     PluginDock, Logo, Wordmark, Waveform, Timeline, PhoneFrame, MiniReel, Grid, SplitCard, Arrow, Cursor,
   });
-  window.MOTION_KIT_VERSION = '1.0.0';
+  window.MOTION_KIT_VERSION = '1.1.0';
 })();

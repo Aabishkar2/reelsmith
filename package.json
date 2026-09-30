@@ -7,7 +7,7 @@
   "homepage": "https://github.com/Aabishkar2/reelsmith#readme",
   "bugs": { "url": "https://github.com/Aabishkar2/reelsmith/issues" },
   "keywords": ["video", "shorts", "tts", "whisper", "subtitles", "motion-graphics", "claude-code", "agent"],
-  "engines": { "node": ">=18" },
+  "engines": { "node": ">=20" },
   "bin": { "reelsmith": "bin/reelsmith.js" },
   "files": [
     "bin/",

@@ -33,6 +33,7 @@ const NAV = [
   { group: 'Start', pages: [
     ['README.md', 'index', 'Overview'],
     ['docs/getting-started.md', 'getting-started', 'Getting started'],
+    ['docs/tutorials.md', 'tutorials', 'Tutorials'],
     ['docs/concepts.md', 'concepts', 'Concepts'],
   ] },
   { group: 'Guides', pages: [

@@ -8,7 +8,7 @@ You need four things:
 
 | Tool | Why | Check |
 |---|---|---|
-| Node.js 22 (18 is the minimum) | runs everything | `node --version` |
+| Node.js 22 (20 is the minimum: Playwright needs it) | runs everything | `node --version` |
 | ffmpeg and ffprobe | audio processing, mixing, encoding | `ffmpeg -version` |
 | Python 3.11 with `openai-whisper` | word timings | `python3.11 -c "import whisper"` |
 | Playwright Chromium | contact sheets, drafts, renders | installed in step 2 |
@@ -48,51 +48,50 @@ git clone https://github.com/Aabishkar2/reelsmith.git
 cd reelsmith
 npm install
 npx playwright install chromium
-npm link
+node bin/reelsmith.js --help
 ```
 
-`npm link` puts the `reelsmith` command on your PATH. Without it, run `node bin/reelsmith.js <command>` from the repo.
+In a clone, run the CLI as `node bin/reelsmith.js <command>` from the repo. If you want a `reelsmith` command on your PATH, run `npm link` once.
 
 The repo already contains a working project: `videos/fixture-e2e` and ten tutorial videos.
 
 ### Package mode: a fresh project
 
-Good for a channel of your own. `init` creates the project folder and installs the framework into it.
-
-```bash
-npx reelsmith init my-channel
-cd my-channel
-```
-
-Until the package is published on npm, run it from GitHub:
+Good for a channel of your own. `init` creates the project folder and installs the framework into it. The package is not on npm yet, so run it from GitHub:
 
 ```bash
 npx github:Aabishkar2/reelsmith init my-channel
+cd my-channel
 ```
+
+Once the package is published, `npx reelsmith init my-channel` does the same. From a clone, `node bin/reelsmith.js init ../my-channel` works too.
 
 `init` writes:
 
 ```
 my-channel/
+  package.json            the reelsmith dependency (github:Aabishkar2/reelsmith)
   reelsmith.config.json   project settings
   .env.example            keys to fill in
   .gitignore
   CLAUDE.md  README.md    instructions for your agent and for you
-  config/                 audio.md, music.md, voice/performance.md, fillers.json
+  config/                 audio.md, music.md, voice/performance.md, fillers.json, strategy.md
   videos/                 your videos
-  music/CREDITS.md        background tracks and their credits
+  music/                  CREDITS.md and download.sh for the background tracks
   plugins/                your own plugins
   .claude/skills/         the agent skills
-  runtime  styles         symlinks into the installed framework
+  runtime                 a symlink into node_modules/reelsmith
+  styles/                 a real folder: one symlink per built-in pack, plus design.md; your own packs go beside them
 ```
 
-It also runs `npm init -y` if needed, adds the `reelsmith` dependency and installs Playwright Chromium.
+It runs `npm init -y` if there is no `package.json`, adds the `reelsmith` dependency, runs `npm install` and installs Playwright Chromium. It refuses a folder that is not empty unless you pass `--force` (existing files are kept).
 
 | Flag | Effect |
 |---|---|
-| `--style=<name>` | default style pack for the project (default `reflective`) |
-| `--link` | link a local checkout of the framework instead of installing it (for framework development) |
-| `--no-install` | skip the dependency install and the Chromium download |
+| `--style=<name>` | default style pack for the project: `reflective` (default), `tech-news` or `motion` |
+| `--link` | use a local checkout of the framework instead of GitHub: writes `"reelsmith": "file:<path>"` and links `node_modules/reelsmith` and `node_modules/.bin/reelsmith` itself, offline, without `npm link` (for framework development) |
+| `--no-install` | skip `npm install` and the Chromium download |
+| `--force` | scaffold into a folder that is not empty |
 
 In package mode the CLI is a local dependency. Run it as `npx reelsmith <command>`. These docs write `reelsmith <command>` for short.
 
@@ -116,7 +115,7 @@ Publish tokens (YouTube, Meta, Discord) come later. See [Publishing](publishing.
 reelsmith doctor
 ```
 
-It checks node, ffmpeg, the Python with Whisper, Playwright Chromium, each key and every plugin's own check, and prints what is missing and how to fix it. Optional items (for example publish tokens) are marked as optional. `reelsmith doctor --json` prints the same report as JSON.
+It checks node, ffmpeg, the Python with Whisper, Playwright Chromium, the project (config, runtime, style packs), each key and every plugin's own check, and prints what is missing and how to fix it. Optional items (for example publish tokens) are marked as optional, and it exits 1 only when a required item fails. `reelsmith doctor --json` prints the same report as JSON.
 
 ## 5. Make your first video
 
@@ -131,39 +130,42 @@ Creates `videos/prompt-caching/script.md` from the template. Add `--style=motion
 Write the script: one sentence per line, grouped into `### Scene N` blocks. Or ask your agent, which uses the script-writing skill. The format is in [Script format](script-format.md).
 
 ```bash
-reelsmith tts videos/prompt-caching --voice=Leda
+reelsmith tts prompt-caching --voice=Leda
 ```
 
-Synthesizes the voice, runs Whisper for word timings and writes `voiceover.mp3` plus `scenes.json`. Voice names depend on the TTS provider; the built-in one uses the Gemini TTS voices. There is no default voice: you choose one per video.
+Synthesizes the voice, runs Whisper for word timings and writes `voiceover.mp3` plus `scenes.json`. Voice names depend on the TTS provider; the built-in one uses the Gemini TTS voices. There is no default voice: you choose one per video. A command takes the video as `prompt-caching`, `videos/prompt-caching` or a path.
 
 Now `videos/prompt-caching/index.html`, the animation. Your agent writes it with the html-animation skill. Every overlay is bound to a spoken word. See [Animation](animation.md).
 
 ```bash
-reelsmith sheet videos/prompt-caching
+reelsmith sheet prompt-caching --stills
 ```
 
-Writes `frames/contact-sheet.png`: hook frames and three frames per scene, each labelled with the words being spoken. Look at it.
+Writes `frames/contact-sheet.png`: hook frames and three frames per scene, each labelled with the words being spoken, plus full-size stills in `frames/stills/`. Look at it.
 
 ```bash
-reelsmith draft videos/prompt-caching
+reelsmith draft prompt-caching
 ```
 
 Renders `draft.mp4` in about 30 seconds: 15 fps, 0.75× size, with the voice. Watch it, give feedback, iterate.
 
 ```bash
-reelsmith approve videos/prompt-caching --by="you"
-reelsmith render videos/prompt-caching
+reelsmith approve prompt-caching --by="you"
+reelsmith render prompt-caching
 ```
 
-`approve` records a fingerprint of the animation, the timings and the images. `render` writes `output.mp4` and refuses (exit code 3) without a current approval.
+`approve` records a fingerprint of the animation, the timings, the runtime, the style kit and the images. `render` writes `output.mp4` and refuses (exit code 3) without a current approval.
 
 Optional steps you will want soon:
 
 ```bash
-reelsmith mix videos/prompt-caching --track=music/clean-soul.mp3   # music bed 6 dB under the voice
-reelsmith lint videos/prompt-caching                               # the sync linters
-reelsmith preview videos/prompt-caching                            # live playback in the browser
+reelsmith mix prompt-caching --track=music/clean-soul.mp3   # music bed 6 dB under the voice
+reelsmith lint prompt-caching                               # the sync linters
+reelsmith preview prompt-caching                            # live playback in the browser
+reelsmith run prompt-caching --voice=Leda                   # tts → mix → lint → sheet → draft in one go
 ```
+
+The tracks come from `bash music/download.sh`. Set `"music": { "defaultTrack": "music/clean-soul.mp3" }` in `reelsmith.config.json` and `mix` (and `run`) no longer need `--track`. Without either, `mix` stops with exit code 2 and lists the tracks it found. `draft` and `render` pick up `voiceover-mix.mp3` by themselves.
 
 ## 6. Or let the agent drive
 
