@@ -21,3 +21,4 @@ videos/*/voiceover/source/*.pcm
 videos/*/voiceover/source/*.wav
 videos/*/publish/
 site/docs/*.html
+site/videos/
