@@ -1,4 +1,5 @@
-# Builds the docs site (tools/build-site.js → site/docs/*.html) and deploys site/ to GitHub Pages.
+# Builds the docs site (tools/build-site.js → site/docs/*.html), pulls the tutorial MP4s from the
+# tutorials-v1 release into site/videos/ (they are too big for git), and deploys site/ to GitHub Pages.
 name: Pages
 
 on:
@@ -25,6 +26,10 @@ jobs:
           node-version: 22
       - name: Build the docs site
         run: node tools/build-site.js
+      - name: Fetch the tutorial videos
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release download tutorials-v1 --pattern 'tut-*.mp4' --dir site/videos
       - uses: actions/upload-pages-artifact@v3
         with:
           path: site
